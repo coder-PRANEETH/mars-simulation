@@ -1,0 +1,90 @@
+{
+  "name": "HiRISE Jezero Southeast Hills",
+  "region": "Hill southeast of Jezero Crater",
+  "datasetName": "MRO Mars High Resolution Imaging Science Experiment DTM V1.0",
+  "datasetId": "MRO-M-HIRISE-5-DTM-V1.0",
+  "dtmProductId": "DTEED_042328_1985_033150_1985_A01",
+  "imageryProductId": "ESP_042328_1985_RED_B_01_ORTHO",
+  "credit": "NASA/JPL-Caltech/University of Arizona",
+  "columns": 401,
+  "rows": 401,
+  "widthMeters": 2423.28915521724,
+  "depthMeters": 2423.28915521724,
+  "areaSquareKilometers": 5.872330329793485,
+  "areaKm2": 5.872330329793485,
+  "elevationOffset": -497.99560546875,
+  "minimumElevation": -875.44482421875,
+  "maximumElevation": -481.2089538574219,
+  "elevationDatum": "Mars 2000 areoid (equipotential surface); meters above datum",
+  "centerLatitude": 18.180813991576052,
+  "centerLongitude": 78.20987650436584,
+  "latitudeNorth": 18.201263298284008,
+  "latitudeSouth": 18.160364684868092,
+  "longitudeWest": 78.1887058242252,
+  "longitudeEast": 78.2310471845065,
+  "coordinateSystem": "Planetocentric latitude; east-positive longitude",
+  "originalResolutionMeters": 2.0194076293477,
+  "originalImageryResolutionMeters": 0.50485190733684,
+  "meshResolutionMeters": 6.058222888043099,
+  "textureResolutionMeters": 0.591623328910459,
+  "textureSize": 4096,
+  "projection": {
+    "type": "Equirectangular",
+    "standardParallel": 15.0,
+    "centerLongitude": 78.21,
+    "radiusMeters": 3394839.8133163,
+    "centerEastingMeters": -7.067926702717159,
+    "centerNorthingMeters": 1077233.815503072
+  },
+  "sourceCrop": {
+    "row": 2900,
+    "column": 1200,
+    "rows": 1201,
+    "columns": 1201
+  },
+  "source": "https://www.uahirise.org/dtm/ESP_042328_1985",
+  "sources": [
+    {
+      "name": "HiRISE stereo DTM",
+      "url": "https://www.uahirise.org/PDS/DTM/ESP/ORB_042300_042399/ESP_042328_1985_ESP_033150_1985/DTEED_042328_1985_033150_1985_A01.IMG",
+      "sha256": "027624b2724a9d121250be310ca1ef998d7ab31317108a7fb9c109de55dab6b2"
+    },
+    {
+      "name": "Co-registered HiRISE RED orthoimage",
+      "url": "https://www.uahirise.org/PDS/DTM/ESP/ORB_042300_042399/ESP_042328_1985_ESP_033150_1985/ESP_042328_1985_RED_B_01_ORTHO.JP2",
+      "sha256": "694e3932f29823af5e5d8c8bd1d824e6a281b52f0536bc0b200a9177cb2e4857"
+    },
+    {
+      "name": "Orbital imagery PDS label",
+      "url": "https://www.uahirise.org/PDS/DTM/ESP/ORB_042300_042399/ESP_042328_1985_ESP_033150_1985/ESP_042328_1985_RED_B_01_ORTHO.LBL",
+      "sha256": "00fd05b4472571dac9beaafd9dc40d961cb11248523559c1f44eef87fb0edf37"
+    },
+    {
+      "name": "HiRISE DTM product documentation",
+      "url": "https://www.uahirise.org/dtm/about.php"
+    }
+  ],
+  "transformations": [
+    "Crop zero-based DTM rows 2900\u20134100, columns 1200\u20132400; all source posts valid.",
+    "Retain every 3rd measured DEM post: 401 \u00d7 401 vertices at 6.058223 m spacing. No synthetic elevation or vertical exaggeration.",
+    "Subtract -497.995605 m from elevation to keep renderer coordinates near zero. Restore this offset for scientific altitude.",
+    "Georeferenced co-registered 0.504852 m/pixel RED orthoimage cropped to the same DEM-post-center bounds; bilinear resize to 4096 \u00d7 4096.",
+    "Single-band RED image linearly stretched using crop 1st/99th percentile DN (74.0, 215.0) and JPEG compressed at quality 92. Rust material tint is illustrative, not measured true color."
+  ],
+  "surfaceInformation": "Orbital morphology only. Rock, regolith and mineral properties are not measured by this prototype.",
+  "simplifications": [
+    "Mesh interpolation gives a planar triangular surface between retained source posts; sub-grid obstacles are not resolved.",
+    "Orbital image includes lighting and shadows from acquisition; it is not a corrected intrinsic-albedo map.",
+    "Decorative instanced rocks and close-range material grain are illustrative props; locations are not mapped geological observations.",
+    "Local equirectangular map plane is used at 1 m = 1 world unit; planetary curvature is omitted over this 2.42 km patch."
+  ],
+  "spawn": {
+    "x": 0,
+    "z": -550,
+    "yaw": 3.5342917352885173,
+    "headingDegrees": 157.5
+  },
+  "encoding": "Float32 little endian; row 0 north, column 0 west; y = areoid elevation \u2212 elevationOffset",
+  "triangleTopology": "northwest a, northeast b, southwest c, southeast d; triangles a,c,b and b,c,d",
+  "preprocessingScript": "scripts/prepare-terrain.py"
+}
