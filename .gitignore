@@ -1,0 +1,10 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.superdesign/tmp/
+scripts/.cache/
+.cache/
+.venv-terrain/
+__pycache__/
+*.log
