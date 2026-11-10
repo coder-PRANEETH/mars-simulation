@@ -46,7 +46,7 @@ function passable(grid, index, profile, avoid) {
 function shortestPath(grid, start, end, profile, avoid) {
   if (!passable(grid, start, profile, avoid) || !passable(grid, end, profile, avoid)) return null
 
-  const { width, height, dx, dz, slope, roughness, elevation } = grid
+  const { width, height, dx, dz, slope, roughness, elevation, surface } = grid
   const endColumn = end % width
   const endRow = Math.floor(end / width)
   const distance = new Float64Array(width * height).fill(Infinity)
@@ -79,7 +79,8 @@ function shortestPath(grid, start, end, profile, avoid) {
       const rise = elevation[next] - elevation[cell]
       const incline = Math.max(slope[cell], slope[next]) / profile.maxSlope
       const uneven = Math.max(roughness[cell], roughness[next])
-      const nextCost = cost + Math.hypot(horizontal, rise) * (1 + 2.2 * incline ** 2 + 2 * uneven)
+      const material = surfacePenalty(surface?.[cell] | surface?.[next])
+      const nextCost = cost + Math.hypot(horizontal, rise) * (1 + 2.2 * incline ** 2 + 2 * uneven + material)
       if (nextCost >= distance[next]) continue
       distance[next] = nextCost
       parent[next] = cell
@@ -88,6 +89,11 @@ function shortestPath(grid, start, end, profile, avoid) {
     }
   }
   return null
+}
+
+// Mapped surface units are broad caution areas with configurable field conditions.
+function surfacePenalty(flags) {
+  return (flags & 1 ? 0.4 : 0) + (flags & 2 ? 0.18 : 0)
 }
 
 function sharedElevation(grid, from, to) {
@@ -103,7 +109,7 @@ function sharedElevation(grid, from, to) {
 }
 
 function describeRoute(grid, path, profile, stop) {
-  const { elevation, roughness, slope } = grid
+  const { elevation, roughness, slope, surface } = grid
   const first = { ...cellPoint(grid, path[0]), y: elevation[path[0]] }
   const points = [first]
   const waypoints = [{ ...first, distance: 0, label: 'Start' }]
@@ -126,7 +132,9 @@ function describeRoute(grid, path, profile, stop) {
     for (const [a, b] of [[origin, midpoint], [midpoint, next]]) {
       const rise = b.y - a.y
       const length = Math.hypot(run, rise)
-      const penalty = 1 + Math.max(roughness[from], roughness[to]) + profile.dustPenalty + (profile.thermalPenalty ?? 0)
+      const penalty = 1 + Math.max(roughness[from], roughness[to])
+        + surfacePenalty(surface?.[from] | surface?.[to])
+        + profile.dustPenalty + (profile.thermalPenalty ?? 0)
       distance += length
       gain += Math.max(0, rise)
       time += length / profile.pace * (penalty + Math.max(0, rise) / run * 3 + Math.max(0, -rise) / run)

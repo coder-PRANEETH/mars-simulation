@@ -153,3 +153,6 @@
   pointer-events: none;
 }
 .expedition-guide span { color: #b7dbcc; }
+.expedition-geology { pointer-events: none; }
+.expedition-geology-legend summary { cursor: pointer; font-size: 12px; }
+.expedition-geology-legend ul { margin: 7px 0; }

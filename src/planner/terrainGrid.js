@@ -1,7 +1,7 @@
 const degrees = 180 / Math.PI
 
 // Each cell matches the two triangles in the rendered mesh.
-export function buildGrid(terrain) {
+export function buildGrid(terrain, surface) {
   const { columns, rows, widthMeters, depthMeters } = terrain.metadata
   const width = columns - 1
   const height = rows - 1
@@ -27,7 +27,7 @@ export function buildGrid(terrain) {
     }
   }
 
-  return { width, height, dx, dz, slope, roughness, elevation, heights: terrain.heights }
+  return { width, height, dx, dz, slope, roughness, elevation, surface, heights: terrain.heights }
 }
 
 export function cellAt(grid, { x, z }) {
@@ -47,7 +47,7 @@ export function cellPoint(grid, index) {
 export function terrainClass(grid, index, maxSlope, closed) {
   if (!Number.isFinite(grid.slope[index])) return 'unknown'
   if (closed?.has(index) || grid.slope[index] > maxSlope) return 'blocked'
-  if (grid.slope[index] > maxSlope * 0.65 || grid.roughness[index] >= 0.12) return 'caution'
+  if (grid.slope[index] > maxSlope * 0.65 || grid.roughness[index] >= 0.12 || grid.surface?.[index]) return 'caution'
   return 'open'
 }
 

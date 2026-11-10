@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { buildGrid, cellAt, cellPoint, cellsInZones, terrainClass } from './terrainGrid.js'
 import { mapLayer } from './mapLayers.js'
 import { scienceSites } from './scienceSites.js'
 import { useRoutes } from './useRoutes.js'
 import RouteControls from './RouteControls.jsx'
+import { GeologyLayer, GeologyLegend } from './GeologyLayer.jsx'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -18,7 +19,23 @@ function Tool({ children, onClick, active, ...props }) {
 export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearRoute }) {
   const metadata = terrain.metadata
   const { widthMeters, depthMeters } = metadata
-  const grid = useMemo(() => buildGrid(terrain), [terrain])
+  const [surface, setSurface] = useState(undefined)
+  const grid = useMemo(() => buildGrid(terrain, surface), [terrain, surface])
+  const locate = useMemo(() => (longitude, latitude) => origin(terrain.location(latitude, longitude), metadata), [terrain, metadata])
+  useEffect(() => {
+    let active = true
+    fetch(`${terrain.assetBase}/surface-flags.bin`)
+      .then((response) => {
+        if (!response.ok) throw new Error('Mapped terrain data unavailable')
+        return response.arrayBuffer()
+      })
+      .then((buffer) => {
+        if (buffer.byteLength !== (metadata.columns - 1) * (metadata.rows - 1)) throw new Error('Mapped terrain size does not match')
+        if (active) setSurface(new Uint8Array(buffer))
+      })
+      .catch(() => { if (active) setSurface(null) })
+    return () => { active = false }
+  }, [terrain, metadata])
   const [layer, setLayer] = useState('Imagery')
   const [hazards, setHazards] = useState(false)
   const [maxSlope, setMaxSlope] = useState(20)
@@ -40,6 +57,9 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
   const [inspection, setInspection] = useState(null)
   const [sitesVisible, setSitesVisible] = useState(true)
   const [selectedSite, setSelectedSite] = useState(null)
+  const [showGeology, setShowGeology] = useState(false)
+  const [geology, setGeology] = useState(null)
+  const [geologyError, setGeologyError] = useState(false)
   const [thermal, setThermal] = useState(false)
   const [context, setContext] = useState(false)
   const [crater, setCrater] = useState(null)
@@ -94,6 +114,19 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
     fetchCrater()
   }
 
+  function toggleGeology() {
+    setShowGeology(!showGeology)
+    if (showGeology || geology) return
+    setGeologyError(false)
+    fetch(`${terrain.assetBase}/geology.json`)
+      .then((response) => {
+        if (!response.ok) throw new Error('Mapped geology unavailable')
+        return response.json()
+      })
+      .then(setGeology)
+      .catch(() => setGeologyError(true))
+  }
+
   function toggleThermal() {
     if (!thermal) fetchCrater()
     setThermal(!thermal)
@@ -138,6 +171,7 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
       <div role="group" aria-label="Terrain layers">
         {!context && ['Imagery', 'Elevation', 'Slope'].map((name) => <Tool key={name} active={layer === name} onClick={() => setLayer(name)}>{name}</Tool>)}
         {!context && <Tool active={hazards} onClick={() => setHazards(!hazards)}>Hazards</Tool>}
+        <Tool active={showGeology} onClick={toggleGeology}>Geology</Tool>
         <Tool active={thermal} onClick={toggleThermal}>Thermal IR</Tool>
         <Tool active={sitesVisible} onClick={() => setSitesVisible(!sitesVisible)}>Science sites</Tool>
       </div>
@@ -150,11 +184,13 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
     <div className="expedition-content">
       <div className="expedition-map">
         {context ? (
-          crater ? <CraterMap crater={crater} terrain={terrain} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
+          crater ? <CraterMap crater={crater} terrain={terrain} geology={showGeology ? geology : null} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
             : <p role="status">{contextError ? 'Crater overview could not be loaded. Select Crater overview to retry.' : 'Loading crater overview…'}</p>
         ) : <svg viewBox={`0 0 ${widthMeters} ${depthMeters}`} onClick={inspect} aria-label="Detailed traverse map" role="img">
+          <clipPath id="expedition-detail"><rect width={widthMeters} height={depthMeters} /></clipPath>
           <image href={raster ?? `${terrain.assetBase}/texture.jpg`} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />
           {thermal && crater && <LocalThermal terrain={terrain} crater={crater} />}
+          {showGeology && geology && <GeologyLayer data={geology} locate={locate} clipPath="url(#expedition-detail)" />}
           {hazard && <image href={hazard} width={widthMeters} height={depthMeters} preserveAspectRatio="none" className="expedition-pixels" />}
           <RouteOverlay routes={routes} selected={selected} grid={grid} start={start} end={end} zones={zones} metadata={metadata} />
           <g transform={`translate(${widthMeters * 0.03} ${depthMeters * 0.94})`} className="expedition-scale">
@@ -182,16 +218,17 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
           <RouteControls start={start} end={end} maxSlope={maxSlope} pace={pace} setPace={(value) => update(setPace, value)}
             dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
             objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
-            sites={localSites} onDemo={demo} onCalculate={requestRoutes} planning={planning} error={error} routes={routes}
+            sites={localSites} onDemo={demo} onCalculate={requestRoutes} planning={planning} loadingSurface={surface === undefined} error={error} routes={routes}
             selected={selected} onSelect={setSelected} onWalk={onWalk} />
           <label className="expedition-field">Maximum slope <output>{maxSlope}°</output>
             <input type="range" min="10" max="35" value={maxSlope} onChange={(event) => update(setMaxSlope, +event.target.value)} />
           </label>
           {hazards && <ul className="expedition-legend">
             <li><i className="hazard-blocked" />Above the slope limit or marked avoid zone</li>
-            <li><i className="hazard-caution" />Steep or locally uneven</li>
+            <li><i className="hazard-caution" />Steep or locally uneven, or mapped surface caution</li>
             <li><i className="hazard-unknown" />No elevation data</li>
           </ul>}
+          {hazards && <p>{surface === null ? 'The mapped surface flags are unavailable. Routing uses elevation and manually marked obstacles.' : 'Mapped surface caution includes windblown bedforms and dark mantling material. A* adds a travel penalty there.'}</p>}
           {layer === 'Elevation' && <p>Elevation ramp: {Math.round(metadata.minimumElevation)} to {Math.round(metadata.maximumElevation)} m · USGS elevation datum</p>}
           {layer === 'Slope' && <p>Slope ramp: 0° teal to 35° or more red. Color shows the steeper triangle in each cell.</p>}
           <div>
@@ -205,13 +242,14 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
           </div>
           <p className="expedition-note">Slope limits are planning assumptions. Small rocks, loose footing and weather require separate assessment.</p>
         </>}
+        {showGeology && <GeologyLegend data={geology} error={geologyError} />}
         {sitesVisible && <SciencePanel selected={selectedSite} onSelect={selectSite} />}
       </aside>
     </div>
   </section>
 }
 
-function CraterMap({ crater, terrain, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
+function CraterMap({ crater, terrain, geology, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
   const { width, height, bounds: [west, south, east, north] } = crater
   const metadata = terrain.metadata
   const x = (longitude) => (longitude - west) / (east - west) * width
@@ -219,6 +257,7 @@ function CraterMap({ crater, terrain, thermal, sitesVisible, selectedSite, onSel
   return <svg viewBox={`0 0 ${width} ${height}`} aria-label="Jezero crater elevation overview" role="img">
     <image href={`${terrain.assetBase}/crater.jpg`} width={width} height={height} />
     {thermal && <image href={`${terrain.assetBase}/thermal.png`} width={width} height={height} preserveAspectRatio="none" className="expedition-pixels" />}
+    {geology && <GeologyLayer data={geology} locate={(longitude, latitude) => ({ x: x(longitude), y: y(latitude) })} />}
     <rect x={x(metadata.longitudeWest)} y={y(metadata.latitudeNorth)}
       width={x(metadata.longitudeEast) - x(metadata.longitudeWest)}
       height={y(metadata.latitudeSouth) - y(metadata.latitudeNorth)}
@@ -239,7 +278,7 @@ function LocalThermal({ terrain, crater }) {
   const top = origin(terrain.location(north, west), terrain.metadata)
   const bottom = origin(terrain.location(south, east), terrain.metadata)
   return <image href={`${terrain.assetBase}/thermal.png`} x={top.x} y={top.y} width={bottom.x - top.x} height={bottom.y - top.y}
-    preserveAspectRatio="none" className="expedition-pixels" />
+    preserveAspectRatio="none" className="expedition-pixels" clipPath="url(#expedition-detail)" />
 }
 
 function SiteMarkers({ size, sites, locate, selected, onSelect }) {

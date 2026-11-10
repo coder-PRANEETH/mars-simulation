@@ -3,7 +3,7 @@ import RouteResults from './RouteResults.jsx'
 export default function RouteControls({
   start, end, maxSlope, pace, setPace, dust, setDust, temperature, setTemperature,
   objective, setObjective, scienceStop, setScienceStop, sites, onDemo, onCalculate,
-  planning, error, routes, selected, onSelect, onWalk,
+  planning, loadingSurface, error, routes, selected, onSelect, onWalk,
 }) {
   return <div className="expedition-routing">
     <div className="expedition-route-heading">
@@ -40,7 +40,7 @@ export default function RouteControls({
         </select>
       </label>
     </div>
-    <button className="expedition-primary" type="button" onClick={onCalculate} disabled={start < 0 || end < 0 || start === end || planning}>
+    <button className="expedition-primary" type="button" onClick={onCalculate} disabled={start < 0 || end < 0 || start === end || planning || loadingSurface}>
       {planning ? 'Calculating…' : 'Calculate routes'}
     </button>
     {start >= 0 && start === end && <p role="status">Choose a destination in a different terrain cell.</p>}

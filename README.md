@@ -63,6 +63,15 @@ are scenario settings informed qualitatively by the [Norcross suit study](https:
 The study used level treadmill trials. Estimates exclude rest and time spent
 on science, and carry no operational EVA limits.
 
+The **Geology** layer shows published USGS geologic units at their regional
+1:75,000 map scale. The planner adds an advisory travel cost for cells
+intersecting mapped eolian bedforms or dark mantling material. These are broad
+geologic observations. Mark a local obstacle as an avoid zone when its position
+is known. Rebuild the geology and advisory grid with
+`python scripts/prepare-jezero-geology.py PATH_TO_NILI_GDB`, using the
+[USGS SIM 3464 database](https://pubs.usgs.gov/publication/sim3464), Shapely and
+Pyogrio in addition to the terrain dependencies.
+
 The packaged data works offline. To rebuild the detailed or crater-wide
 assets, install `numpy`, `Pillow`, `rasterio` and `pyproj` and run
 `python scripts/prepare-jezero.py detail` or
