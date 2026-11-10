@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test src/physics/*.test.js src/terrain/*.test.js src/simulation/*.test.js",
+    "test": "node --test src/physics/*.test.js src/terrain/*.test.js src/simulation/*.test.js src/planner/*.test.js",
     "test:browser": "playwright test"
   },
   "dependencies": {
