@@ -74,7 +74,7 @@ function DataPanel({ metadata, onClose }) {
   );
 }
 
-export default function Hud({ region: regionId, onChangeRegion, onOpenMap, simulation = {}, setParameter, applyPreset, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, setDebug, inspection, onClearInspection }) {
+export default function Hud({ driving, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, setParameter, applyPreset, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, setDebug, inspection, onClearInspection }) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
@@ -151,9 +151,12 @@ export default function Hud({ region: regionId, onChangeRegion, onOpenMap, simul
 
       {!locked && !dataOpen && <div className="sim-entry sim-interactive" role="region" aria-label="Enter simulation">
         <div className="sim-entry-index">{loading ? 'PREPARING SURFACE' : loadError ? 'TERRAIN LOAD ERROR' : hasEntered ? 'SIMULATION PAUSED' : 'SURFACE READY'}</div>
-        <h2>{loading ? 'Reconstructing Mars terrain' : loadError ? 'Unable to load terrain' : hasEntered ? 'Return to the surface' : 'Stand on Mars'}</h2>
-        <p>{loading ? 'Loading measured elevation and surface assets.' : loadError ? String(loadError.message ?? loadError) : 'Explore real terrain on foot. Mouse look, physical movement, and gravity-driven jumps.'}</p>
+        <h2>{loading ? 'Reconstructing Mars terrain' : loadError ? 'Unable to load terrain' : hasEntered ? 'Return to the surface' : driving ? 'Drive on Mars' : 'Stand on Mars'}</h2>
+        <p>{loading ? 'Loading measured elevation and surface assets.' : loadError ? String(loadError.message ?? loadError) : driving ? 'Drive the expedition car on the measured terrain. Steering, braking and traction respond to the surface.' : 'Explore real terrain on foot. Mouse look, physical movement, and gravity-driven jumps.'}</p>
         {!loading && !loadError && <button className="sim-enter-button" onClick={enter}>{hasEntered ? 'Resume simulation' : 'Enter simulation'}<span aria-hidden="true">↗</span></button>}
+        {!loading && !loadError && <button type="button" className="sim-tool-button sim-drive-toggle" aria-pressed={driving} onClick={onToggleDriving}>
+          {driving ? 'Switch to foot mode' : 'Switch to car mode'}
+        </button>}
         {loading && <div className="sim-load-line" aria-label="Loading" />}
         {!loading && !loadError && <div className="sim-entry-hint">Click the viewport to capture your mouse.<br /><kbd>ESC</kbd> releases it for environment controls.</div>}
       </div>}
@@ -170,11 +173,14 @@ export default function Hud({ region: regionId, onChangeRegion, onOpenMap, simul
         <dl className="sim-readout"><dt>FPS</dt><dd>{number(telemetry.fps, 0)}</dd><dt>XYZ · m</dt><dd>{vector(telemetry.position)}</dd><dt>Velocity · m/s</dt><dd>{vector(telemetry.velocity)}</dd><dt>Vertical velocity</dt><dd>{number(telemetry.verticalVelocity ?? component(telemetry.velocity, 'y'), 2)} m/s</dd><dt>Grounded</dt><dd className={telemetry.grounded ? 'sim-grounded' : ''}>{telemetry.grounded ? 'YES' : 'NO'}</dd><dt>Terrain elevation</dt><dd>{number(telemetry.terrainElevation, 2)} m</dd><dt>Local slope</dt><dd>{number(telemetry.slope, 1)}°</dd><dt>Gravity</dt><dd>{number(simulation.gravity, 2)} m/s²</dd><dt>Friction</dt><dd>{number(simulation.friction, 2)}</dd><dt>Airborne time</dt><dd>{number(telemetry.airborneTime, 2)} s</dd><dt>Player altitude</dt><dd>{number(altitude, 2)} m AGL</dd></dl>
       </section>}
 
-      <footer className="sim-controls-legend"><div><kbd>W A S D</kbd><span>Move</span><kbd>MOUSE</kbd><span>Look</span></div><div><kbd>SPACE</kbd><span>Jump</span><kbd>SHIFT</kbd><span>Sprint</span></div><div><kbd>E</kbd><span>Inspect terrain</span><kbd>F3</kbd><span>Debug</span></div><p>{locked ? 'ESC · release mouse / edit environment' : 'Keyboard + mouse required for surface exploration'}</p></footer>
+      <footer className="sim-controls-legend">{driving ? <>
+        <div><kbd>W / S</kbd><span>Drive / reverse</span><kbd>A / D</kbd><span>Steer</span></div>
+        <div><kbd>SPACE</kbd><span>Brake</span><kbd>MOUSE</kbd><span>Orbit view</span></div>
+      </> : <><div><kbd>W A S D</kbd><span>Move</span><kbd>MOUSE</kbd><span>Look</span></div><div><kbd>SPACE</kbd><span>Jump</span><kbd>SHIFT</kbd><span>Sprint</span></div></>}<div><kbd>E</kbd><span>Inspect terrain</span><kbd>F3</kbd><span>Debug</span></div><p>{locked ? 'ESC · release mouse / edit environment' : 'Keyboard + mouse required for surface exploration'}</p></footer>
 
       <section className="sim-telemetry" aria-label="Live environment telemetry">
         <div className="sim-telemetry-title">LIVE TELEMETRY <span>{telemetry.grounded ? 'ON SURFACE' : hasEntered ? 'AIRBORNE' : 'STANDBY'}</span></div>
-        <dl><dt>Gravity</dt><dd>{number(simulation.gravity, 2)} <span>m/s²</span></dd><dt>Wind</dt><dd>{number(simulation.windSpeed, 0)} <span>km/h · {number(simulation.windDirection, 0)}°</span></dd><dt>Temperature</dt><dd>{number(simulation.temperature, 0)} <span>°C</span></dd><dt>Regolith</dt><dd>{softness < 0.33 ? 'Hard' : softness < 0.66 ? 'Mixed' : 'Loose'} <span>{Math.round(softness * 100)}%</span></dd><dt>Current speed</dt><dd>{number(speed, 2)} <span>m/s</span></dd><dt>Altitude</dt><dd>{number(altitude, 1)} <span>m AGL</span></dd></dl>
+        <dl><dt>Gravity</dt><dd>{number(simulation.gravity, 2)} <span>m/s²</span></dd><dt>Wind</dt><dd>{number(simulation.windSpeed, 0)} <span>km/h · {number(simulation.windDirection, 0)}°</span></dd><dt>Temperature</dt><dd>{number(simulation.temperature, 0)} <span>°C</span></dd><dt>Regolith</dt><dd>{softness < 0.33 ? 'Hard' : softness < 0.66 ? 'Mixed' : 'Loose'} <span>{Math.round(softness * 100)}%</span></dd><dt>Current speed</dt><dd>{number(driving ? speed * 3.6 : speed, driving ? 1 : 2)} <span>{driving ? 'km/h' : 'm/s'}</span></dd><dt>Altitude</dt><dd>{number(altitude, 1)} <span>m AGL</span></dd></dl>
       </section>
       {locked && <div className="sim-lock-hint">MOUSE CAPTURED <span>ESC to release</span></div>}
     </div>

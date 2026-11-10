@@ -1,7 +1,7 @@
 import RouteResults from './RouteResults.jsx'
 
 export default function RouteControls({
-  start, end, maxSlope, pace, setPace, dust, setDust, temperature, setTemperature,
+  driving, start, end, maxSlope, pace, setPace, dust, setDust, temperature, setTemperature,
   objective, setObjective, scienceStop, setScienceStop, sites, onDemo, onCalculate,
   planning, loadingSurface, error, routes, selected, onSelect, onWalk,
 }) {
@@ -45,7 +45,7 @@ export default function RouteControls({
     </button>
     {start >= 0 && start === end && <p role="status">Choose a destination in a different terrain cell.</p>}
     {error && <p role="alert">{error}</p>}
-    {routes && <RouteResults routes={routes} selected={selected} onSelect={onSelect} onWalk={onWalk} />}
+    {routes && <RouteResults driving={driving} routes={routes} selected={selected} onSelect={onSelect} onWalk={onWalk} />}
     <p>Current slope limit {maxSlope}°. Dust and thermal scenarios add time allowances. The pace and allowances are adjustable planning assumptions.</p>
   </div>
 }

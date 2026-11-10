@@ -99,6 +99,18 @@ The camera is the player's head, **1.7 m above their feet**. Walking includes ac
 
 To compare jumps, stand still, jump under Mars gravity, press Esc, open **Environment**, choose **Earth 9.81**, and jump again. Open F3 diagnostics to watch vertical velocity, height above ground, grounded state, and airborne time. Holding Space does not cause automatic repeated jumps.
 
+## Car mode
+
+Press **Esc** to release the mouse, then choose **Switch to car mode** on
+the entry panel. Use **W/S** to drive or reverse, **A/D** to steer, **Space**
+to brake and the mouse to orbit the chase camera. Switch back to foot mode
+at your current position. The car works in both regions and can follow a
+selected Jezero route. Route time estimates describe walking.
+
+The expedition car uses the measured heightfield and a separate handling
+profile, with a flat, firm-ground speed limit of 54 km/h before traction
+and softness adjustments. It is a simplified vehicle simulation.
+
 ## Environmental controls
 
 All values live in a single simulation store. Sliders and presets take effect on the next physics/frame update, including gravity changes during a jump.

@@ -17,7 +17,7 @@ function Tool({ children, onClick, active, ...props }) {
   return <button type="button" onClick={onClick} aria-pressed={active} {...props}>{children}</button>
 }
 
-export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearRoute }) {
+export default function ExpeditionMap({ terrain, driving, open, onClose, onWalk, onClearRoute }) {
   const metadata = terrain.metadata
   const { widthMeters, depthMeters } = metadata
   const [surface, setSurface] = useState(undefined)
@@ -218,7 +218,7 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
           <a href="https://astrogeology.usgs.gov/search/map/mars_odyssey_themis_ir_night_60n60s_mosaic_100m_v14" target="_blank" rel="noreferrer">Thermal data source ↗</a>
         </div>}
         {!context && <>
-          <RouteControls start={start} end={end} maxSlope={maxSlope} pace={pace} setPace={(value) => update(setPace, value)}
+          <RouteControls driving={driving} start={start} end={end} maxSlope={maxSlope} pace={pace} setPace={(value) => update(setPace, value)}
             dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
             objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
             sites={localSites} onDemo={demo} onCalculate={requestRoutes} planning={planning} loadingSurface={surface === undefined} error={error} routes={routes}

@@ -17,6 +17,19 @@ export const PLAYER_CONFIG = Object.freeze({
   fixedStep: 1 / 120,
 })
 
+export const CAR_CONFIG = Object.freeze({
+  ...PLAYER_CONFIG,
+  radius: 1.8,
+  walkSpeed: 15,
+  sprintSpeed: 15,
+  reverseSpeed: 5,
+  groundAcceleration: 8,
+  stopAcceleration: 3.5,
+  brakeAcceleration: 17,
+  airAcceleration: 0,
+  maxWalkSlope: 30,
+})
+
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
 function approachVector(x, z, targetX, targetZ, amount) {
@@ -116,7 +129,10 @@ export class PlayerPhysics {
     const desiredX = -Math.sin(yaw) * forward + Math.cos(yaw) * right
     const desiredZ = -Math.cos(yaw) * forward - Math.sin(yaw) * right
     const sprinting = input.sprint && input.active !== false
-    const speed = (sprinting ? config.sprintSpeed : config.walkSpeed) * (1 - softness * 0.48)
+    const speedLimit = forward < 0 && config.reverseSpeed != null
+      ? config.reverseSpeed : sprinting ? config.sprintSpeed : config.walkSpeed
+    const speed = speedLimit * (1 - softness * 0.48)
+    const braking = input.brake ? config.brakeAcceleration ?? config.stopAcceleration : config.stopAcceleration
 
     if (this.grounded) {
       const tanSlope = Math.tan(slope)
@@ -131,7 +147,7 @@ export class PlayerPhysics {
         )
       } else if (!isSliding) {
         ;[velocity.x, velocity.z] = approachVector(
-          velocity.x, velocity.z, 0, 0, config.stopAcceleration * grip * dt,
+          velocity.x, velocity.z, 0, 0, braking * grip * dt,
         )
       } else {
         // Friction is already included in the net downslope force below. Brake
@@ -143,7 +159,7 @@ export class PlayerPhysics {
         const acrossX = velocity.x - downX * along
         const acrossZ = velocity.z - downZ * along
         const [brakedX, brakedZ] = approachVector(
-          acrossX, acrossZ, 0, 0, config.stopAcceleration * grip * dt,
+          acrossX, acrossZ, 0, 0, braking * grip * dt,
         )
         velocity.x = downX * along + brakedX
         velocity.z = downZ * along + brakedZ

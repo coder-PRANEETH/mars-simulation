@@ -168,3 +168,5 @@
 @media (prefers-reduced-motion: reduce) {
   .sim-load-line::after { animation: none; width: 100%; opacity: .6; }
 }
+.sim-entry .sim-drive-toggle { display: block; margin: 9px auto 0; }
+.sim-entry .sim-drive-toggle[aria-pressed="true"] { border-color: #e1b875; color: #f9ddb4; }

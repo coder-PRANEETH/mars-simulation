@@ -1,7 +1,7 @@
 export const distanceText = (distance) => distance >= 1000 ? `${(distance / 1000).toFixed(2)} km` : `${Math.round(distance)} m`
 const timeRange = (seconds) => `${Math.max(1, Math.round(seconds * 0.8 / 60))}–${Math.max(1, Math.ceil(seconds * 1.2 / 60))} min`
 
-export default function RouteResults({ routes, selected, onSelect, onWalk }) {
+export default function RouteResults({ driving, routes, selected, onSelect, onWalk }) {
   if (!routes.terrain) return <p role="status">No connected route under these settings. Check the endpoints, terrain limit, and avoid zones.</p>
   const route = routes[selected] ?? routes.terrain
   const delta = route.distance - routes.terrain.distance
@@ -26,7 +26,7 @@ export default function RouteResults({ routes, selected, onSelect, onWalk }) {
       <dt>Estimated walk</dt><dd>{timeRange(route.time)}</dd>
       <dt>Out and back</dt><dd>{timeRange(route.time + route.returnTime)}</dd>
     </dl>
-    <button className="expedition-primary" type="button" onClick={() => onWalk(route)}>Walk selected route ↗</button>
+    <button className="expedition-primary" type="button" onClick={() => onWalk(route)}>{driving ? 'Drive selected route' : 'Walk selected route'} ↗</button>
     <details className="expedition-waypoints">
       <summary>Waypoints · {route.waypoints.length}</summary>
       <ol>{route.waypoints.map((waypoint, index) => <li key={index}>{waypoint.label} · {distanceText(waypoint.distance)}</li>)}</ol>

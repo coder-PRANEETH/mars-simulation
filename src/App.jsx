@@ -20,6 +20,7 @@ class SceneErrorBoundary extends Component {
 export default function App() {
   const simulation = useSimulation();
   const [mapOpen, setMapOpen] = useState(false);
+  const [driving, setDriving] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null);
   const [waypointIndex, setWaypointIndex] = useState(0);
   const [region, setRegion] = useState('terrain');
@@ -128,18 +129,18 @@ export default function App() {
         fallback={<div className="webgl-error"><h2>WebGL is unavailable</h2><p>Enable hardware acceleration in your browser to walk on Mars.</p></div>}
       >
         <Suspense fallback={null}>
-          {terrain && environment && <World route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
+          {terrain && environment && <World driving={driving} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
     <div inert={mapOpen && !loading && !loadError}>
-    <Hud onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    <Hud driving={driving} onToggleDriving={() => setDriving((mode) => !mode)} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
     </div>
     {activeRoute && !mapOpen && <aside className="expedition-guide" aria-label="Traverse guidance">
       <strong>{guide ? `Waypoint ${guide.number} of ${guide.count} · ${guide.waypoint.label}` : 'Destination reached'}</strong>
       {guide && <span>{Math.round(guide.distance)} m · bearing {Math.round(guide.bearing) % 360}°</span>}
     </aside>}
     {region === 'jezero' && !loading && !loadError && terrain &&
-      <ExpeditionMap terrain={terrain} open={mapOpen} onClose={() => setMapOpen(false)} onWalk={walkRoute} onClearRoute={() => setActiveRoute(null)} />}
+      <ExpeditionMap terrain={terrain} driving={driving} open={mapOpen} onClose={() => setMapOpen(false)} onWalk={walkRoute} onClearRoute={() => setActiveRoute(null)} />}
   </main>;
 }
