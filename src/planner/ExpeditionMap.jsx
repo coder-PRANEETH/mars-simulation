@@ -4,6 +4,7 @@ import { mapLayer } from './mapLayers.js'
 import { scienceSites } from './scienceSites.js'
 import { useRoutes } from './useRoutes.js'
 import RouteControls from './RouteControls.jsx'
+import DrivingHazards from './DrivingHazards.jsx'
 import WeatherObservations from './WeatherObservations.jsx'
 import { GeologyLayer, GeologyLegend } from './GeologyLayer.jsx'
 import './expedition.css'
@@ -17,7 +18,7 @@ function Tool({ children, onClick, active, ...props }) {
   return <button type="button" onClick={onClick} aria-pressed={active} {...props}>{children}</button>
 }
 
-export default function ExpeditionMap({ terrain, open, onClose, onLaunch, onClearRoute }) {
+export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, onLaunch, onClearRoute }) {
   const metadata = terrain.metadata
   const { widthMeters, depthMeters } = metadata
   const [surface, setSurface] = useState(undefined)
@@ -168,7 +169,7 @@ export default function ExpeditionMap({ terrain, open, onClose, onLaunch, onClea
     } else setInspection({ x, z })
   }
 
-  if (!open) return null
+  if (!open) return drivingHazards ? <DrivingHazards terrain={terrain} grid={grid} avoid={avoid} maxSlope={maxSlope} {...drivingHazards} /> : null
 
   return <section className="expedition" aria-label="Jezero expedition map">
     <header className="expedition-heading">

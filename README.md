@@ -105,7 +105,9 @@ To compare jumps, stand still, jump under Mars gravity, press Esc, open **Enviro
 Choose **Switch to car mode** on the entry panel. Press **Esc** to pause
 driving and return to the entry panel. Use **W/S** to drive or reverse, **A/D** to steer, **Space**
 to brake. Drag the terrain to orbit the chase camera. The cursor stays
-free for map and dashboard controls. Switch back to foot mode
+free for map and dashboard controls. The **Hazards** switch shows a local map
+centered on the car. In Jezero, it uses the planner’s slope limit, mapped
+surface cautions, and marked avoid zones. Switch back to foot mode
 at your current position. The car works in both regions and can follow a
 selected Jezero route. Route time estimates describe walking.
 

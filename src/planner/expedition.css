@@ -199,3 +199,26 @@
 .expedition-disclosure { border-top: 1px solid var(--line); padding-top: 8px; font-size: 12px; }
 .expedition-disclosure > summary { cursor: pointer; color: var(--muted); }
 .expedition-disclosure > :not(summary) { margin-top: 9px; }
+.drive-hazards {
+  position: absolute;
+  z-index: 6;
+  right: 28px;
+  bottom: 155px;
+  width: clamp(128px, 19vw, 185px);
+  padding: 8px;
+  border: 1px solid #82918b;
+  border-radius: 6px;
+  background: #151c20ed;
+  color: #eef2ec;
+  font-size: 10px;
+  pointer-events: none;
+}
+.drive-hazards header, .drive-hazards footer { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.drive-hazards header span { color: #b6c1bf; }
+.drive-hazards svg { display: block; width: 100%; margin: 6px 0; background: #10161a; overflow: hidden; }
+.drive-hazards image { image-rendering: pixelated; }
+.drive-hazards i { display: inline-block; width: 8px; height: 8px; margin-right: 3px; border-radius: 2px; }
+@media (max-width: 730px) {
+  .drive-hazards { right: 15px; bottom: 125px; }
+}
+.drive-hazards svg { height: auto; }
