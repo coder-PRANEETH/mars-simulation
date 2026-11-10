@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function useRoutes(grid) {
   const worker = useRef(null)
@@ -24,18 +24,18 @@ export function useRoutes(grid) {
     return () => { planner.terminate(); worker.current = null }
   }, [grid])
 
-  function clear() {
+  const clear = useCallback(() => {
     requestId.current++
     setRoutes(null)
     setError(null)
     setPlanning(false)
-  }
+  }, [])
 
-  function calculate(request) {
+  const calculate = useCallback((request) => {
     clear()
     setPlanning(true)
     worker.current.postMessage({ id: requestId.current, request })
-  }
+  }, [clear])
 
   return { planning, routes, error, clear, calculate }
 }

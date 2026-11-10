@@ -51,12 +51,13 @@ pressure, and local sunrise/sunset for sols 1130–1133. The source records are
 dated April 2024 and are provided as environmental context.
 
 To plan a traverse, click **Set start** and **Set destination**, or choose
-**Example traverse**. Use **Mark avoid zone** to exclude a 40 m radius around
-an identified obstacle. **Calculate routes** compares a terrain-first route
+**Try example**. Use **Mark avoid zone** to exclude a 40 m radius around
+an identified obstacle. The planner automatically compares a terrain-first route
 with a route that visits a selected science stop or the highest-priority
 reachable stop for the chosen objective. Both routes use the same slope and
-avoid-zone constraints. **Walk selected route** places the explorer at the
-start and displays ground traces, beacons, and a bearing to the next waypoint.
+avoid-zone constraints. **Drive route** starts the car at the selected start pin facing along the route.
+**Walk route** places the explorer at the same pin. Both show ground traces,
+beacons, and a bearing to the next waypoint.
 
 The planner runs A* on the same two-triangle cells used for the 3D terrain.
 Distance follows the surface and time depends on the selected pace, along-route
@@ -101,9 +102,10 @@ To compare jumps, stand still, jump under Mars gravity, press Esc, open **Enviro
 
 ## Car mode
 
-Press **Esc** to release the mouse, then choose **Switch to car mode** on
-the entry panel. Use **W/S** to drive or reverse, **A/D** to steer, **Space**
-to brake and the mouse to orbit the chase camera. Switch back to foot mode
+Choose **Switch to car mode** on the entry panel. Press **Esc** to pause
+driving and return to the entry panel. Use **W/S** to drive or reverse, **A/D** to steer, **Space**
+to brake. Drag the terrain to orbit the chase camera. The cursor stays
+free for map and dashboard controls. Switch back to foot mode
 at your current position. The car works in both regions and can follow a
 selected Jezero route. Route time estimates describe walking.
 

@@ -95,13 +95,15 @@ export default function App() {
     if (reached) setWaypointIndex((index) => index + 1);
   }, [reached, waypointIndex]);
 
-  const walkRoute = (route) => {
+  const launchRoute = (route, asCar) => {
     const [start, next] = route.points;
     const yaw = -Math.atan2(next.x - start.x, start.z - next.z);
     playerRef.current?.reset({ ...start, yaw });
     setInspection(null);
     setWaypointIndex(1);
     setActiveRoute(route);
+    setDriving(asCar);
+    setCarActive(asCar);
     setMapOpen(false);
   };
 
@@ -147,6 +149,6 @@ export default function App() {
       {guide && <span>{Math.round(guide.distance)} m · bearing {Math.round(guide.bearing) % 360}°</span>}
     </aside>}
     {region === 'jezero' && !loading && !loadError && terrain &&
-      <ExpeditionMap terrain={terrain} driving={driving} open={mapOpen} onClose={() => setMapOpen(false)} onWalk={walkRoute} onClearRoute={() => setActiveRoute(null)} />}
+      <ExpeditionMap terrain={terrain} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => setActiveRoute(null)} />}
   </main>;
 }

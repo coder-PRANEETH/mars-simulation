@@ -21,13 +21,6 @@
   justify-content: space-between;
   gap: 10px;
 }
-.expedition-heading p, .expedition-kicker {
-  color: var(--accent);
-  font-size: 10px;
-  letter-spacing: .19em;
-  font-weight: 700;
-  margin: 0 0 6px;
-}
 .expedition h1 { font-size: clamp(23px, 3vw, 36px); letter-spacing: -.035em; margin: 0; }
 .expedition h2 { font-size: 15px; margin: 0 0 7px; }
 .expedition button, .expedition select {
@@ -74,7 +67,6 @@
   overflow: auto;
 }
 .expedition-panel p, .expedition-panel li { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
-.expedition-panel .expedition-kicker { color: var(--accent); margin-bottom: 6px; }
 .expedition-field { display: block; font-size: 12px; }
 .expedition-field input { display: block; width: 100%; margin: 7px 0 0; accent-color: var(--accent); }
 .expedition-field output { float: right; color: var(--accent); }
@@ -86,7 +78,6 @@
 .expedition-readings { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 12px; margin: 0; }
 .expedition-readings dt { color: var(--muted); }
 .expedition-readings dd { margin: 0; text-align: right; }
-.expedition-panel .expedition-note { padding-top: 10px; border-top: 1px solid var(--line); font-size: 11px; }
 .expedition-north { pointer-events: none; position: absolute; background: #151c20e8; color: #fff; border-radius: 4px; padding: 6px; font-size: 11px; }
 .expedition-north { right: 10px; top: 10px; display: grid; justify-items: center; font-size: 16px; }
 .expedition-north span { font-size: 10px; }
@@ -110,10 +101,6 @@
 .expedition-science > div { padding: 8px 0 0; display: grid; gap: 5px; }
 .expedition-science strong { color: var(--accent); font-size: 12px; }
 .expedition a { color: var(--accent); font-size: 12px; }
-.expedition-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.expedition-actions span { color: var(--muted); font-size: 11px; padding-left: 4px; }
-.expedition:has(.expedition-actions) .expedition-map { height: calc(100dvh - 205px); }
-.expedition:has(.expedition-actions) .expedition-panel { max-height: calc(100dvh - 205px); }
 .expedition-routing, .expedition-route-results { display: grid; gap: 10px; }
 .expedition-route-heading { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .expedition-route-heading h2 { margin: 0; }
@@ -125,15 +112,10 @@
 .expedition-route-choices button { flex: 1; display: grid; gap: 4px; text-align: left; }
 .expedition-route-choices strong { font-size: 15px; }
 .expedition-waypoints { font-size: 12px; }
-.expedition-waypoints summary { cursor: pointer; }
-.expedition-waypoints ol { margin: 6px 0; padding-left: 20px; }
+.expedition-waypoints { margin: 6px 0; padding-left: 20px; }
 .expedition-route-overlay { pointer-events: none; }
 .expedition-route-overlay text { fill: #15272c; font-weight: 700; }
 .expedition-avoid { fill: #dd4a57aa; stroke: #ff7b7f; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
-@media (max-width: 730px) {
-  .expedition:has(.expedition-actions) .expedition-map { height: 53vh; }
-  .expedition:has(.expedition-actions) .expedition-panel { max-height: none; }
-}
 .expedition-guide {
   position: absolute;
   z-index: 5;
@@ -158,3 +140,62 @@
 .expedition-weather summary { cursor: pointer; font-size: 12px; }
 .expedition-weather > :not(summary) { margin-top: 8px; }
 .expedition-weather a { display: inline-block; }
+.expedition-map-tools { align-items: center; }
+.expedition-layer-menu { position: relative; }
+.expedition-layer-menu > summary {
+  padding: 7px 10px;
+  background: #20282e;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.expedition-layer-menu > div {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  top: calc(100% + 5px);
+  width: 160px;
+  padding: 8px;
+  background: #1c2429;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+}
+.expedition-layer-menu button { text-align: left; }
+.expedition-map-hint {
+  position: absolute;
+  pointer-events: none;
+  top: 10px;
+  left: 10px;
+  background: #151c20ed;
+  padding: 7px 10px;
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 12px;
+}
+.expedition-endpoints { display: grid; gap: 6px; }
+.expedition-endpoints button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  min-height: 39px;
+}
+.expedition-endpoints b {
+  display: grid;
+  place-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #8ef0d8;
+  color: #15272c;
+}
+.expedition-endpoints button + button b { background: #ffd8a9; }
+.expedition-endpoints small { color: var(--muted); }
+.expedition-launch { display: grid; grid-template-columns: 1.4fr 1fr; gap: 6px; }
+.expedition-disclosure { border-top: 1px solid var(--line); padding-top: 8px; font-size: 12px; }
+.expedition-disclosure > summary { cursor: pointer; color: var(--muted); }
+.expedition-disclosure > :not(summary) { margin-top: 9px; }
