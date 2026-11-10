@@ -46,6 +46,9 @@ identify the approximate Kodiak viewpoint separately. Neretva Vallis appears
 in the crater overview beyond the routeable area. Mars Odyssey THEMIS nighttime
 IR adds regional thermal contrast at 100 m source resolution. Its stretched
 brightness values do not provide a temperature or measure present conditions.
+The planner also displays NASA's archived Perseverance MEDA air temperatures,
+pressure, and local sunrise/sunset for sols 1130–1133. The source records are
+dated April 2024 and are provided as environmental context.
 
 To plan a traverse, click **Set start** and **Set destination**, or choose
 **Example traverse**. Use **Mark avoid zone** to exclude a 40 m radius around

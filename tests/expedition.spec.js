@@ -18,6 +18,9 @@ test('opens real Jezero terrain and inspects its map layers', async ({ page }) =
   await page.getByRole('button', { name: 'Geology', exact: true }).click();
   await expect(page.getByText('Published geologic units')).toBeVisible();
   await expect(page.getByText(/Eolian bedform unit/)).toBeVisible();
+  await page.getByText('Perseverance weather observations').click();
+  await page.getByRole('combobox', { name: 'Weather observation sol' }).selectOption('1130');
+  await expect(page.getByText('777.1 Pa')).toBeVisible();
   await page.getByRole('button', { name: 'Thermal IR', exact: true }).click();
   await expect(page.getByText(/Mars Odyssey THEMIS nighttime infrared/)).toBeVisible();
   await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('seitah');

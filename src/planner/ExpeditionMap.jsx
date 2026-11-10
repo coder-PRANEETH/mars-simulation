@@ -4,6 +4,7 @@ import { mapLayer } from './mapLayers.js'
 import { scienceSites } from './scienceSites.js'
 import { useRoutes } from './useRoutes.js'
 import RouteControls from './RouteControls.jsx'
+import WeatherObservations from './WeatherObservations.jsx'
 import { GeologyLayer, GeologyLegend } from './GeologyLayer.jsx'
 import './expedition.css'
 
@@ -158,7 +159,9 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
     }
   }
 
-  return <section className="expedition" aria-label="Jezero expedition map" hidden={!open}>
+  if (!open) return null
+
+  return <section className="expedition" aria-label="Jezero expedition map">
     <header className="expedition-heading">
       <div><p>MARS 2020 FIELD REGION</p><h1>Jezero Expedition Planner</h1></div>
       <button type="button" onClick={onClose}>Return to surface <span aria-hidden="true">↗</span></button>
@@ -242,6 +245,7 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
           </div>
           <p className="expedition-note">Slope limits are planning assumptions. Small rocks, loose footing and weather require separate assessment.</p>
         </>}
+        <WeatherObservations assetBase={terrain.assetBase} />
         {showGeology && <GeologyLegend data={geology} error={geologyError} />}
         {sitesVisible && <SciencePanel selected={selectedSite} onSelect={selectSite} />}
       </aside>
@@ -252,19 +256,21 @@ export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearR
 function CraterMap({ crater, terrain, geology, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
   const { width, height, bounds: [west, south, east, north] } = crater
   const metadata = terrain.metadata
-  const x = (longitude) => (longitude - west) / (east - west) * width
-  const y = (latitude) => (north - latitude) / (north - south) * height
+  const locate = useMemo(() => (longitude, latitude) => ({
+    x: (longitude - west) / (east - west) * width,
+    y: (north - latitude) / (north - south) * height,
+  }), [east, height, north, south, west, width])
+  const top = locate(metadata.longitudeWest, metadata.latitudeNorth)
+  const bottom = locate(metadata.longitudeEast, metadata.latitudeSouth)
   return <svg viewBox={`0 0 ${width} ${height}`} aria-label="Jezero crater elevation overview" role="img">
     <image href={`${terrain.assetBase}/crater.jpg`} width={width} height={height} />
     {thermal && <image href={`${terrain.assetBase}/thermal.png`} width={width} height={height} preserveAspectRatio="none" className="expedition-pixels" />}
-    {geology && <GeologyLayer data={geology} locate={(longitude, latitude) => ({ x: x(longitude), y: y(latitude) })} />}
-    <rect x={x(metadata.longitudeWest)} y={y(metadata.latitudeNorth)}
-      width={x(metadata.longitudeEast) - x(metadata.longitudeWest)}
-      height={y(metadata.latitudeSouth) - y(metadata.latitudeNorth)}
+    {geology && <GeologyLayer data={geology} locate={locate} />}
+    <rect x={top.x} y={top.y} width={bottom.x - top.x} height={bottom.y - top.y}
       className="expedition-footprint" role="button" tabIndex="0" aria-label="Open detailed traverse area"
       onClick={onDetail} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onDetail() } }} />
     {sitesVisible && <SiteMarkers size={width} sites={scienceSites.filter((site) => !terrain.contains(...sitePosition(terrain, site)))}
-      locate={(site) => ({ x: x(site.longitude), y: y(site.latitude) })} selected={selectedSite} onSelect={onSelect} />}
+      locate={(site) => locate(site.longitude, site.latitude)} selected={selectedSite} onSelect={onSelect} />}
   </svg>
 }
 

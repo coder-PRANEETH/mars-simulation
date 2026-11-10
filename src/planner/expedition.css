@@ -110,7 +110,6 @@
 .expedition-science > div { padding: 8px 0 0; display: grid; gap: 5px; }
 .expedition-science strong { color: var(--accent); font-size: 12px; }
 .expedition a { color: var(--accent); font-size: 12px; }
-.expedition[hidden] { display: none; }
 .expedition-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .expedition-actions span { color: var(--muted); font-size: 11px; padding-left: 4px; }
 .expedition:has(.expedition-actions) .expedition-map { height: calc(100dvh - 205px); }
@@ -156,3 +155,6 @@
 .expedition-geology { pointer-events: none; }
 .expedition-geology-legend summary { cursor: pointer; font-size: 12px; }
 .expedition-geology-legend ul { margin: 7px 0; }
+.expedition-weather summary { cursor: pointer; font-size: 12px; }
+.expedition-weather > :not(summary) { margin-top: 8px; }
+.expedition-weather a { display: inline-block; }
