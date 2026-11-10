@@ -110,3 +110,46 @@
 .expedition-science > div { padding: 8px 0 0; display: grid; gap: 5px; }
 .expedition-science strong { color: var(--accent); font-size: 12px; }
 .expedition a { color: var(--accent); font-size: 12px; }
+.expedition[hidden] { display: none; }
+.expedition-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.expedition-actions span { color: var(--muted); font-size: 11px; padding-left: 4px; }
+.expedition:has(.expedition-actions) .expedition-map { height: calc(100dvh - 205px); }
+.expedition:has(.expedition-actions) .expedition-panel { max-height: calc(100dvh - 205px); }
+.expedition-routing, .expedition-route-results { display: grid; gap: 10px; }
+.expedition-route-heading { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.expedition-route-heading h2 { margin: 0; }
+.expedition-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.expedition-form-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 11px; }
+.expedition-form-grid select { width: 100%; min-width: 0; padding: 6px 2px; }
+.expedition .expedition-primary { background: #25433f; border-color: #689f90; font-weight: 700; }
+.expedition-route-choices { display: flex; gap: 6px; }
+.expedition-route-choices button { flex: 1; display: grid; gap: 4px; text-align: left; }
+.expedition-route-choices strong { font-size: 15px; }
+.expedition-waypoints { font-size: 12px; }
+.expedition-waypoints summary { cursor: pointer; }
+.expedition-waypoints ol { margin: 6px 0; padding-left: 20px; }
+.expedition-route-overlay { pointer-events: none; }
+.expedition-route-overlay text { fill: #15272c; font-weight: 700; }
+.expedition-avoid { fill: #dd4a57aa; stroke: #ff7b7f; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+@media (max-width: 730px) {
+  .expedition:has(.expedition-actions) .expedition-map { height: 53vh; }
+  .expedition:has(.expedition-actions) .expedition-panel { max-height: none; }
+}
+.expedition-guide {
+  position: absolute;
+  z-index: 5;
+  top: 103px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid #b4dfcf5c;
+  border-radius: 5px;
+  background: #152522e8;
+  color: #e3fff5;
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
+}
+.expedition-guide span { color: #b7dbcc; }

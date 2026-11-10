@@ -126,7 +126,7 @@ function describeRoute(grid, path, profile, stop) {
     for (const [a, b] of [[origin, midpoint], [midpoint, next]]) {
       const rise = b.y - a.y
       const length = Math.hypot(run, rise)
-      const penalty = 1 + Math.max(roughness[from], roughness[to]) + profile.dustPenalty
+      const penalty = 1 + Math.max(roughness[from], roughness[to]) + profile.dustPenalty + (profile.thermalPenalty ?? 0)
       distance += length
       gain += Math.max(0, rise)
       time += length / profile.pace * (penalty + Math.max(0, rise) / run * 3 + Math.max(0, -rise) / run)

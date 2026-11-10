@@ -20,6 +20,8 @@ class SceneErrorBoundary extends Component {
 export default function App() {
   const simulation = useSimulation();
   const [mapOpen, setMapOpen] = useState(false);
+  const [activeRoute, setActiveRoute] = useState(null);
+  const [waypointIndex, setWaypointIndex] = useState(0);
   const [region, setRegion] = useState('terrain');
   const [terrain, setTerrain] = useState(null);
   const [environment, setEnvironment] = useState(null);
@@ -77,7 +79,32 @@ export default function App() {
     return () => { delete window.__MARS_SIM__; };
   }, [terrain]);
 
+  const nextWaypoint = activeRoute?.waypoints[waypointIndex];
+  const position = telemetry.position;
+  const guide = nextWaypoint && position ? {
+    waypoint: nextWaypoint,
+    number: waypointIndex + 1,
+    count: activeRoute.waypoints.length,
+    distance: Math.hypot(nextWaypoint.x - position.x, nextWaypoint.z - position.z),
+    bearing: (Math.atan2(nextWaypoint.x - position.x, position.z - nextWaypoint.z) * 180 / Math.PI + 360) % 360,
+  } : null;
+  const reached = locked && guide && guide.distance <= 14;
+  useEffect(() => {
+    if (reached) setWaypointIndex((index) => index + 1);
+  }, [reached, waypointIndex]);
+
+  const walkRoute = (route) => {
+    const [start, next] = route.points;
+    const yaw = -Math.atan2(next.x - start.x, start.z - next.z);
+    playerRef.current?.reset({ ...start, yaw });
+    setInspection(null);
+    setWaypointIndex(1);
+    setActiveRoute(route);
+    setMapOpen(false);
+  };
+
   const changeRegion = () => {
+    setActiveRoute(null);
     setTerrain(null);
     setEnvironment(null);
     setInspection(null);
@@ -88,7 +115,7 @@ export default function App() {
     setRegion(region === 'terrain' ? 'jezero' : 'terrain');
   };
   const enter = () => playerRef.current?.enter();
-  const reset = () => { playerRef.current?.reset(); setInspection(null); };
+  const reset = () => { playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
 
   return <main className="simulation-viewport">
     <SceneErrorBoundary key={region}>
@@ -101,11 +128,18 @@ export default function App() {
         fallback={<div className="webgl-error"><h2>WebGL is unavailable</h2><p>Enable hardware acceleration in your browser to walk on Mars.</p></div>}
       >
         <Suspense fallback={null}>
-          {terrain && environment && <World terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
+          {terrain && environment && <World route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
+    <div inert={mapOpen && !loading && !loadError}>
     <Hud onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
-    {mapOpen && !loading && !loadError && terrain && <ExpeditionMap terrain={terrain} onClose={() => setMapOpen(false)} />}
+    </div>
+    {activeRoute && !mapOpen && <aside className="expedition-guide" aria-label="Traverse guidance">
+      <strong>{guide ? `Waypoint ${guide.number} of ${guide.count} · ${guide.waypoint.label}` : 'Destination reached'}</strong>
+      {guide && <span>{Math.round(guide.distance)} m · bearing {Math.round(guide.bearing) % 360}°</span>}
+    </aside>}
+    {region === 'jezero' && !loading && !loadError && terrain &&
+      <ExpeditionMap terrain={terrain} open={mapOpen} onClose={() => setMapOpen(false)} onWalk={walkRoute} onClearRoute={() => setActiveRoute(null)} />}
   </main>;
 }

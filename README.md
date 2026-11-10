@@ -47,6 +47,22 @@ in the crater overview beyond the routeable area. Mars Odyssey THEMIS nighttime
 IR adds regional thermal contrast at 100 m source resolution. Its stretched
 brightness values do not provide a temperature or measure present conditions.
 
+To plan a traverse, click **Set start** and **Set destination**, or choose
+**Example traverse**. Use **Mark avoid zone** to exclude a 40 m radius around
+an identified obstacle. **Calculate routes** compares a terrain-first route
+with a route that visits a selected science stop or the highest-priority
+reachable stop for the chosen objective. Both routes use the same slope and
+avoid-zone constraints. **Walk selected route** places the explorer at the
+start and displays ground traces, beacons, and a bearing to the next waypoint.
+
+The planner runs A* on the same two-triangle cells used for the 3D terrain.
+Distance follows the surface and time depends on the selected pace, along-route
+grade, unevenness and scenario allowances for dust and thermal load. The
+out-and-back estimate assumes retracing the route. Pace and uncertainty bounds
+are scenario settings informed qualitatively by the [Norcross suit study](https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2010-216115_PlanetarySuitMetabolicCosts.pdf).
+The study used level treadmill trials. Estimates exclude rest and time spent
+on science, and carry no operational EVA limits.
+
 The packaged data works offline. To rebuild the detailed or crater-wide
 assets, install `numpy`, `Pillow`, `rasterio` and `pyproj` and run
 `python scripts/prepare-jezero.py detail` or

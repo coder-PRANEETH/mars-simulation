@@ -27,3 +27,29 @@ test('opens real Jezero terrain and inspects its map layers', async ({ page }) =
   await expect(page.getByText('Hill southeast of Jezero Crater')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('calculates and follows a science route on the Jezero terrain', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await page.getByRole('button', { name: 'Example traverse' }).click();
+  await page.getByRole('button', { name: 'Calculate routes' }).click();
+  await expect(page.getByRole('heading', { name: 'Route comparison' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Terrain first/ })).toContainText('2.60 km');
+  await page.getByRole('button', { name: /Science stop/ }).click();
+  await expect(page.getByText(/Visits Western Delta front/)).toBeVisible();
+  await expect(page.getByText('Estimated walk')).toBeVisible();
+  await page.getByText(/^Waypoints ·/).click();
+  await expect(page.getByText(/^Western Delta front ·/)).toBeVisible();
+  await page.getByRole('button', { name: 'Walk selected route' }).click();
+  await expect(page.getByLabel('Traverse guidance')).toContainText('Waypoint 2');
+  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().longitude)).toBeCloseTo(77.4509, 3);
+  await page.getByRole('button', { name: 'Expedition map' }).click();
+  await expect(page.getByRole('heading', { name: 'Route comparison' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mark avoid zone' }).click();
+  await page.getByRole('img', { name: 'Detailed traverse map' }).click();
+  await expect(page.getByRole('button', { name: 'Undo last avoid zone' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Route comparison' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

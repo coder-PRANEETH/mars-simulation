@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
-import { buildGrid, cellAt, terrainClass } from './terrainGrid.js'
+import { buildGrid, cellAt, cellPoint, cellsInZones, terrainClass } from './terrainGrid.js'
 import { mapLayer } from './mapLayers.js'
 import { scienceSites } from './scienceSites.js'
+import { useRoutes } from './useRoutes.js'
+import RouteControls from './RouteControls.jsx'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -13,13 +15,28 @@ function Tool({ children, onClick, active, ...props }) {
   return <button type="button" onClick={onClick} aria-pressed={active} {...props}>{children}</button>
 }
 
-export default function ExpeditionMap({ terrain, onClose }) {
+export default function ExpeditionMap({ terrain, open, onClose, onWalk, onClearRoute }) {
   const metadata = terrain.metadata
   const { widthMeters, depthMeters } = metadata
   const grid = useMemo(() => buildGrid(terrain), [terrain])
   const [layer, setLayer] = useState('Imagery')
   const [hazards, setHazards] = useState(false)
   const [maxSlope, setMaxSlope] = useState(20)
+  const [mode, setMode] = useState('Inspect')
+  const [start, setStart] = useState(-1)
+  const [end, setEnd] = useState(-1)
+  const [zones, setZones] = useState([])
+  const [pace, setPace] = useState(1)
+  const [dust, setDust] = useState('clear')
+  const [temperature, setTemperature] = useState('nominal')
+  const [objective, setObjective] = useState('habitability')
+  const [scienceStop, setScienceStop] = useState('auto')
+  const [selected, setSelected] = useState('terrain')
+  const { planning, routes, error, clear, calculate } = useRoutes(grid)
+  const avoid = useMemo(() => cellsInZones(grid, zones), [grid, zones])
+  const localSites = useMemo(() => scienceSites
+    .map((site) => ({ ...site, cell: cellAt(grid, terrain.location(site.latitude, site.longitude)) }))
+    .filter((site) => site.cell >= 0), [grid, terrain])
   const [inspection, setInspection] = useState(null)
   const [sitesVisible, setSitesVisible] = useState(true)
   const [selectedSite, setSelectedSite] = useState(null)
@@ -28,8 +45,37 @@ export default function ExpeditionMap({ terrain, onClose }) {
   const [crater, setCrater] = useState(null)
   const [contextError, setContextError] = useState(false)
   const raster = useMemo(() => layer === 'Imagery' ? null : mapLayer(grid, metadata, layer, maxSlope), [grid, metadata, layer, maxSlope])
-  const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, 'Hazards', maxSlope) : null, [grid, metadata, hazards, maxSlope])
+  const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, 'Hazards', maxSlope, avoid) : null, [grid, metadata, hazards, maxSlope, avoid])
   const scaleBar = widthMeters >= 3000 ? 500 : 200
+
+  function update(setter, value) {
+    setter(value)
+    clear()
+    onClearRoute()
+  }
+
+  function demo() {
+    setStart(localSites.find((site) => site.id === 'landing').cell)
+    setEnd(localSites.find((site) => site.id === 'depot').cell)
+    setScienceStop('auto')
+    setContext(false)
+    setMode('Inspect')
+    clear()
+    onClearRoute()
+  }
+
+  function requestRoutes() {
+    const candidates = scienceStop === 'auto'
+      ? [...localSites].sort((a, b) => b[objective] - a[objective])
+      : localSites.filter((site) => site.id === scienceStop)
+    const profile = {
+      maxSlope, pace,
+      dustPenalty: { clear: 0, haze: 0.12, heavy: 0.32 }[dust],
+      thermalPenalty: { nominal: 0, cold: 0.16, warm: 0.20 }[temperature],
+    }
+    setSelected('terrain')
+    calculate({ start, end, profile, avoid: [...avoid], sites: candidates })
+  }
 
   function fetchCrater() {
     if (crater) return
@@ -64,10 +110,22 @@ export default function ExpeditionMap({ terrain, onClose }) {
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(svg.getScreenCTM().inverse())
     const x = point.x - widthMeters / 2
     const z = point.y - depthMeters / 2
-    if (cellAt(grid, { x, z }) >= 0) setInspection({ x, z })
+    const cell = cellAt(grid, { x, z })
+    if (cell < 0) return
+    setInspection({ x, z })
+    if (mode === 'Set start') {
+      update(setStart, cell)
+      setMode('Set destination')
+    } else if (mode === 'Set destination') {
+      update(setEnd, cell)
+      setMode('Inspect')
+    } else if (mode === 'Mark avoid zone') {
+      update(setZones, [...zones, { x, z, radius: 40 }])
+      setHazards(true)
+    }
   }
 
-  return <section className="expedition" aria-label="Jezero expedition map">
+  return <section className="expedition" aria-label="Jezero expedition map" hidden={!open}>
     <header className="expedition-heading">
       <div><p>MARS 2020 FIELD REGION</p><h1>Jezero Expedition Planner</h1></div>
       <button type="button" onClick={onClose}>Return to surface <span aria-hidden="true">↗</span></button>
@@ -84,6 +142,11 @@ export default function ExpeditionMap({ terrain, onClose }) {
         <Tool active={sitesVisible} onClick={() => setSitesVisible(!sitesVisible)}>Science sites</Tool>
       </div>
     </div>
+    {!context && <div className="expedition-actions" role="group" aria-label="Map tools">
+      {['Inspect', 'Set start', 'Set destination', 'Mark avoid zone'].map((action) => <Tool key={action} active={mode === action} onClick={() => setMode(action)}>{action}</Tool>)}
+      {!!zones.length && <Tool onClick={() => update(setZones, zones.slice(0, -1))}>Undo last avoid zone</Tool>}
+      <span>{mode === 'Mark avoid zone' ? 'Click a known obstacle to exclude a 40 m radius.' : 'Choose a map tool, then select a location.'}</span>
+    </div>}
     <div className="expedition-content">
       <div className="expedition-map">
         {context ? (
@@ -93,6 +156,7 @@ export default function ExpeditionMap({ terrain, onClose }) {
           <image href={raster ?? `${terrain.assetBase}/texture.jpg`} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />
           {thermal && crater && <LocalThermal terrain={terrain} crater={crater} />}
           {hazard && <image href={hazard} width={widthMeters} height={depthMeters} preserveAspectRatio="none" className="expedition-pixels" />}
+          <RouteOverlay routes={routes} selected={selected} grid={grid} start={start} end={end} zones={zones} metadata={metadata} />
           <g transform={`translate(${widthMeters * 0.03} ${depthMeters * 0.94})`} className="expedition-scale">
             <rect x={-widthMeters * .012} y={-widthMeters * .047} width={scaleBar + widthMeters * .025} height={widthMeters * .067} rx={widthMeters * .007} />
             <line x2={scaleBar} strokeWidth={widthMeters * .004} />
@@ -114,13 +178,17 @@ export default function ExpeditionMap({ terrain, onClose }) {
           <p>{contextError ? 'Thermal layer could not be loaded. Toggle it to retry.' : 'Mars Odyssey THEMIS nighttime infrared · 100 m source pixels. Purple to yellow shows relative brightness in the contrast-stretched mosaic.'}</p>
           <a href="https://astrogeology.usgs.gov/search/map/mars_odyssey_themis_ir_night_60n60s_mosaic_100m_v14" target="_blank" rel="noreferrer">Thermal data source ↗</a>
         </div>}
-        {sitesVisible && <SciencePanel selected={selectedSite} onSelect={selectSite} />}
         {!context && <>
+          <RouteControls start={start} end={end} maxSlope={maxSlope} pace={pace} setPace={(value) => update(setPace, value)}
+            dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
+            objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
+            sites={localSites} onDemo={demo} onCalculate={requestRoutes} planning={planning} error={error} routes={routes}
+            selected={selected} onSelect={setSelected} onWalk={onWalk} />
           <label className="expedition-field">Maximum slope <output>{maxSlope}°</output>
-            <input type="range" min="10" max="35" value={maxSlope} onChange={(event) => setMaxSlope(+event.target.value)} />
+            <input type="range" min="10" max="35" value={maxSlope} onChange={(event) => update(setMaxSlope, +event.target.value)} />
           </label>
           {hazards && <ul className="expedition-legend">
-            <li><i className="hazard-blocked" />Above the selected slope limit</li>
+            <li><i className="hazard-blocked" />Above the slope limit or marked avoid zone</li>
             <li><i className="hazard-caution" />Steep or locally uneven</li>
             <li><i className="hazard-unknown" />No elevation data</li>
           </ul>}
@@ -132,11 +200,12 @@ export default function ExpeditionMap({ terrain, onClose }) {
               <dt>Coordinates</dt><dd>{terrain.coordinates(inspection.x, inspection.z).latitude.toFixed(5)}° N, {terrain.coordinates(inspection.x, inspection.z).longitude.toFixed(5)}° E</dd>
               <dt>Elevation</dt><dd>{terrain.getElevation(inspection.x, inspection.z).toFixed(1)} m</dd>
               <dt>Slope</dt><dd>{terrain.sampleSlope(inspection.x, inspection.z).toFixed(1)}°</dd>
-              <dt>Terrain class</dt><dd>{terrainClass(grid, cellAt(grid, inspection), maxSlope)}</dd>
+              <dt>Terrain class</dt><dd>{terrainClass(grid, cellAt(grid, inspection), maxSlope, avoid)}</dd>
             </dl> : <p>Select a point on the map to inspect it.</p>}
           </div>
           <p className="expedition-note">Slope limits are planning assumptions. Small rocks, loose footing and weather require separate assessment.</p>
         </>}
+        {sitesVisible && <SciencePanel selected={selectedSite} onSelect={selectSite} />}
       </aside>
     </div>
   </section>
@@ -207,4 +276,42 @@ function SciencePanel({ selected, onSelect }) {
       <a href={selected.source} target="_blank" rel="noreferrer">Science source ↗</a>
     </div>}
   </div>
+}
+
+function RouteOverlay({ routes, selected, grid, start, end, zones, metadata }) {
+  const toMap = (point) => origin(point, metadata)
+  const labelSize = metadata.widthMeters * 0.012
+  const selectedRoute = routes?.[selected]
+  return <g className="expedition-route-overlay" aria-hidden="true">
+    {zones.map((zone, index) => {
+      const point = toMap(zone)
+      return <circle key={index} cx={point.x} cy={point.y} r={zone.radius} className="expedition-avoid" />
+    })}
+    {['terrain', 'science'].map((id) => {
+      const route = routes?.[id]
+      if (!route) return null
+      const color = id === 'science' ? '#ffbe75' : '#8ef0d8'
+      return <polyline key={id} points={route.points.map((point) => {
+        const { x, y } = toMap(point)
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+      }).join(' ')} fill="none" stroke={color} strokeWidth={id === selected ? 3 : 1.6}
+        strokeDasharray={id === selected ? undefined : '4 4'} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+    })}
+    {selectedRoute?.waypoints.map((waypoint, index) => {
+      if (index === 0 || index === selectedRoute.waypoints.length - 1) return null
+      const { x, y } = toMap(waypoint)
+      return <g key={index} transform={`translate(${x} ${y})`}>
+        <circle r={labelSize * 0.58} fill={selected === 'science' ? '#ffbe75' : '#8ef0d8'} />
+        <text textAnchor="middle" y={labelSize * 0.23} fontSize={labelSize * 0.68}>{index + 1}</text>
+      </g>
+    })}
+    {[[start, 'S'], [end, 'D']].map(([cell, label]) => {
+      if (cell < 0) return null
+      const { x, y } = toMap(cellPoint(grid, cell))
+      return <g key={label} transform={`translate(${x} ${y})`}>
+        <circle r={labelSize * 0.8} fill={label === 'S' ? '#8ef0d8' : '#ffd8a9'} />
+        <text textAnchor="middle" y={labelSize * 0.33} fontSize={labelSize}>{label}</text>
+      </g>
+    })}
+  </g>
 }

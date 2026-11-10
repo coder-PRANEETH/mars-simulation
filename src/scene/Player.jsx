@@ -92,13 +92,13 @@ export default function Player({ terrain, environment, onTelemetry, onLockChange
     }
     const up = (event) => keys.current.delete(event.code)
     const blur = () => keys.current.clear()
-    const reset = () => {
-      physics.reset()
+    const reset = (spawn) => {
+      physics.reset(spawn)
       keys.current.clear()
       state.current.accumulator = 0
       state.current.landing = 0
       state.current.landingVelocity = 0
-      look.current.yaw = look.current.targetYaw = terrain.metadata?.spawn?.yaw || 0
+      look.current.yaw = look.current.targetYaw = spawn?.yaw ?? terrain.metadata?.spawn?.yaw ?? 0
       look.current.pitch = look.current.targetPitch = -0.035
       callbacks.current.onTelemetry?.({
         ...physics.telemetry(),

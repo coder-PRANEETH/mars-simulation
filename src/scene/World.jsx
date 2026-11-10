@@ -5,6 +5,7 @@ import Terrain from './Terrain.jsx';
 import Player from './Player.jsx';
 import Rocks from './Rocks.jsx';
 import Dust from './Dust.jsx';
+import RouteBeacons from '../planner/RouteBeacons.jsx';
 
 const dustStrength = { none: 0, low: 0.2, medium: 0.45, high: 0.75, storm: 1 };
 
@@ -76,7 +77,7 @@ function InspectionMarker({ inspection }) {
   </group>;
 }
 
-export default function World({ terrain, environment, playerRef, onTelemetry, onLockChange, onInspect, inspection, onReady }) {
+export default function World({ route, terrain, environment, playerRef, onTelemetry, onLockChange, onInspect, inspection, onReady }) {
   useEffect(() => { onReady(); }, []);
   return <>
     <Atmosphere environment={environment} />
@@ -85,5 +86,6 @@ export default function World({ terrain, environment, playerRef, onTelemetry, on
     <Dust environment={environment} />
     <Player terrain={terrain} environment={environment} resetRef={playerRef} onTelemetry={onTelemetry} onLockChange={onLockChange} onInspect={onInspect} />
     <InspectionMarker inspection={inspection} />
+    {route && <RouteBeacons route={route} />}
   </>;
 }

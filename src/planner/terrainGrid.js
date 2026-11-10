@@ -50,3 +50,25 @@ export function terrainClass(grid, index, maxSlope, closed) {
   if (grid.slope[index] > maxSlope * 0.65 || grid.roughness[index] >= 0.12) return 'caution'
   return 'open'
 }
+
+export function cellsInZones(grid, zones) {
+  const cells = new Set()
+  const halfX = grid.dx / 2
+  const halfZ = grid.dz / 2
+  for (const zone of zones) {
+    const column = Math.floor(zone.x / grid.dx + grid.width / 2)
+    const row = Math.floor(zone.z / grid.dz + grid.height / 2)
+    const cols = Math.ceil(zone.radius / grid.dx) + 1
+    const rows = Math.ceil(zone.radius / grid.dz) + 1
+    for (let r = Math.max(0, row - rows); r <= Math.min(grid.height - 1, row + rows); r++) {
+      for (let c = Math.max(0, column - cols); c <= Math.min(grid.width - 1, column + cols); c++) {
+        const index = r * grid.width + c
+        const point = cellPoint(grid, index)
+        const x = Math.max(0, Math.abs(zone.x - point.x) - halfX)
+        const z = Math.max(0, Math.abs(zone.z - point.z) - halfZ)
+        if (x * x + z * z <= zone.radius ** 2) cells.add(index)
+      }
+    }
+  }
+  return cells
+}
