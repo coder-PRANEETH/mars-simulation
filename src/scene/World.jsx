@@ -77,14 +77,14 @@ function InspectionMarker({ inspection }) {
   </group>;
 }
 
-export default function World({ driving, route, terrain, environment, playerRef, onTelemetry, onLockChange, onInspect, inspection, onReady }) {
+export default function World({ driving, carActive, onPauseCar, route, terrain, environment, playerRef, onTelemetry, onLockChange, onInspect, inspection, onReady }) {
   useEffect(() => { onReady(); }, []);
   return <>
     <Atmosphere environment={environment} />
     <Terrain terrain={terrain} />
     <Rocks terrain={terrain} />
     <Dust environment={environment} />
-    <Player driving={driving} terrain={terrain} environment={environment} resetRef={playerRef} onTelemetry={onTelemetry} onLockChange={onLockChange} onInspect={onInspect} />
+    <Player driving={driving} carActive={carActive} onPauseCar={onPauseCar} terrain={terrain} environment={environment} resetRef={playerRef} onTelemetry={onTelemetry} onLockChange={onLockChange} onInspect={onInspect} />
     <InspectionMarker inspection={inspection} />
     {route && <RouteBeacons route={route} />}
   </>;

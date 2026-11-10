@@ -74,18 +74,19 @@ function DataPanel({ metadata, onClose }) {
   );
 }
 
-export default function Hud({ driving, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, setParameter, applyPreset, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, setDebug, inspection, onClearInspection }) {
+export default function Hud({ driving, carActive, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, setParameter, applyPreset, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, setDebug, inspection, onClearInspection }) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
 
+  const active = locked || (driving && carActive);
   useEffect(() => {
-    if (locked) {
+    if (active) {
       setHasEntered(true);
       setPanelOpen(false);
       setDataOpen(false);
     }
-  }, [locked]);
+  }, [active]);
 
   const center = metadata.center ?? {};
   const region = metadata.region ?? metadata.name ?? 'Mars surface';
@@ -102,7 +103,7 @@ export default function Hud({ driving, onToggleDriving, region: regionId, onChan
   };
 
   return (
-    <div className={`sim-hud ${locked ? 'is-locked' : 'is-paused'}`}>
+    <div className={`sim-hud ${locked ? 'is-locked' : active ? 'is-driving' : 'is-paused'}`}>
       <header className="sim-brand">
         <div className="sim-eyebrow"><span className="sim-status-dot" /> Surface exploration / terrain demonstrator</div>
         <h1>MARS SURFACE SIMULATOR</h1>
@@ -149,7 +150,7 @@ export default function Hud({ driving, onToggleDriving, region: regionId, onChan
 
       {dataOpen && <DataPanel metadata={metadata} onClose={() => setDataOpen(false)} />}
 
-      {!locked && !dataOpen && <div className="sim-entry sim-interactive" role="region" aria-label="Enter simulation">
+      {!active && !dataOpen && <div className="sim-entry sim-interactive" role="region" aria-label="Enter simulation">
         <div className="sim-entry-index">{loading ? 'PREPARING SURFACE' : loadError ? 'TERRAIN LOAD ERROR' : hasEntered ? 'SIMULATION PAUSED' : 'SURFACE READY'}</div>
         <h2>{loading ? 'Reconstructing Mars terrain' : loadError ? 'Unable to load terrain' : hasEntered ? 'Return to the surface' : driving ? 'Drive on Mars' : 'Stand on Mars'}</h2>
         <p>{loading ? 'Loading measured elevation and surface assets.' : loadError ? String(loadError.message ?? loadError) : driving ? 'Drive the expedition car on the measured terrain. Steering, braking and traction respond to the surface.' : 'Explore real terrain on foot. Mouse look, physical movement, and gravity-driven jumps.'}</p>
@@ -158,7 +159,7 @@ export default function Hud({ driving, onToggleDriving, region: regionId, onChan
           {driving ? 'Switch to foot mode' : 'Switch to car mode'}
         </button>}
         {loading && <div className="sim-load-line" aria-label="Loading" />}
-        {!loading && !loadError && <div className="sim-entry-hint">Click the viewport to capture your mouse.<br /><kbd>ESC</kbd> releases it for environment controls.</div>}
+        {!loading && !loadError && <div className="sim-entry-hint">{driving ? 'Drag the terrain to orbit the camera. Esc pauses driving.' : <>Click the viewport to capture your mouse.<br /><kbd>ESC</kbd> releases it for environment controls.</>}</div>}
       </div>}
 
       {inspection && <section className="sim-inspection sim-interactive" aria-label="Inspected terrain point">
@@ -175,8 +176,8 @@ export default function Hud({ driving, onToggleDriving, region: regionId, onChan
 
       <footer className="sim-controls-legend">{driving ? <>
         <div><kbd>W / S</kbd><span>Drive / reverse</span><kbd>A / D</kbd><span>Steer</span></div>
-        <div><kbd>SPACE</kbd><span>Brake</span><kbd>MOUSE</kbd><span>Orbit view</span></div>
-      </> : <><div><kbd>W A S D</kbd><span>Move</span><kbd>MOUSE</kbd><span>Look</span></div><div><kbd>SPACE</kbd><span>Jump</span><kbd>SHIFT</kbd><span>Sprint</span></div></>}<div><kbd>E</kbd><span>Inspect terrain</span><kbd>F3</kbd><span>Debug</span></div><p>{locked ? 'ESC · release mouse / edit environment' : 'Keyboard + mouse required for surface exploration'}</p></footer>
+        <div><kbd>SPACE</kbd><span>Brake</span><kbd>DRAG</kbd><span>Orbit view</span></div>
+      </> : <><div><kbd>W A S D</kbd><span>Move</span><kbd>MOUSE</kbd><span>Look</span></div><div><kbd>SPACE</kbd><span>Jump</span><kbd>SHIFT</kbd><span>Sprint</span></div></>}<div><kbd>E</kbd><span>Inspect terrain</span><kbd>F3</kbd><span>Debug</span></div><p>{driving ? 'ESC · pause driving' : locked ? 'ESC · release mouse / edit environment' : 'Keyboard + mouse required for surface exploration'}</p></footer>
 
       <section className="sim-telemetry" aria-label="Live environment telemetry">
         <div className="sim-telemetry-title">LIVE TELEMETRY <span>{telemetry.grounded ? 'ON SURFACE' : hasEntered ? 'AIRBORNE' : 'STANDBY'}</span></div>

@@ -10,11 +10,11 @@ const LOOK_SENSITIVITY = 0.002
 const MAX_PITCH = Math.PI / 2 - 0.035
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
-export default function Player({ driving, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
+export default function Player({ driving, carActive, onPauseCar, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
   const { camera, gl, scene } = useThree()
   const physics = useMemo(() => new PlayerPhysics(terrain, environment), [terrain, environment])
-  const callbacks = useRef({ onTelemetry, onLockChange, onInspect })
-  callbacks.current = { onTelemetry, onLockChange, onInspect }
+  const callbacks = useRef({ carActive, onPauseCar, onTelemetry, onLockChange, onInspect })
+  callbacks.current = { carActive, onPauseCar, onTelemetry, onLockChange, onInspect }
   const keys = useRef(new Set())
   const vehicle = useRef(null)
   const wheels = useRef([])
@@ -24,6 +24,7 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
   const groundNormal = useMemo(() => new Vector3(), [])
   const locked = useRef(false)
   const skipMouseEvent = useRef(false)
+  const orbitPointer = useRef(null)
   const look = useRef({
     yaw: terrain.metadata?.spawn?.yaw || 0,
     pitch: -0.035,
@@ -48,9 +49,16 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
   }, [driving, physics])
 
   useEffect(() => {
+    if (!carActive) {
+      keys.current.clear()
+      orbitPointer.current = null
+    }
+  }, [carActive])
+
+  useEffect(() => {
     const canvas = gl.domElement
     const enter = () => {
-      if (document.pointerLockElement === canvas) return
+      if (driving || document.pointerLockElement === canvas) return
       const requested = canvas.requestPointerLock()
       // Browsers expose either a Promise or void for this API.
       requested?.catch?.(() => callbacks.current.onLockChange?.(false))
@@ -65,18 +73,27 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
       if (!locked.current) keys.current.clear()
       callbacks.current.onLockChange?.(locked.current)
     }
+    const orbit = (event) => {
+      if (Math.abs(event.movementX) > 200 || Math.abs(event.movementY) > 200) return
+      look.current.targetYaw -= event.movementX * LOOK_SENSITIVITY
+      look.current.targetPitch = clamp(look.current.targetPitch - event.movementY * LOOK_SENSITIVITY, -MAX_PITCH, MAX_PITCH)
+    }
+    const startOrbit = (event) => {
+      if (!driving || !callbacks.current.carActive || event.button !== 0) return
+      orbitPointer.current = event.pointerId
+      canvas.setPointerCapture(event.pointerId)
+    }
+    const dragOrbit = (event) => {
+      if (event.pointerId === orbitPointer.current && callbacks.current.carActive) orbit(event)
+    }
+    const endOrbit = () => { orbitPointer.current = null }
     const moveMouse = (event) => {
       if (!locked.current) return
       if (skipMouseEvent.current) {
         skipMouseEvent.current = false
         return
       }
-      if (Math.abs(event.movementX) > 200 || Math.abs(event.movementY) > 200) return
-      look.current.targetYaw -= event.movementX * LOOK_SENSITIVITY
-      look.current.targetPitch = clamp(
-        look.current.targetPitch - event.movementY * LOOK_SENSITIVITY,
-        -MAX_PITCH, MAX_PITCH,
-      )
+      orbit(event)
     }
     const inspect = () => {
       const mesh = scene.getObjectByName('mars-terrain')
@@ -100,10 +117,15 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
       })
     }
     const down = (event) => {
-      if (!locked.current) return
+      if (!(driving ? callbacks.current.carActive : locked.current)) return
       if (event.code === 'Escape') {
-        document.exitPointerLock()
+        if (driving) callbacks.current.onPauseCar()
+        else document.exitPointerLock()
         return
+      }
+      if (driving && event.target instanceof Element) {
+        if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return
+        if (event.code === 'Space' && event.target.closest('button:focus-visible, a:focus-visible, summary:focus-visible')) return
       }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyE'].includes(event.code)) {
         event.preventDefault()
@@ -112,7 +134,10 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
       if (event.code === 'KeyE' && !event.repeat) inspect()
     }
     const up = (event) => keys.current.delete(event.code)
-    const blur = () => keys.current.clear()
+    const blur = () => { keys.current.clear(); endOrbit() }
+    const focus = (event) => {
+      if (driving && event.target.matches('input, select, textarea, [contenteditable="true"]')) keys.current.clear()
+    }
     const reset = (spawn) => {
       physics.reset(spawn)
       keys.current.clear()
@@ -130,6 +155,10 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
     }
     if (resetRef) resetRef.current = { enter, reset, exit: () => document.exitPointerLock() }
     canvas.addEventListener('click', enter)
+    canvas.addEventListener('pointerdown', startOrbit)
+    canvas.addEventListener('pointermove', dragOrbit)
+    canvas.addEventListener('lostpointercapture', endOrbit)
+    document.addEventListener('focusin', focus)
     document.addEventListener('pointerlockchange', changeLock)
     document.addEventListener('mousemove', moveMouse)
     document.addEventListener('keydown', down)
@@ -138,6 +167,10 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
     return () => {
       if (document.pointerLockElement === canvas) document.exitPointerLock()
       canvas.removeEventListener('click', enter)
+      canvas.removeEventListener('pointerdown', startOrbit)
+      canvas.removeEventListener('pointermove', dragOrbit)
+      canvas.removeEventListener('lostpointercapture', endOrbit)
+      document.removeEventListener('focusin', focus)
       document.removeEventListener('pointerlockchange', changeLock)
       document.removeEventListener('mousemove', moveMouse)
       document.removeEventListener('keydown', down)
@@ -166,14 +199,14 @@ export default function Player({ driving, terrain, environment, onTelemetry, onL
       brake,
       sprint: !driving && (pressed.has('ShiftLeft') || pressed.has('ShiftRight')),
       yaw: view.yaw,
-      active: locked.current,
+      active: driving ? carActive : locked.current,
     }
     frame.accumulator += dt
     while (frame.accumulator >= PLAYER_CONFIG.fixedStep) {
       if (driving) {
         const yaw = driverYaw.current
         const along = -Math.sin(yaw) * physics.velocity.x - Math.cos(yaw) * physics.velocity.z
-        if (locked.current && physics.grounded) {
+        if (input.active && physics.grounded) {
           const direction = Math.abs(along) > 0.2 ? Math.sign(along) : throttle
           const turning = Math.min(Math.abs(along) / 2 + Math.abs(throttle) * 0.25, 1) * 0.86
           driverYaw.current -= steer * direction * turning * PLAYER_CONFIG.fixedStep

@@ -8,8 +8,8 @@ test('drives faster than walking, steers, brakes, and switches back to foot mode
   await page.goto('/');
   await page.getByRole('button', { name: 'Switch to car mode' }).click();
   await page.getByRole('button', { name: /^Enter simulation/ }).click();
-  await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true);
-  await expect(page.locator(".sim-hud")).toHaveClass(/is-locked/);
+  await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(false);
+  await expect(page.locator(".sim-hud")).toHaveClass(/is-driving/);
   await page.keyboard.down('KeyW');
   await expect.poll(async () => (await telemetry(page)).speed, { timeout: 15000 }).toBeGreaterThan(8);
   const before = await telemetry(page);

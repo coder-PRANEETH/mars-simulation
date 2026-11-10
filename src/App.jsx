@@ -21,6 +21,7 @@ export default function App() {
   const simulation = useSimulation();
   const [mapOpen, setMapOpen] = useState(false);
   const [driving, setDriving] = useState(false);
+  const [carActive, setCarActive] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null);
   const [waypointIndex, setWaypointIndex] = useState(0);
   const [region, setRegion] = useState('terrain');
@@ -89,7 +90,7 @@ export default function App() {
     distance: Math.hypot(nextWaypoint.x - position.x, nextWaypoint.z - position.z),
     bearing: (Math.atan2(nextWaypoint.x - position.x, position.z - nextWaypoint.z) * 180 / Math.PI + 360) % 360,
   } : null;
-  const reached = locked && guide && guide.distance <= 14;
+  const reached = (locked || (carActive && !mapOpen)) && guide && guide.distance <= 14;
   useEffect(() => {
     if (reached) setWaypointIndex((index) => index + 1);
   }, [reached, waypointIndex]);
@@ -106,6 +107,7 @@ export default function App() {
 
   const changeRegion = () => {
     setActiveRoute(null);
+    setCarActive(false);
     setTerrain(null);
     setEnvironment(null);
     setInspection(null);
@@ -115,7 +117,11 @@ export default function App() {
     setMapOpen(region === 'terrain');
     setRegion(region === 'terrain' ? 'jezero' : 'terrain');
   };
-  const enter = () => playerRef.current?.enter();
+  const enter = () => driving ? setCarActive(true) : playerRef.current?.enter();
+  const toggleDriving = () => {
+    setCarActive(false);
+    setDriving((mode) => !mode);
+  };
   const reset = () => { playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
 
   return <main className="simulation-viewport">
@@ -129,12 +135,12 @@ export default function App() {
         fallback={<div className="webgl-error"><h2>WebGL is unavailable</h2><p>Enable hardware acceleration in your browser to walk on Mars.</p></div>}
       >
         <Suspense fallback={null}>
-          {terrain && environment && <World driving={driving} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
+          {terrain && environment && <World driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
     <div inert={mapOpen && !loading && !loadError}>
-    <Hud driving={driving} onToggleDriving={() => setDriving((mode) => !mode)} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    <Hud driving={driving} carActive={carActive} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
     </div>
     {activeRoute && !mapOpen && <aside className="expedition-guide" aria-label="Traverse guidance">
       <strong>{guide ? `Waypoint ${guide.number} of ${guide.count} · ${guide.waypoint.label}` : 'Destination reached'}</strong>
