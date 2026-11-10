@@ -30,38 +30,82 @@ export function buildTerrainGeometry(terrain) {
   return geometry;
 }
 
-function createGrainTexture(widthMeters, depthMeters) {
-  // Illustrative sub-DEM surface roughness: shading only, never elevation data.
+function createRegolithTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 128;
+  const size = 256;
+  canvas.width = canvas.height = size;
   const context = canvas.getContext('2d');
-  const pixels = context.createImageData(128, 128);
+  const pixels = context.createImageData(size, size);
   let seed = 4217;
-  for (let i = 0; i < pixels.data.length; i += 4) {
+  const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    const shade = 85 + (seed >>> 25);
-    pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = shade;
-    pixels.data[i + 3] = 255;
+    return seed / 4294967296;
+  };
+
+  const noiseLayers = [8, 32, 64].map((width) => ({
+    width, values: Float32Array.from({ length: width * width }, random),
+  }));
+  function noise({ width, values }, x, y) {
+    const u = x * width / size, v = y * width / size;
+    const column = Math.floor(u), row = Math.floor(v);
+    const blend = (t) => t * t * (3 - 2 * t);
+    const sx = blend(u - column), sy = blend(v - row);
+    const nextColumn = (column + 1) % width;
+    const nextRow = (row + 1) % width;
+    const top = values[row * width + column] * (1 - sx) + values[row * width + nextColumn] * sx;
+    const bottom = values[nextRow * width + column] * (1 - sx) + values[nextRow * width + nextColumn] * sx;
+    return top * (1 - sy) + bottom * sy;
+  }
+
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const [coarse, grit, fine] = noiseLayers.map((layer) => noise(layer, x, y));
+    const offset = (y * size + x) * 4;
+    pixels.data[offset] = 255 * (coarse * 0.25 + grit * 0.32 + fine * 0.31 + random() * 0.12);
+    pixels.data[offset + 1] = 255 * (coarse * 0.32 + grit * 0.51 + fine * 0.17);
+    pixels.data[offset + 2] = 255 * coarse;
+    pixels.data[offset + 3] = 255;
   }
   context.putImageData(pixels, 0, 0);
+
   const texture = new CanvasTexture(canvas);
   texture.wrapS = texture.wrapT = RepeatWrapping;
-  texture.repeat.set(widthMeters / 3, depthMeters / 3);
-  texture.anisotropy = 4;
+  texture.anisotropy = 8;
   return texture;
 }
 
 export default function Terrain({ terrain }) {
   const texture = useTexture(`${terrain.assetBase}/texture.jpg`);
   const geometry = useMemo(() => buildTerrainGeometry(terrain), [terrain]);
-  const grain = useMemo(() => createGrainTexture(terrain.metadata.widthMeters, terrain.metadata.depthMeters), [terrain]);
+  const { widthMeters, depthMeters } = terrain.metadata;
+  const grain = useMemo(() => {
+    const detail = createRegolithTexture();
+    detail.repeat.set(widthMeters / 2.5, depthMeters / 2.5);
+    return detail;
+  }, [widthMeters, depthMeters]);
   useEffect(() => {
     texture.colorSpace = SRGBColorSpace;
     texture.anisotropy = 8;
     texture.needsUpdate = true;
     return () => { geometry.dispose(); grain.dispose(); };
   }, [texture, geometry, grain]);
+
+  // Modulate the source imagery with illustrative grit at metre and centimetre
+  // scales. All relief at those scales is material shading.
+  const shadeRegolith = (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <map_fragment>', `
+        #include <map_fragment>
+        vec2 localUv = vBumpMapUv;
+        float grit = texture2D(bumpMap, localUv).g;
+        float patches = texture2D(bumpMap, localUv * 0.1875 + vec2(0.17, 0.36)).b;
+        float fade = 1.0 - smoothstep(30.0, 210.0, length(vViewPosition));
+        vec3 detail = mix(vec3(0.65, 0.51, 0.44), vec3(1.38, 1.29, 1.16), grit * 0.7 + patches * 0.3);
+        diffuseColor.rgb *= mix(vec3(1.0), detail, fade);
+      `);
+  };
+
   return <mesh name="mars-terrain" geometry={geometry} receiveShadow>
-    <meshStandardMaterial map={texture} color="#ce9469" roughness={0.96} metalness={0} bumpMap={grain} bumpScale={0.085} />
+    <meshStandardMaterial map={texture} color="#e5ae87" roughness={0.94} bumpMap={grain} bumpScale={0.20}
+      onBeforeCompile={shadeRegolith} />
   </mesh>;
 }
