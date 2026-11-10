@@ -27,12 +27,22 @@ const jump = async (page) => {
   return { peak, time: (await read(page)).lastAirborneTime };
 };
 
-test('the actual Mars scene supports FPS movement, gravity changes, inspect and live environment controls', async ({ page }) => {
+test('the actual Mars scene supports FPS movement, gravity changes, inspection and the simplified telemetry', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
   await page.getByRole('button', { name: /^Enter simulation/ }).waitFor();
   await expect(page.getByRole('heading', { name: 'MARS SURFACE SIMULATOR' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Environment', exact: true })).toHaveCount(0);
+  const live = page.getByRole('region', { name: 'Live telemetry' });
+  await expect(live.locator('dt')).toHaveText(['Wind', 'Temperature', 'Coordinates', 'Speed']);
+  await expect(live.locator('.sim-position')).toContainText('18.');
+  const weather = await page.evaluate(() => window.__MARS_SIM__.getSimulation());
+  expect(weather.windSpeed).toBeGreaterThanOrEqual(6);
+  expect(weather.windSpeed).toBeLessThanOrEqual(44);
+  expect(weather.temperature).toBeGreaterThanOrEqual(-85);
+  expect(weather.temperature).toBeLessThanOrEqual(-45);
   await expect.poll(async () => (await read(page)).grounded).toBe(true);
   const data = await page.evaluate(() => {
     const terrain = window.__MARS_SIM__.getTerrain();
@@ -53,9 +63,7 @@ test('the actual Mars scene supports FPS movement, gravity changes, inspect and 
   expect((await read(page)).altitude).toBeLessThan(0.01);
   const mars = await jump(page);
   await unlock(page);
-  await page.getByRole('button', { name: /Environment/ }).click();
-  await page.getByRole('button', { name: 'Earth 9.81' }).click();
-  await expect(page.getByLabel('GRAVITY', { exact: true })).toHaveValue('9.81');
+  await page.evaluate(() => window.__MARS_SIM__.setParameter('gravity', 9.81));
   await enter(page);
   const earth = await jump(page);
   expect(mars.time).toBeGreaterThan(earth.time * 2.4);
@@ -76,20 +84,13 @@ test('the actual Mars scene supports FPS movement, gravity changes, inspect and 
   await page.keyboard.press('F3');
   await expect(page.getByRole('region', { name: 'Physics debug telemetry' })).toBeVisible();
   await unlock(page);
-  await page.getByRole('button', { name: /Environment/ }).click();
-  await page.getByLabel('ATMOSPHERIC DUST').selectOption('storm');
-  const wind = page.getByLabel('WIND SPEED', { exact: true });
-  await wind.focus();
-  await wind.press('End');
-  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getSimulation().windSpeed)).toBe(150);
-  await page.getByLabel('REGOLITH SOFTNESS').focus();
-  await page.getByLabel('REGOLITH SOFTNESS').press('End');
-  await page.getByLabel('TRACTION / FRICTION').focus();
-  await page.getByLabel('TRACTION / FRICTION').press('Home');
-  const state = await page.evaluate(() => window.__MARS_SIM__.getSimulation());
-  expect(state.dustLevel).toBe('storm');
-  expect(state.regolithSoftness).toBe(1);
-  expect(state.friction).toBe(0.1);
+  await page.evaluate(() => {
+    const simulation = window.__MARS_SIM__;
+    simulation.setParameter('dustLevel', 'storm');
+    simulation.setParameter('windSpeed', 150);
+    simulation.setParameter('regolithSoftness', 1);
+    simulation.setParameter('friction', 0.1);
+  });
   await page.getByRole('button', { name: 'Terrain & data' }).click();
   await expect(page.getByRole('region', { name: 'Terrain source and attribution' })).toContainText('2.019');
   await expect(page.getByRole('region', { name: 'Terrain source and attribution' })).toContainText('HiRISE');

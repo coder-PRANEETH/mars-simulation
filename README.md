@@ -1,6 +1,6 @@
 # Mars Surface Simulator
 
-A working first-person web prototype on **5.87 km² of reconstructed Martian terrain southeast of Jezero Crater**. The product is the walkable 3D surface: real HiRISE elevation, co-registered orbital imagery, terrain contact, gravity-driven jumps, and live environmental controls.
+A working first-person web prototype on **5.87 km² of reconstructed Martian terrain southeast of Jezero Crater**. The product is the walkable 3D surface: real HiRISE elevation, co-registered orbital imagery, terrain contact, gravity-driven jumps, and simulated surface weather.
 
 ## Run
 
@@ -92,13 +92,13 @@ GeoTIFF samples from USGS without downloading the full mosaics.
 | Mouse | Look freely |
 | Space | Jump; release before the next jump |
 | Shift | Sprint |
-| Esc | Release pointer lock, use environment controls |
+| Esc | Release the cursor |
 | E | Raycast through the crosshair to inspect terrain |
 | F3 | Toggle physics diagnostics and FPS |
 
 The camera is the player's head, **1.7 m above their feet**. Walking includes acceleration, deceleration, limited air steering, ground detection, slope grip, and sliding. The small camera gait and landing offsets provide feedback; jump motion comes from the simulated body.
 
-To compare jumps, stand still, jump under Mars gravity, press Esc, open **Environment**, choose **Earth 9.81**, and jump again. Open F3 diagnostics to watch vertical velocity, height above ground, grounded state, and airborne time. Holding Space does not cause automatic repeated jumps.
+Open **F3** diagnostics to see vertical velocity, height above ground, grounded state, and airborne time. Holding Space does not repeat the jump.
 
 ## Car mode
 
@@ -115,22 +115,14 @@ The expedition car uses the measured heightfield and a separate handling
 profile, with a flat, firm-ground speed limit of 54 km/h before traction
 and softness adjustments. It is a simplified vehicle simulation.
 
-## Environmental controls
+## Simulated surface weather
 
-All values live in a single simulation store. Sliders and presets take effect on the next physics/frame update, including gravity changes during a jump.
+Each session starts with a generated wind speed (6–44 km/h) and air temperature
+(−85 to −45°C). Both refresh every 30 seconds. Wind drives the dust effects,
+and temperature is informational. Live telemetry shows those two values,
+coordinates, and travel speed. The planner’s archived Perseverance observations
+remain available separately under **Map information**.
 
-| Parameter | Range / behavior |
-| --- | --- |
-| Gravity | 0.5–15 m/s²; Moon 1.62, Mars 3.71, Earth 9.81 presets |
-| Wind | 0–150 km/h; particle advection, without pushing the human |
-| Wind direction | Clockwise bearing from north; the direction particles travel **toward** |
-| Regolith softness | Hard to loose; lower maximum speed, acceleration and effective grip |
-| Friction | 0.1–1.5; stopping distance and Coulomb-style slope grip/sliding |
-| Atmospheric density | 0–1.225 kg/m³; simplified dust entrainment and haze |
-| Temperature | −130°C to +30°C; informational, available through the environment API |
-| Dust | None / Low / Medium / High / Dust storm; particle count and visibility |
-
-**Realistic Mars** uses 3.71 m/s², approximately 0.016 kg/m³, and a representative −63°C. These are general reference values, not weather measurements for this region or image-acquisition date. NASA's [planetary parameters](https://ssd.jpl.nasa.gov/planets/phys_par.html) support the gravity value; its [Mars fact sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html) gives the approximate near-surface atmospheric density. Wind, temperature at this point, friction, softness and dust settings are illustrative tuning parameters. **Earth Physics** and **Moon-like** change the environment on the same Martian terrain; they do not change the dataset or reconstruct those worlds.
 
 ## Real NASA / public terrain data
 
@@ -151,7 +143,7 @@ Credit: **NASA/JPL-Caltech/University of Arizona**. Dataset: **MRO Mars High Res
 - Image: 4096² JPEG, geographically matched to the same DEM-post bounds.
 - **Vertical exaggeration is 1**. Primary hills, depressions and ridges come from the DEM; no random terrain is substituted.
 
-The HiRISE RED image is a single grayscale band. The warm material tint is illustrative, not measured true color. Decorative tiny rocks and material grain are also illustrative and explicitly documented. **Terrain & data** in the HUD exposes sources, bounds, resolutions, datum, attribution and transformations.
+The HiRISE RED image is a single grayscale band. The renderer adds a warm tint, oblique sunlight, and close-up material grain to the source imagery. Small decorative rocks are placed on the measured surface around the observer. **Terrain & data** in the HUD exposes sources, bounds, resolutions, datum, attribution and transformations.
 
 See [DATA_SOURCES.md](DATA_SOURCES.md) for exact product URLs, source hashes, projection equations, input dimensions and independent source verification. Original PDS labels are preserved in `public/terrain`.
 
@@ -199,7 +191,7 @@ React + JavaScript, Vite, Three.js, React Three Fiber and drei are used. This pr
 
 The physics runs at **120 Hz** with an accumulator independent of rendering. Jumping applies **3.4 m/s upward velocity**, then integrates the selected gravity. On flat ground this yields roughly 1.54 m / 1.83 s under Mars gravity and 0.58 m / 0.69 s under Earth gravity. Gravity is queried each step. Horizontal movement uses traction-dependent acceleration and braking, reduced speed on loose regolith, slope response, and restricted air acceleration. The camera follows the body with restrained gait, landing impact and sprint FOV feedback.
 
-Validation includes 19 passing deterministic tests (original PDS sample values, exact collision triangles, measured-terrain traversal/jumps/sliding, environment updates) and a passing Playwright acceptance flow. The browser flow enters pointer lock, walks on the real terrain, compares Mars/Earth jumps, looks and inspects, toggles F3, changes wind/dust/softness/friction, and verifies particle and fog response. Browser-measured jump samples were approximately **1.52 m / 1.82 s** on Mars and **0.57 m / 0.69 s** on Earth.
+Validation includes 19 passing deterministic tests (original PDS sample values, exact collision triangles, measured-terrain traversal/jumps/sliding, environment updates) and a passing Playwright acceptance flow. The browser flow enters pointer lock, walks on the real terrain, compares Mars/Earth jumps, looks and inspects, toggles F3, uses the internal simulation API to verify particle and fog response, and checks the four live telemetry fields. Browser-measured jump samples were approximately **1.52 m / 1.82 s** on Mars and **0.57 m / 0.69 s** on Earth.
 
 The environment API is intentionally small:
 

@@ -51,6 +51,12 @@ export default function App() {
   }, [region]);
 
   useEffect(() => {
+    simulationStore.refreshWeather();
+    const timer = window.setInterval(simulationStore.refreshWeather, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     const keyDown = (event) => {
       if (event.code === 'F3') { event.preventDefault(); setDebug((current) => !current); }
     };
@@ -60,8 +66,7 @@ export default function App() {
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    // Read-only telemetry plus the same parameter API as the controls, for local
-    // browser acceptance checks. There is no separate testing physics path.
+    // Browser acceptance checks use the same simulation state as the scene.
     window.__MARS_SIM__ = {
       getTelemetry: () => latestTelemetry.current,
       getSimulation: simulationStore.getState,
@@ -146,7 +151,7 @@ export default function App() {
       </Canvas>
     </SceneErrorBoundary>
     <div inert={mapOpen && !loading && !loadError}>
-    <Hud driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    <Hud driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
     </div>
     {activeRoute && !mapOpen && <aside className="expedition-guide" aria-label="Traverse guidance">
       <strong>{guide ? `Waypoint ${guide.number} of ${guide.count} · ${guide.waypoint.label}` : 'Destination reached'}</strong>

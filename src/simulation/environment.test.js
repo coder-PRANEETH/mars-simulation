@@ -41,3 +41,20 @@ test('the parameter API rejects invalid keys and values and clamps supported bou
   simulationStore.applyPreset('realistic-mars');
   assert.equal(simulationStore.getState().dustLevel, 'medium');
 });
+
+test('refreshing simulated weather updates the shared readings without changing the physics', (t) => {
+  simulationStore.applyPreset('realistic-mars');
+  const before = simulationStore.getState();
+  const environment = createEnvironment(terrain);
+  t.mock.method(Math, 'random', () => 0.25);
+  let updates = 0;
+  const unsubscribe = simulationStore.subscribe(() => { updates++; });
+  simulationStore.refreshWeather();
+  unsubscribe();
+
+  const after = simulationStore.getState();
+  assert.equal(updates, 1);
+  assert.equal(environment.getWind().speed, 15 / 3.6);
+  assert.equal(environment.getTemperature(), -75);
+  assert.deepEqual(after, { ...before, windSpeed: 15, temperature: -75 });
+});

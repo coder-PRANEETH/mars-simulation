@@ -10,21 +10,6 @@ const coordinate = (value, axis) => {
 const component = (value, axis) => Array.isArray(value) ? value[['x', 'y', 'z'].indexOf(axis)] : value?.[axis];
 const vector = (value) => ['x', 'y', 'z'].map((axis) => number(component(value, axis), 2)).join(' / ');
 
-function Parameter({ label, value, display, unit, min, max, step = 1, onChange, hint, ends, children }) {
-  return (
-    <div className="sim-parameter">
-      <div className="sim-parameter-label">
-        <label>{label}</label>
-        <output>{display ?? number(value, step < 0.1 ? 2 : 1)} <span>{unit}</span></output>
-      </div>
-      <input aria-label={label} type="range" min={min} max={max} step={step} value={value ?? min} onChange={(event) => onChange(Number(event.target.value))} />
-      {ends && <div className="sim-range-ends"><span>{ends[0]}</span><span>{ends[1]}</span></div>}
-      {children}
-      {hint && <p className="sim-parameter-hint">{hint}</p>}
-    </div>
-  );
-}
-
 function DataPanel({ metadata, onClose }) {
   let sources = metadata.sources ?? metadata.datasets ?? [];
   if (!Array.isArray(sources)) sources = Object.entries(sources).map(([key, value]) => typeof value === 'string' ? { name: key, url: value } : { name: key, ...value });
@@ -69,13 +54,12 @@ function DataPanel({ metadata, onClose }) {
         </div>
       ))}
       {transforms && <div className="sim-processing"><h3>Processing</h3>{Array.isArray(transforms) ? <ol>{transforms.map((step, index) => <li key={index}>{typeof step === 'string' ? step : JSON.stringify(step)}</li>)}</ol> : <p>{typeof transforms === 'string' ? transforms : JSON.stringify(transforms)}</p>}</div>}
-      <p className="sim-data-note">Orbital data resolution limits surface detail. Friction, regolith, dust, and temperature controls are simplified simulation parameters; they do not represent measurements at every point.</p>
+      <p className="sim-data-note">Orbital data resolution limits surface detail. Wind and temperature in the simulator are generated values.</p>
     </section>
   );
 }
 
-export default function Hud({ driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, setParameter, applyPreset, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, setDebug, inspection, onClearInspection }) {
-  const [panelOpen, setPanelOpen] = useState(true);
+export default function Hud({ driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, inspection, onClearInspection }) {
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
 
@@ -83,7 +67,6 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
   useEffect(() => {
     if (active) {
       setHasEntered(true);
-      setPanelOpen(false);
       setDataOpen(false);
     }
   }, [active]);
@@ -94,9 +77,6 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
   const longitude = telemetry.longitude ?? metadata.centerLongitude ?? metadata.longitude ?? center.longitude ?? center.lon;
   const speed = telemetry.speed ?? Math.hypot(component(telemetry.velocity, 'x') ?? 0, component(telemetry.velocity, 'z') ?? 0);
   const altitude = telemetry.altitude ?? telemetry.elevation ?? component(telemetry.position, 'y');
-  const softness = simulation.regolithSoftness ?? 0;
-  const activePreset = simulation.preset ?? simulation.presetName ?? 'custom';
-  const change = (key) => (value) => setParameter?.(key, value);
   const enter = (event) => {
     event.stopPropagation();
     onEnter?.();
@@ -108,7 +88,6 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
         <div className="sim-eyebrow"><span className="sim-status-dot" /> Surface exploration / terrain demonstrator</div>
         <h1>MARS SURFACE SIMULATOR</h1>
         <div className="sim-region">{region}</div>
-        <div className="sim-coordinates"><span>{coordinate(latitude, 'lat')}</span><span>{coordinate(longitude, 'lon')}</span></div>
       </header>
 
       <div className="sim-crosshair" aria-hidden="true"><i /><i /><i /><i /></div>
@@ -118,36 +97,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
         {onOpenMap && <button className="sim-tool-button" onClick={onOpenMap}>Expedition map</button>}
         <button className="sim-tool-button" onClick={onChangeRegion}>{regionId === 'jezero' ? 'Southeast hills' : 'Explore Jezero'}</button>
         <button className={`sim-tool-button ${dataOpen ? 'is-active' : ''}`} onClick={() => setDataOpen((open) => !open)} aria-expanded={dataOpen}>Terrain & data</button>
-        <button className={`sim-tool-button ${panelOpen ? 'is-active' : ''}`} onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="simulation-controls">Environment <span aria-hidden="true">{panelOpen ? '−' : '+'}</span></button>
       </div>
-
-      {panelOpen && <aside id="simulation-controls" className="sim-controls sim-interactive" aria-label="Environment controls">
-        <div className="sim-panel-heading"><h2>Simulation environment</h2><span className="sim-panel-code">ENV / 01</span></div>
-        <div className="sim-control-scroll">
-          <fieldset disabled={locked}>
-            <legend className="sim-sr-only">Environment parameters</legend>
-            <div className="sim-presets">
-              {[['realistic-mars', 'REALISTIC MARS'], ['earth-physics', 'EARTH PHYSICS'], ['moon-like', 'MOON-LIKE'], ['custom', 'CUSTOM']].map(([name, label]) => <button key={name} className={activePreset === name ? 'is-active' : ''} onClick={() => applyPreset?.(name)}>{label}</button>)}
-            </div>
-            <p className="sim-preset-note">Gravity presets are representative. Terrain response and dust are adjustable approximations.</p>
-            <Parameter label="GRAVITY" value={simulation.gravity} unit="m/s²" min={0.5} max={15} step={0.01} onChange={change('gravity')}>
-              <div className="sim-gravity-presets">{[['Moon', 1.62], ['Mars', 3.71], ['Earth', 9.81]].map(([name, value]) => <button key={name} onClick={() => setParameter?.('gravity', value)} className={Math.abs((simulation.gravity ?? 0) - value) < 0.01 ? 'is-active' : ''}>{name} <span>{value}</span></button>)}</div>
-            </Parameter>
-            <Parameter label="WIND SPEED" value={simulation.windSpeed} unit="km/h" min={0} max={150} onChange={change('windSpeed')} />
-            <Parameter label="WIND DIRECTION" value={simulation.windDirection} unit="°" min={0} max={360} display={number(simulation.windDirection, 0)} onChange={change('windDirection')} ends={['0° N', '90° E / 180° S / 270° W']} />
-            <Parameter label="REGOLITH SOFTNESS" value={softness} min={0} max={1} step={0.01} display={`${Math.round(softness * 100)}%`} onChange={change('regolithSoftness')} ends={['Hard / rocky', 'Loose / soft']} />
-            <Parameter label="TRACTION / FRICTION" value={simulation.friction} min={0.1} max={1.5} step={0.01} onChange={change('friction')} ends={['Low grip', 'High grip']} />
-            <Parameter label="ATMOSPHERIC DENSITY" value={simulation.atmosphericDensity} unit="kg/m³" min={0} max={1.225} step={0.001} display={number(simulation.atmosphericDensity, 3)} onChange={change('atmosphericDensity')} hint="Affects dust response; wind does not push the player." />
-            <Parameter label="TEMPERATURE" value={simulation.temperature} unit="°C" min={-130} max={30} display={number(simulation.temperature, 0)} onChange={change('temperature')} hint="Informational in this prototype." />
-            <div className="sim-parameter sim-dust-control">
-              <label htmlFor="dust-level">ATMOSPHERIC DUST</label>
-              <select id="dust-level" value={simulation.dustLevel ?? 'medium'} onChange={(event) => setParameter?.('dustLevel', event.target.value)}><option value="none">None</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="storm">Dust storm</option></select>
-            </div>
-            <div className="sim-control-actions"><button onClick={onReset}>Reset position</button><button onClick={() => setDebug?.(!debug)} className={debug ? 'is-active' : ''}>Debug {debug ? 'on' : 'off'} <span>F3</span></button></div>
-          </fieldset>
-        </div>
-        <p className="sim-panel-footer">{locked ? 'Press ESC to release the mouse and edit controls.' : 'Changes apply immediately. Click the surface to explore.'}</p>
-      </aside>}
 
       {dataOpen && <DataPanel metadata={metadata} onClose={() => setDataOpen(false)} />}
 
@@ -156,11 +106,14 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
         <h2>{loading ? 'Reconstructing Mars terrain' : loadError ? 'Unable to load terrain' : hasEntered ? 'Return to the surface' : driving ? 'Drive on Mars' : 'Stand on Mars'}</h2>
         <p>{loading ? 'Loading measured elevation and surface assets.' : loadError ? String(loadError.message ?? loadError) : driving ? 'Drive the expedition car on the measured terrain. Steering, braking and traction respond to the surface.' : 'Explore real terrain on foot. Mouse look, physical movement, and gravity-driven jumps.'}</p>
         {!loading && !loadError && <button className="sim-enter-button" onClick={enter}>{hasEntered ? 'Resume simulation' : 'Enter simulation'}<span aria-hidden="true">↗</span></button>}
-        {!loading && !loadError && <button type="button" className="sim-tool-button sim-drive-toggle" aria-pressed={driving} onClick={onToggleDriving}>
-          {driving ? 'Switch to foot mode' : 'Switch to car mode'}
-        </button>}
+        {!loading && !loadError && <div className="sim-entry-actions">
+          <button type="button" className="sim-tool-button" aria-pressed={driving} onClick={onToggleDriving}>
+            {driving ? 'Switch to foot mode' : 'Switch to car mode'}
+          </button>
+          <button type="button" className="sim-tool-button" onClick={onReset}>Reset position</button>
+        </div>}
         {loading && <div className="sim-load-line" aria-label="Loading" />}
-        {!loading && !loadError && <div className="sim-entry-hint">{driving ? 'Drag the terrain to orbit the camera. Esc pauses driving.' : <>Click the viewport to capture your mouse.<br /><kbd>ESC</kbd> releases it for environment controls.</>}</div>}
+        {!loading && !loadError && <div className="sim-entry-hint">{driving ? 'Drag the terrain to orbit the camera. Esc pauses driving.' : <>Click the viewport to capture your mouse.<br /><kbd>ESC</kbd> releases the cursor.</>}</div>}
       </div>}
 
       {inspection && <section className="sim-inspection sim-interactive" aria-label="Inspected terrain point">
@@ -178,11 +131,16 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       <footer className="sim-controls-legend">{driving ? <>
         <div><kbd>W / S</kbd><span>Drive / reverse</span><kbd>A / D</kbd><span>Steer</span></div>
         <div><kbd>SPACE</kbd><span>Brake</span><kbd>DRAG</kbd><span>Orbit view</span></div>
-      </> : <><div><kbd>W A S D</kbd><span>Move</span><kbd>MOUSE</kbd><span>Look</span></div><div><kbd>SPACE</kbd><span>Jump</span><kbd>SHIFT</kbd><span>Sprint</span></div></>}<div><kbd>E</kbd><span>Inspect terrain</span><kbd>F3</kbd><span>Debug</span></div><p>{driving ? 'ESC · pause driving' : locked ? 'ESC · release mouse / edit environment' : 'Keyboard + mouse required for surface exploration'}</p></footer>
+      </> : <><div><kbd>W A S D</kbd><span>Move</span><kbd>MOUSE</kbd><span>Look</span></div><div><kbd>SPACE</kbd><span>Jump</span><kbd>SHIFT</kbd><span>Sprint</span></div></>}<div><kbd>E</kbd><span>Inspect terrain</span><kbd>F3</kbd><span>Debug</span></div><p>{driving ? 'ESC · pause driving' : locked ? 'ESC · release cursor' : 'Keyboard + mouse required for surface exploration'}</p></footer>
 
-      <section className="sim-telemetry" aria-label="Live environment telemetry">
-        <div className="sim-telemetry-title">LIVE TELEMETRY <span>{telemetry.grounded ? 'ON SURFACE' : hasEntered ? 'AIRBORNE' : 'STANDBY'}</span></div>
-        <dl><dt>Gravity</dt><dd>{number(simulation.gravity, 2)} <span>m/s²</span></dd><dt>Wind</dt><dd>{number(simulation.windSpeed, 0)} <span>km/h · {number(simulation.windDirection, 0)}°</span></dd><dt>Temperature</dt><dd>{number(simulation.temperature, 0)} <span>°C</span></dd><dt>Regolith</dt><dd>{softness < 0.33 ? 'Hard' : softness < 0.66 ? 'Mixed' : 'Loose'} <span>{Math.round(softness * 100)}%</span></dd><dt>Current speed</dt><dd>{number(driving ? speed * 3.6 : speed, driving ? 1 : 2)} <span>{driving ? 'km/h' : 'm/s'}</span></dd><dt>Altitude</dt><dd>{number(altitude, 1)} <span>m AGL</span></dd></dl>
+      <section className="sim-telemetry" aria-label="Live telemetry">
+        <div className="sim-telemetry-title">LIVE TELEMETRY</div>
+        <dl>
+          <dt>Wind</dt><dd title="Simulated wind speed">{number(simulation.windSpeed, 0)} <span>km/h</span></dd>
+          <dt>Temperature</dt><dd title="Simulated air temperature">{number(simulation.temperature, 0)} <span>°C</span></dd>
+          <dt>Coordinates</dt><dd className="sim-position"><span>{coordinate(latitude, 'lat')}</span> <span>{coordinate(longitude, 'lon')}</span></dd>
+          <dt>Speed</dt><dd>{number(driving ? speed * 3.6 : speed, driving ? 1 : 2)} <span>{driving ? 'km/h' : 'm/s'}</span></dd>
+        </dl>
       </section>
       {locked && <div className="sim-lock-hint">MOUSE CAPTURED <span>ESC to release</span></div>}
     </div>

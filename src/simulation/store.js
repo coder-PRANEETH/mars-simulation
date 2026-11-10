@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 // Representative environmental values, not a weather report for the DEM epoch.
-// Friction, softness and dust levels are adjustable game-model coefficients.
+// Friction, softness and dust levels are game-model coefficients.
 export const PRESETS = {
   'realistic-mars': { gravity: 3.71, atmosphericDensity: 0.016, windSpeed: 18, windDirection: 245, temperature: -63, dustLevel: 'medium', regolithSoftness: 0.3, friction: 0.85 },
   'earth-physics': { gravity: 9.81, atmosphericDensity: 1.225, windSpeed: 10, windDirection: 245, temperature: 15, dustLevel: 'low', regolithSoftness: 0.15, friction: 1.0 },
@@ -27,6 +27,12 @@ export const simulationStore = {
       value = Math.min(limits[key][1], Math.max(limits[key][0], Number(value)));
     }
     state = { ...state, [key]: value, preset: 'custom' };
+    emit();
+  },
+  refreshWeather() {
+    const windSpeed = 6 + Math.floor(Math.random() * 39);
+    const temperature = -85 + Math.floor(Math.random() * 41);
+    state = { ...state, windSpeed, temperature };
     emit();
   },
   applyPreset(name) {
