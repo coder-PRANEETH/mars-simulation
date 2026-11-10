@@ -1,0 +1,11 @@
+{
+  "bounds": [
+    77.22,
+    18.0,
+    78.16,
+    18.82
+  ],
+  "width": 858,
+  "height": 832,
+  "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/mars2020_trn/CTX/ScienceInvestigationMaps_JPL/M20_JezeroCrater_CTXDEM_20m.tif"
+}

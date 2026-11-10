@@ -52,7 +52,7 @@ function createGrainTexture(widthMeters, depthMeters) {
 }
 
 export default function Terrain({ terrain }) {
-  const texture = useTexture('/terrain/texture.jpg');
+  const texture = useTexture(`${terrain.assetBase}/texture.jpg`);
   const geometry = useMemo(() => buildTerrainGeometry(terrain), [terrain]);
   const grain = useMemo(() => createGrainTexture(terrain.metadata.widthMeters, terrain.metadata.depthMeters), [terrain]);
   useEffect(() => {

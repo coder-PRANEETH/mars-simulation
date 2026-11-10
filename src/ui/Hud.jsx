@@ -74,7 +74,7 @@ function DataPanel({ metadata, onClose }) {
   );
 }
 
-export default function Hud({ simulation = {}, setParameter, applyPreset, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, setDebug, inspection, onClearInspection }) {
+export default function Hud({ region: regionId, onChangeRegion, onOpenMap, simulation = {}, setParameter, applyPreset, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, setDebug, inspection, onClearInspection }) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
@@ -113,6 +113,8 @@ export default function Hud({ simulation = {}, setParameter, applyPreset, teleme
       <div className="sim-crosshair" aria-hidden="true"><i /><i /><i /><i /></div>
 
       <div className="sim-top-actions sim-interactive">
+        {onOpenMap && <button className="sim-tool-button" onClick={onOpenMap}>Expedition map</button>}
+        <button className="sim-tool-button" onClick={onChangeRegion}>{regionId === 'jezero' ? 'Southeast hills' : 'Explore Jezero'}</button>
         <button className={`sim-tool-button ${dataOpen ? 'is-active' : ''}`} onClick={() => setDataOpen((open) => !open)} aria-expanded={dataOpen}>Terrain & data</button>
         <button className={`sim-tool-button ${panelOpen ? 'is-active' : ''}`} onClick={() => setPanelOpen((open) => !open)} aria-expanded={panelOpen} aria-controls="simulation-controls">Environment <span aria-hidden="true">{panelOpen ? '−' : '+'}</span></button>
       </div>

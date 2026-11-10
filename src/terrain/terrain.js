@@ -1,16 +1,22 @@
 import { Vector3 } from 'three'
 
-let loading
+const pendingTerrain = new Map()
 
 /** Shared, measured terrain for visual mesh, collision, HUD and scientific queries. */
-export function loadTerrain() {
-  if (!loading) {
-    loading = Promise.all([
-      fetch('/terrain/metadata.json').then(checkResponse).then((response) => response.json()),
-      fetch('/terrain/heights.bin').then(checkResponse).then((response) => response.arrayBuffer()),
-    ]).then(([metadata, buffer]) => createTerrain(metadata, new Float32Array(buffer)))
+export function loadTerrain(assetDirectory = 'terrain') {
+  const assetBase = `${import.meta.env.BASE_URL}${assetDirectory}`
+  if (!pendingTerrain.has(assetDirectory)) {
+    const loading = Promise.all([
+      fetch(`${assetBase}/metadata.json`).then(checkResponse).then((response) => response.json()),
+      fetch(`${assetBase}/heights.bin`).then(checkResponse).then((response) => response.arrayBuffer()),
+    ]).then(([metadata, buffer]) => createTerrain(metadata, new Float32Array(buffer), assetBase))
+      .catch((error) => {
+        pendingTerrain.delete(assetDirectory)
+        throw error
+      })
+    pendingTerrain.set(assetDirectory, loading)
   }
-  return loading
+  return pendingTerrain.get(assetDirectory)
 }
 
 function checkResponse(response) {
@@ -19,7 +25,7 @@ function checkResponse(response) {
 }
 
 /** Triangle interpolation matches exactly the rendered a,c,b / b,c,d index order. */
-export function createTerrain(metadata, heights) {
+export function createTerrain(metadata, heights, assetBase = '/terrain') {
   const { columns, rows, widthMeters, depthMeters, elevationOffset } = metadata
   if (heights.length !== columns * rows) throw new Error('Terrain height buffer does not match metadata')
   const dx = widthMeters / (columns - 1)
@@ -60,8 +66,15 @@ export function createTerrain(metadata, heights) {
     }
   }
 
+  function location(latitude, longitude) {
+    return {
+      x: (longitude - metadata.centerLongitude) * widthMeters / (metadata.longitudeEast - metadata.longitudeWest),
+      z: (latitude - metadata.centerLatitude) * depthMeters / (metadata.latitudeSouth - metadata.latitudeNorth),
+    }
+  }
+
   return {
-    metadata, heights, sampleHeight, sampleNormal, sampleSlope, coordinates,
+    assetBase, location, metadata, heights, sampleHeight, sampleNormal, sampleSlope, coordinates,
     getElevation: (x, z) => sampleHeight(x, z) + elevationOffset,
     contains: (x, z, margin = 0) => Math.abs(x) <= widthMeters / 2 - margin && Math.abs(z) <= depthMeters / 2 - margin,
   }

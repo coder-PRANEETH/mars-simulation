@@ -6,6 +6,7 @@ import { createEnvironment } from './simulation/environment.js';
 import { simulationStore, useSimulation } from './simulation/store.js';
 import World from './scene/World.jsx';
 import Hud from './ui/Hud.jsx';
+import ExpeditionMap from './planner/ExpeditionMap.jsx';
 
 class SceneErrorBoundary extends Component {
   state = { error: null };
@@ -18,6 +19,8 @@ class SceneErrorBoundary extends Component {
 
 export default function App() {
   const simulation = useSimulation();
+  const [mapOpen, setMapOpen] = useState(false);
+  const [region, setRegion] = useState('terrain');
   const [terrain, setTerrain] = useState(null);
   const [environment, setEnvironment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,13 +36,13 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    loadTerrain().then((data) => {
+    loadTerrain(region).then((data) => {
       if (cancelled) return;
       setTerrain(data);
       setEnvironment(createEnvironment(data));
     }).catch((error) => { if (!cancelled) { setLoadError(error.message); setLoading(false); } });
     return () => { cancelled = true; };
-  }, []);
+  }, [region]);
 
   useEffect(() => {
     const keyDown = (event) => {
@@ -74,11 +77,21 @@ export default function App() {
     return () => { delete window.__MARS_SIM__; };
   }, [terrain]);
 
+  const changeRegion = () => {
+    setTerrain(null);
+    setEnvironment(null);
+    setInspection(null);
+    setTelemetry({});
+    setLoadError(null);
+    setLoading(true);
+    setMapOpen(region === 'terrain');
+    setRegion(region === 'terrain' ? 'jezero' : 'terrain');
+  };
   const enter = () => playerRef.current?.enter();
   const reset = () => { playerRef.current?.reset(); setInspection(null); };
 
   return <main className="simulation-viewport">
-    <SceneErrorBoundary>
+    <SceneErrorBoundary key={region}>
       <Canvas
         shadows="soft"
         dpr={[1, 1.5]}
@@ -92,6 +105,7 @@ export default function App() {
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
-    <Hud simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    <Hud onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} setParameter={simulationStore.setParameter} applyPreset={simulationStore.applyPreset} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} setDebug={setDebug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    {mapOpen && !loading && !loadError && terrain && <ExpeditionMap terrain={terrain} onClose={() => setMapOpen(false)} />}
   </main>;
 }

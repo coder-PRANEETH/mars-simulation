@@ -28,6 +28,25 @@ npm run test:browser
 
 The development server binds to all interfaces for local preview. Production deployments should serve `dist/` using ordinary static hosting. Pointer lock works on localhost or a secure HTTPS origin.
 
+## Jezero Expedition Planner
+
+Select **Explore Jezero** to open the planner inside Jezero Crater. The crater
+overview uses the USGS 20 m CTX elevation mosaic. The outlined traverse area
+opens a 19.48 km² western-delta crop from the Mars 2020 USGS HiRISE products,
+with 1 m source elevation posts sampled every eighth post and matched 25 cm
+source imagery. Select **Return to surface** to walk the same mesh in first
+person. **Southeast hills** returns to the original simulator terrain.
+
+The detailed map lets you inspect elevation and slope and highlight steep or
+locally uneven terrain. The slope limit is an adjustable planning assumption.
+Small obstacles below the grid scale require independent observations.
+
+The packaged data works offline. To rebuild the detailed or crater-wide
+assets, install `numpy`, `Pillow`, `rasterio` and `pyproj` and run
+`python scripts/prepare-jezero.py detail` or
+`python scripts/prepare-jezero.py overview`. The script reads the required
+GeoTIFF samples from USGS without downloading the full mosaics.
+
 ## Controls
 
 | Input | Action |
