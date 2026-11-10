@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { buildGrid, cellAt, terrainClass } from './terrainGrid.js'
 import { mapLayer } from './mapLayers.js'
+import { scienceSites } from './scienceSites.js'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -20,6 +21,9 @@ export default function ExpeditionMap({ terrain, onClose }) {
   const [hazards, setHazards] = useState(false)
   const [maxSlope, setMaxSlope] = useState(20)
   const [inspection, setInspection] = useState(null)
+  const [sitesVisible, setSitesVisible] = useState(true)
+  const [selectedSite, setSelectedSite] = useState(null)
+  const [thermal, setThermal] = useState(false)
   const [context, setContext] = useState(false)
   const [crater, setCrater] = useState(null)
   const [contextError, setContextError] = useState(false)
@@ -27,8 +31,7 @@ export default function ExpeditionMap({ terrain, onClose }) {
   const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, 'Hazards', maxSlope) : null, [grid, metadata, hazards, maxSlope])
   const scaleBar = widthMeters >= 3000 ? 500 : 200
 
-  function showCrater() {
-    setContext(true)
+  function fetchCrater() {
     if (crater) return
     setContextError(false)
     fetch(`${terrain.assetBase}/crater.json`)
@@ -38,6 +41,22 @@ export default function ExpeditionMap({ terrain, onClose }) {
       })
       .then(setCrater)
       .catch(() => setContextError(true))
+  }
+
+  function showCrater() {
+    setContext(true)
+    fetchCrater()
+  }
+
+  function toggleThermal() {
+    if (!thermal) fetchCrater()
+    setThermal(!thermal)
+  }
+
+  function selectSite(site) {
+    setSelectedSite(site)
+    if (terrain.contains(...sitePosition(terrain, site))) setContext(false)
+    else showCrater()
   }
 
   function inspect(event) {
@@ -58,24 +77,29 @@ export default function ExpeditionMap({ terrain, onClose }) {
         <Tool active={!context} onClick={() => setContext(false)}>Traverse area</Tool>
         <Tool active={context} onClick={showCrater}>Crater overview</Tool>
       </div>
-      {!context && <div role="group" aria-label="Terrain layers">
-        {['Imagery', 'Elevation', 'Slope'].map((name) => <Tool key={name} active={layer === name} onClick={() => setLayer(name)}>{name}</Tool>)}
-        <Tool active={hazards} onClick={() => setHazards(!hazards)}>Hazards</Tool>
-      </div>}
+      <div role="group" aria-label="Terrain layers">
+        {!context && ['Imagery', 'Elevation', 'Slope'].map((name) => <Tool key={name} active={layer === name} onClick={() => setLayer(name)}>{name}</Tool>)}
+        {!context && <Tool active={hazards} onClick={() => setHazards(!hazards)}>Hazards</Tool>}
+        <Tool active={thermal} onClick={toggleThermal}>Thermal IR</Tool>
+        <Tool active={sitesVisible} onClick={() => setSitesVisible(!sitesVisible)}>Science sites</Tool>
+      </div>
     </div>
     <div className="expedition-content">
       <div className="expedition-map">
         {context ? (
-          crater ? <CraterMap crater={crater} terrain={terrain} onDetail={() => setContext(false)} />
+          crater ? <CraterMap crater={crater} terrain={terrain} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
             : <p role="status">{contextError ? 'Crater overview could not be loaded. Select Crater overview to retry.' : 'Loading crater overview…'}</p>
         ) : <svg viewBox={`0 0 ${widthMeters} ${depthMeters}`} onClick={inspect} aria-label="Detailed traverse map" role="img">
           <image href={raster ?? `${terrain.assetBase}/texture.jpg`} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />
+          {thermal && crater && <LocalThermal terrain={terrain} crater={crater} />}
           {hazard && <image href={hazard} width={widthMeters} height={depthMeters} preserveAspectRatio="none" className="expedition-pixels" />}
           <g transform={`translate(${widthMeters * 0.03} ${depthMeters * 0.94})`} className="expedition-scale">
             <rect x={-widthMeters * .012} y={-widthMeters * .047} width={scaleBar + widthMeters * .025} height={widthMeters * .067} rx={widthMeters * .007} />
             <line x2={scaleBar} strokeWidth={widthMeters * .004} />
             <text y={-widthMeters * .012} fontSize={widthMeters * .028}>{scaleBar} m</text>
           </g>
+          {sitesVisible && <SiteMarkers size={widthMeters} sites={scienceSites.filter((site) => terrain.contains(...sitePosition(terrain, site)))}
+            locate={(site) => origin(terrain.location(site.latitude, site.longitude), metadata)} selected={selectedSite} onSelect={selectSite} />}
           {inspection && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
         </svg>}
         <div className="expedition-north" aria-hidden="true">↑<span>N</span></div>
@@ -86,6 +110,11 @@ export default function ExpeditionMap({ terrain, onClose }) {
           <h2>{context ? 'Jezero Crater' : 'Western Delta traverse area'}</h2>
           <p>{context ? 'Crater-wide context from the CTX elevation mosaic. Select the outlined region to return to the detailed map.' : `HiRISE elevation and matched orbital imagery · ${metadata.areaKm2.toFixed(1)} km²`}</p>
         </div>
+        {thermal && <div>
+          <p>{contextError ? 'Thermal layer could not be loaded. Toggle it to retry.' : 'Mars Odyssey THEMIS nighttime infrared · 100 m source pixels. Purple to yellow shows relative brightness in the contrast-stretched mosaic.'}</p>
+          <a href="https://astrogeology.usgs.gov/search/map/mars_odyssey_themis_ir_night_60n60s_mosaic_100m_v14" target="_blank" rel="noreferrer">Thermal data source ↗</a>
+        </div>}
+        {sitesVisible && <SciencePanel selected={selectedSite} onSelect={selectSite} />}
         {!context && <>
           <label className="expedition-field">Maximum slope <output>{maxSlope}°</output>
             <input type="range" min="10" max="35" value={maxSlope} onChange={(event) => setMaxSlope(+event.target.value)} />
@@ -113,17 +142,69 @@ export default function ExpeditionMap({ terrain, onClose }) {
   </section>
 }
 
-function CraterMap({ crater, terrain, onDetail }) {
+function CraterMap({ crater, terrain, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
   const { width, height, bounds: [west, south, east, north] } = crater
   const metadata = terrain.metadata
   const x = (longitude) => (longitude - west) / (east - west) * width
   const y = (latitude) => (north - latitude) / (north - south) * height
   return <svg viewBox={`0 0 ${width} ${height}`} aria-label="Jezero crater elevation overview" role="img">
     <image href={`${terrain.assetBase}/crater.jpg`} width={width} height={height} />
+    {thermal && <image href={`${terrain.assetBase}/thermal.png`} width={width} height={height} preserveAspectRatio="none" className="expedition-pixels" />}
     <rect x={x(metadata.longitudeWest)} y={y(metadata.latitudeNorth)}
       width={x(metadata.longitudeEast) - x(metadata.longitudeWest)}
       height={y(metadata.latitudeSouth) - y(metadata.latitudeNorth)}
       className="expedition-footprint" role="button" tabIndex="0" aria-label="Open detailed traverse area"
       onClick={onDetail} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onDetail() } }} />
+    {sitesVisible && <SiteMarkers size={width} sites={scienceSites.filter((site) => !terrain.contains(...sitePosition(terrain, site)))}
+      locate={(site) => ({ x: x(site.longitude), y: y(site.latitude) })} selected={selectedSite} onSelect={onSelect} />}
   </svg>
+}
+
+const sitePosition = (terrain, site) => {
+  const { x, z } = terrain.location(site.latitude, site.longitude)
+  return [x, z]
+}
+
+function LocalThermal({ terrain, crater }) {
+  const [west, south, east, north] = crater.bounds
+  const top = origin(terrain.location(north, west), terrain.metadata)
+  const bottom = origin(terrain.location(south, east), terrain.metadata)
+  return <image href={`${terrain.assetBase}/thermal.png`} x={top.x} y={top.y} width={bottom.x - top.x} height={bottom.y - top.y}
+    preserveAspectRatio="none" className="expedition-pixels" />
+}
+
+function SiteMarkers({ size, sites, locate, selected, onSelect }) {
+  const radius = size * 0.012
+  return sites.map((site) => {
+    const { x, y } = locate(site)
+    function activate(event) {
+      event.stopPropagation()
+      onSelect(site)
+    }
+    return <g key={site.id} role="button" tabIndex="0" aria-label={site.name} aria-pressed={selected?.id === site.id}
+      transform={`translate(${x} ${y})`} className="expedition-site"
+      onClick={activate} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activate(event) } }}>
+      <circle r={radius} strokeWidth={radius * 0.2} />
+      <text y={radius * 0.37} textAnchor="middle" fontSize={radius * 1.1}>{scienceSites.indexOf(site) + 1}</text>
+    </g>
+  })
+}
+
+function SciencePanel({ selected, onSelect }) {
+  return <div className="expedition-science">
+    <h2>Science sites</h2>
+    <select aria-label="Inspect science site" value={selected?.id ?? ''} onChange={(event) => {
+      const site = scienceSites.find(({ id }) => id === event.target.value)
+      if (site) onSelect(site)
+    }}>
+      <option value="" disabled>Select a science site</option>
+      {scienceSites.map((site, index) => <option key={site.id} value={site.id}>{index + 1}. {site.name}</option>)}
+    </select>
+    {selected && <div>
+      <strong>{selected.category}</strong>
+      <p>{selected.description}</p>
+      <p>{selected.locationNote}</p>
+      <a href={selected.source} target="_blank" rel="noreferrer">Science source ↗</a>
+    </div>}
+  </div>
 }

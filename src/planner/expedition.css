@@ -101,3 +101,12 @@
   .expedition-map { height: 53vh; min-height: 240px; }
   .expedition-panel { max-height: none; }
 }
+.expedition-site { cursor: pointer; }
+.expedition-site circle { fill: #18282d; stroke: #a9efdc; }
+.expedition-site text { fill: #ecfff7; font-weight: 700; pointer-events: none; }
+.expedition-site:hover circle, .expedition-site:focus circle, .expedition-site[aria-pressed="true"] circle { fill: #487568; stroke: white; }
+.expedition-science { display: grid; gap: 6px; }
+.expedition-science h2 { margin-bottom: 1px; }
+.expedition-science > div { padding: 8px 0 0; display: grid; gap: 5px; }
+.expedition-science strong { color: var(--accent); font-size: 12px; }
+.expedition a { color: var(--accent); font-size: 12px; }

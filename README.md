@@ -41,10 +41,16 @@ The detailed map lets you inspect elevation and slope and highlight steep or
 locally uneven terrain. The slope limit is an adjustable planning assumption.
 Small obstacles below the grid scale require independent observations.
 
+The science markers use NASA Perseverance locations where available and
+identify the approximate Kodiak viewpoint separately. Neretva Vallis appears
+in the crater overview beyond the routeable area. Mars Odyssey THEMIS nighttime
+IR adds regional thermal contrast at 100 m source resolution. Its stretched
+brightness values do not provide a temperature or measure present conditions.
+
 The packaged data works offline. To rebuild the detailed or crater-wide
 assets, install `numpy`, `Pillow`, `rasterio` and `pyproj` and run
 `python scripts/prepare-jezero.py detail` or
-`python scripts/prepare-jezero.py overview`. The script reads the required
+`python scripts/prepare-jezero.py overview`. Use the `thermal` option for THEMIS. The script reads the required
 GeoTIFF samples from USGS without downloading the full mosaics.
 
 ## Controls

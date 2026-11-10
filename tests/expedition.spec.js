@@ -15,6 +15,12 @@ test('opens real Jezero terrain and inspects its map layers', async ({ page }) =
   await expect(page.getByRole('img', { name: 'Jezero crater elevation overview' })).toBeVisible();
   await page.getByRole('button', { name: 'Open detailed traverse area' }).press('Enter');
   await expect(page.getByRole('img', { name: 'Detailed traverse map' })).toBeVisible();
+  await page.getByRole('button', { name: 'Thermal IR', exact: true }).click();
+  await expect(page.getByText(/Mars Odyssey THEMIS nighttime infrared/)).toBeVisible();
+  await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('seitah');
+  await expect(page.getByText(/Investigate the olivine-rich/)).toBeVisible();
+  await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('neretva');
+  await expect(page.getByRole('img', { name: 'Jezero crater elevation overview' })).toBeVisible();
   await page.getByRole('button', { name: 'Return to surface' }).click();
   await expect(page.getByText('Jezero Crater / Western Delta')).toBeVisible();
   await page.getByRole('button', { name: 'Southeast hills' }).click();
