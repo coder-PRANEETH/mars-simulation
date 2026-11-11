@@ -21,23 +21,9 @@ function Tool({ children, onClick, active, ...props }) {
 export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, onLaunch, onClearRoute }) {
   const metadata = terrain.metadata
   const { widthMeters, depthMeters } = metadata
-  const [surface, setSurface] = useState(undefined)
+  const surface = terrain.surfaceFlags
   const grid = useMemo(() => buildGrid(terrain, surface), [terrain, surface])
   const locate = useMemo(() => (longitude, latitude) => origin(terrain.location(latitude, longitude), metadata), [terrain, metadata])
-  useEffect(() => {
-    let active = true
-    fetch(`${terrain.assetBase}/surface-flags.bin`)
-      .then((response) => {
-        if (!response.ok) throw new Error('Mapped terrain data unavailable')
-        return response.arrayBuffer()
-      })
-      .then((buffer) => {
-        if (buffer.byteLength !== (metadata.columns - 1) * (metadata.rows - 1)) throw new Error('Mapped terrain size does not match')
-        if (active) setSurface(new Uint8Array(buffer))
-      })
-      .catch(() => { if (active) setSurface(null) })
-    return () => { active = false }
-  }, [terrain, metadata])
   const [layer, setLayer] = useState('Imagery')
   const [hazards, setHazards] = useState(false)
   const [maxSlope, setMaxSlope] = useState(20)

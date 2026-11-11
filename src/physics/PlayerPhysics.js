@@ -1,3 +1,5 @@
+import { FIRM_SURFACE } from '../simulation/surface.js'
+
 // A small, deterministic heightfield character simulation. Distances are metres,
 // time is seconds, and position.y is the player's feet (not the camera).
 export const PLAYER_CONFIG = Object.freeze({
@@ -20,6 +22,7 @@ export const PLAYER_CONFIG = Object.freeze({
 export const CAR_CONFIG = Object.freeze({
   ...PLAYER_CONFIG,
   radius: 1.8,
+  surfaceResponse: true,
   walkSpeed: 15,
   sprintSpeed: 15,
   reverseSpeed: 5,
@@ -95,7 +98,8 @@ export class PlayerPhysics {
     const softness = clamp(this.environment.getRegolithSoftness(), 0, 1)
     // The shared environment already applies regolith's traction reduction.
     const friction = clamp(this.environment.getSurfaceFriction(position), 0.05, 1.5)
-    const grip = friction
+    const surface = config.surfaceResponse ? this.environment.getSurfaceCondition?.(position) ?? FIRM_SURFACE : FIRM_SURFACE
+    const grip = friction * surface.gripFactor
     const normal = this.normal(position.x, position.z)
     const groundHeight = this.height(position.x, position.z)
     const slope = Math.acos(clamp(normal.y, 0, 1))
@@ -131,7 +135,7 @@ export class PlayerPhysics {
     const sprinting = input.sprint && input.active !== false
     const speedLimit = forward < 0 && config.reverseSpeed != null
       ? config.reverseSpeed : sprinting ? config.sprintSpeed : config.walkSpeed
-    const speed = speedLimit * (1 - softness * 0.48)
+    const speed = speedLimit * (1 - softness * 0.48) * surface.speedFactor
     const braking = input.brake ? config.brakeAcceleration ?? config.stopAcceleration : config.stopAcceleration
 
     if (this.grounded) {
@@ -275,6 +279,7 @@ export class PlayerPhysics {
       position: { ...position },
       velocity: { ...this.velocity },
       speed: Math.hypot(this.velocity.x, this.velocity.z),
+      surface: this.config.surfaceResponse ? this.environment.getSurfaceCondition?.(position) ?? FIRM_SURFACE : null,
       verticalVelocity: this.velocity.y,
       grounded: this.grounded,
       slope: this.terrain.sampleSlope(position.x, position.z),

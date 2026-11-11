@@ -113,7 +113,11 @@ selected Jezero route. Route time estimates describe walking.
 
 The expedition car uses the measured heightfield and a separate handling
 profile, with a flat, firm-ground speed limit of 54 km/h before traction
-and softness adjustments. It is a simplified vehicle simulation.
+and softness adjustments. It is a simplified vehicle simulation. Driving samples the surface at the
+car's position. Mapped eolian bedforms reduce speed and grip, surface deposits
+add rolling resistance, and the elevation mesh supplies roughness and slope
+penalties. Responses blend across cell boundaries. These handling coefficients
+are illustrative. The mapped categories come from USGS SIM 3464.
 
 ## Simulated surface weather
 

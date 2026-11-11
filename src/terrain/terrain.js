@@ -9,7 +9,15 @@ export function loadTerrain(assetDirectory = 'terrain') {
     const loading = Promise.all([
       fetch(`${assetBase}/metadata.json`).then(checkResponse).then((response) => response.json()),
       fetch(`${assetBase}/heights.bin`).then(checkResponse).then((response) => response.arrayBuffer()),
-    ]).then(([metadata, buffer]) => createTerrain(metadata, new Float32Array(buffer), assetBase))
+      assetDirectory === 'jezero'
+        ? fetch(`${assetBase}/surface-flags.bin`).then(checkResponse).then((response) => response.arrayBuffer()).catch(() => null)
+        : Promise.resolve(null),
+    ]).then(([metadata, buffer, flags]) => {
+      const terrain = createTerrain(metadata, new Float32Array(buffer), assetBase)
+      const count = (metadata.columns - 1) * (metadata.rows - 1)
+      terrain.surfaceFlags = flags?.byteLength === count ? new Uint8Array(flags) : null
+      return terrain
+    })
       .catch((error) => {
         pendingTerrain.delete(assetDirectory)
         throw error

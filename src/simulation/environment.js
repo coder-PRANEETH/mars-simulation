@@ -1,9 +1,12 @@
 import { simulationStore } from './store.js';
+import { createSurfaceSampler } from './surface.js';
 
 // Shared by the walker, dust renderer and future vehicles. Coordinates are local
 // metres: +x east, +z south, +y up; bearings run clockwise from north.
 export function createEnvironment(terrain, store = simulationStore) {
+  const sampleSurface = createSurfaceSampler(terrain);
   return {
+    getSurfaceCondition: sampleSurface,
     getState: store.getState,
     getGravity: () => store.getState().gravity,
     getSurfaceFriction: () => store.getState().friction * (1 - 0.45 * store.getState().regolithSoftness),
