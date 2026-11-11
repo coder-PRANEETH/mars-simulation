@@ -23,6 +23,8 @@ function Atmosphere({ environment }) {
   }), []);
   useEffect(() => { scene.fog = new FogExp2('#ca9070', 0.00055); return () => { scene.fog = null; }; }, [scene]);
   useFrame((_, dt) => {
+    // Region changes briefly detach the atmosphere before its next effect runs.
+    if (!scene.fog || !sky.current || !light.current || !target.current) return;
     const state = environment.getState();
     const dust = dustStrength[state.dustLevel] ?? 0.45;
     // Optical artist model: density + wind lofting make haze responsive; this is

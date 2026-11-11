@@ -1,19 +1,20 @@
 import RouteResults from './RouteResults.jsx'
+import Icon from '../ui/Icon.jsx'
 
 export default function RouteControls({
-  start, end, mode, setMode, maxSlope, setMaxSlope, pace, setPace, dust, setDust, temperature, setTemperature,
+  start, end, startLabel, endLabel, mode, setMode, maxSlope, setMaxSlope, pace, setPace, dust, setDust, temperature, setTemperature,
   objective, setObjective, scienceStop, setScienceStop, sites, onDemo,
   planning, loadingSurface, error, routes, selected, onSelect, onLaunch,
 }) {
   return <div className="expedition-routing">
     <div className="expedition-route-heading">
-      <h2>Plan route</h2>
-      <button type="button" onClick={onDemo}>Try example</button>
+      <div><p className="expedition-eyebrow">YOUR TRAVERSE</p><h2>Where to?</h2></div>
+      <button type="button" className="expedition-example" onClick={onDemo}>Try example<Icon name="arrow" size={14} /></button>
     </div>
     <div className="expedition-endpoints">
-      {[['Set start', 'Start', start, 'S'], ['Set destination', 'Destination', end, 'D']].map(([action, label, cell, badge]) =>
+      {[['Set start', 'Start', startLabel, 'S'], ['Set destination', 'Destination', endLabel, 'D']].map(([action, label, place, badge]) =>
         <button key={action} type="button" aria-label={action} aria-pressed={mode === action} onClick={() => setMode(action)}>
-          <b>{badge}</b><span>{label}</span><small>{mode === action ? 'Click map' : cell >= 0 ? 'Set · change' : 'Choose'}</small>
+          <b>{badge}</b><span><small>{label}</small><strong>{place}</strong></span><small>{mode === action ? 'Click map' : 'Change'}</small>
         </button>
       )}
     </div>

@@ -138,6 +138,7 @@ export default function App() {
   return <main className="simulation-viewport">
     <SceneErrorBoundary key={region}>
       <Canvas
+        frameloop={mapOpen && !loading ? 'never' : 'always'}
         shadows="soft"
         dpr={[1, 1.5]}
         camera={{ fov: 72, near: 0.07, far: 7000, position: [0, 70, 0] }}

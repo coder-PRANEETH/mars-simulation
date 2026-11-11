@@ -5,6 +5,7 @@ import { scienceSites } from './scienceSites.js'
 import { useRoutes } from './useRoutes.js'
 import RouteControls from './RouteControls.jsx'
 import DrivingHazards from './DrivingHazards.jsx'
+import Icon from '../ui/Icon.jsx'
 import WeatherObservations from './WeatherObservations.jsx'
 import { GeologyLayer, GeologyLegend } from './GeologyLayer.jsx'
 import './expedition.css'
@@ -56,6 +57,15 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const raster = useMemo(() => layer === 'Imagery' ? null : mapLayer(grid, metadata, layer, maxSlope), [grid, metadata, layer, maxSlope])
   const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, 'Hazards', maxSlope, avoid) : null, [grid, metadata, hazards, maxSlope, avoid])
   const scaleBar = widthMeters >= 3000 ? 500 : 200
+
+  function endpointLabel(cell) {
+    if (cell < 0) return 'Choose on the map'
+    const site = localSites.find((candidate) => candidate.cell === cell)
+    if (site) return site.name
+    const { x, z } = cellPoint(grid, cell)
+    const { latitude, longitude } = terrain.coordinates(x, z)
+    return `${latitude.toFixed(4)}° N · ${longitude.toFixed(4)}° E`
+  }
 
   function update(setter, value) {
     setter(value)
@@ -159,8 +169,11 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
 
   return <section className="expedition" aria-label="Jezero expedition map">
     <header className="expedition-heading">
-      <h1>Jezero Expedition Planner</h1>
-      <button type="button" onClick={onClose}>Return to surface <span aria-hidden="true">↗</span></button>
+      <div className="expedition-title">
+        <span className="expedition-eyebrow">MARS / FIELD ATLAS</span>
+        <h1 aria-label="Jezero Expedition Planner">Jezero<span>.</span></h1>
+      </div>
+      <button type="button" className="expedition-back" onClick={onClose} aria-label="Return to surface">Back to terrain<Icon name="arrow" size={18} /></button>
     </header>
     <div className="expedition-tools">
       <div role="group" aria-label="Map extent">
@@ -172,10 +185,10 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
           <Tool active={mode === 'Inspect'} onClick={() => setMode('Inspect')}>Inspect</Tool>
           <Tool active={mode === 'Mark avoid zone'} onClick={() => setMode('Mark avoid zone')}>Mark avoid zone</Tool>
           {!!zones.length && <Tool onClick={() => update(setZones, zones.slice(0, -1))}>Undo last avoid zone</Tool>}
-          <Tool active={hazards} onClick={() => setHazards(!hazards)}>Hazards</Tool>
+          <Tool active={hazards} onClick={() => setHazards(!hazards)}><Icon name="hazard" size={16} />Hazards</Tool>
         </>}
         <details className="expedition-layer-menu">
-          <summary>Layers</summary>
+          <summary><Icon name="layers" size={17} />Layers</summary>
           <div role="group" aria-label="Terrain layers">
             {!context && ['Imagery', 'Elevation', 'Slope'].map((name) => <Tool key={name} active={layer === name} onClick={() => setLayer(name)}>{name}</Tool>)}
             <Tool active={showGeology} onClick={toggleGeology}>Geology</Tool>
@@ -215,7 +228,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         <div className="expedition-north" aria-hidden="true">↑<span>N</span></div>
       </div>
       <aside className="expedition-panel">
-        {!context && <RouteControls start={start} end={end} mode={mode} setMode={setMode}
+        {!context && <RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={setMode}
           maxSlope={maxSlope} setMaxSlope={(value) => update(setMaxSlope, value)} pace={pace} setPace={(value) => update(setPace, value)}
           dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
           objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}

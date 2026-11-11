@@ -102,7 +102,7 @@ Open **F3** diagnostics to see vertical velocity, height above ground, grounded 
 
 ## Car mode
 
-Choose **Switch to car mode** on the entry panel. Press **Esc** to pause
+Choose **By rover**, then **Begin exploring** on the entry screen. Press **Esc** to pause
 driving and return to the entry panel. Use **W/S** to drive or reverse, **A/D** to steer, **Space**
 to brake. Drag the terrain to orbit the chase camera. The cursor stays
 free for map and dashboard controls. The **Hazards** switch shows a local map

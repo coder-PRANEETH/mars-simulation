@@ -1,3 +1,5 @@
+import Icon from '../ui/Icon.jsx'
+
 export const distanceText = (distance) => distance >= 1000 ? `${(distance / 1000).toFixed(2)} km` : `${Math.round(distance)} m`
 const timeRange = (seconds) => `${Math.max(1, Math.round(seconds * 0.8 / 60))}–${Math.max(1, Math.ceil(seconds * 1.2 / 60))} min`
 
@@ -6,19 +8,19 @@ export default function RouteResults({ routes, selected, onSelect, onLaunch }) {
   const route = routes[selected] ?? routes.terrain
 
   return <div className="expedition-route-results">
-    <h2>Route comparison</h2>
+    <h2 className="expedition-section-label">Route comparison</h2>
     <div className="expedition-route-choices">
       <button aria-pressed={selected === 'terrain'} type="button" onClick={() => onSelect('terrain')}>
-        <span>Terrain first</span><strong>{distanceText(routes.terrain.distance)}</strong>
+        <span>Terrain first<small>Fewer terrain penalties</small></span><strong>{distanceText(routes.terrain.distance)}</strong>
       </button>
       <button aria-pressed={selected === 'science'} type="button" onClick={() => onSelect('science')} disabled={!routes.science}>
-        <span>Science stop</span><strong>{routes.science ? distanceText(routes.science.distance) : 'Unavailable'}</strong>
+        <span>Science stop<small>A discovery along the way</small></span><strong>{routes.science ? distanceText(routes.science.distance) : 'Unavailable'}</strong>
       </button>
     </div>
     {route.stop && <p>Via {route.stop.name}</p>}
     <div className="expedition-launch">
-      <button className="expedition-primary" type="button" onClick={() => onLaunch(route, true)}>Drive route</button>
-      <button type="button" onClick={() => onLaunch(route, false)}>Walk route</button>
+      <button className="expedition-primary" type="button" onClick={() => onLaunch(route, true)}>Drive route<Icon name="arrow" size={18} /></button>
+      <button type="button" onClick={() => onLaunch(route, false)}><Icon name="walking" size={17} />Walk route</button>
     </div>
     <details className="expedition-disclosure">
       <summary>Route details · {route.waypoints.length} waypoints</summary>

@@ -6,6 +6,7 @@ test('opens real Jezero terrain and inspects its map layers', async ({ page }) =
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
   await expect(page.getByRole('heading', { name: 'Jezero Expedition Planner' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTerrain().surfaceFlags?.length)).toBeGreaterThan(0);
   await page.getByText('Layers', { exact: true }).click();
   await page.getByRole('button', { name: 'Elevation', exact: true }).click();
   await page.getByText('Layers', { exact: true }).click();

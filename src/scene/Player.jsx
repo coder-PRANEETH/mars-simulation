@@ -49,11 +49,15 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
   }, [driving, physics])
 
   useEffect(() => {
-    if (!carActive) {
+    if (carActive) {
+      // Hand keyboard control to the view after launching from an HTML button.
+      gl.domElement.tabIndex = -1
+      gl.domElement.focus({ preventScroll: true })
+    } else {
       keys.current.clear()
       orbitPointer.current = null
     }
-  }, [carActive])
+  }, [carActive, gl])
 
   useEffect(() => {
     const canvas = gl.domElement
