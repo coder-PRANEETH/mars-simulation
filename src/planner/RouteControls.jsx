@@ -8,8 +8,8 @@ export default function RouteControls({
 }) {
   return <div className="expedition-routing">
     <div className="expedition-route-heading">
-      <div><p className="expedition-eyebrow">YOUR TRAVERSE</p><h2>Where to?</h2></div>
-      <button type="button" className="expedition-example" onClick={onDemo}>Try example<Icon name="arrow" size={14} /></button>
+      <div><p className="expedition-eyebrow">CHOOSE YOUR NEXT STOP</p><h2>Pick a route</h2></div>
+      <button type="button" className="expedition-example" onClick={onDemo}>Try a route<Icon name="arrow" size={14} /></button>
     </div>
     <div className="expedition-endpoints">
       {[['Set start', 'Start', startLabel, 'S'], ['Set destination', 'Destination', endLabel, 'D']].map(([action, label, place, badge]) =>

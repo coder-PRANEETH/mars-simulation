@@ -23,22 +23,22 @@
 .expedition-eyebrow { display: block; margin: 0 0 8px; font-size: 8px; letter-spacing: .17em; font-weight: 600; color: var(--atlas-muted); }
 .expedition-title { display: flex; flex-direction: column; }
 .expedition-title .expedition-eyebrow { margin-bottom: 2px; }
-.expedition h1 { font-family: Georgia, 'Times New Roman', serif; font-size: 42px; font-weight: 400; letter-spacing: -.05em; margin: 0; line-height: 1; }
+.expedition h1 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; font-size: 34px; font-weight: 700; letter-spacing: -.035em; margin: 0; line-height: 1; }
 .expedition h1 span { color: var(--atlas-accent); }
 .expedition-back { display: inline-flex; align-items: center; gap: 15px; font-size: 11px !important; }
-.expedition-back svg { border: 1px solid var(--atlas-line); border-radius: 50%; box-sizing: content-box; padding: 11px; }
+.expedition-back svg { border: 0; border-left: 1px solid var(--atlas-line); border-radius: 0; box-sizing: content-box; padding: 11px; }
 .expedition-back:hover svg { background: var(--atlas-raised); }
 .expedition-tools { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 0 1px; flex-shrink: 0; }
 .expedition-tools > div { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .expedition-tools > div[aria-label="Map extent"] { gap: 16px; }
-.expedition-tools button { padding: 5px 9px; font-size: 11px; border-radius: 24px; display: inline-flex; align-items: center; gap: 6px; }
+.expedition-tools button { padding: 5px 9px; font-size: 11px; border-radius: 0; display: inline-flex; align-items: center; gap: 6px; }
 .expedition-tools button[aria-pressed="true"] { color: var(--atlas-on-accent); background: var(--atlas-accent); }
 .expedition-tools > div[aria-label="Map extent"] button { padding: 5px 0; border-radius: 0; color: var(--atlas-muted); background: none; border-bottom: 1px solid transparent; }
 .expedition-tools > div[aria-label="Map extent"] button[aria-pressed="true"] { color: var(--atlas-accent); border-bottom-color: var(--atlas-accent); }
 .expedition-tools button:hover { color: var(--atlas-ink); background: var(--atlas-raised); }
 .expedition-tools button[aria-pressed="true"]:hover { color: var(--atlas-on-accent); background: #c58e65; }
 .expedition-content { display: grid; grid-template-columns: 292px minmax(0, 1fr); grid-template-areas: "panel map"; flex: 1; min-height: 0; gap: 25px; }
-.expedition-map { grid-area: map; position: relative; display: grid; place-items: center; min-width: 0; overflow: hidden; border-radius: 25px; background: var(--atlas-panel); }
+.expedition-map { grid-area: map; position: relative; display: grid; place-items: center; min-width: 0; overflow: hidden; border-radius: 0; background: var(--atlas-panel); }
 .expedition-map > svg { display: block; width: 100%; height: 100%; min-height: 0; cursor: crosshair; }
 .expedition-map .expedition-pixels { image-rendering: pixelated; }
 .expedition-panel { grid-area: panel; min-height: 0; overflow: auto; padding: 14px 8px 18px 0; scrollbar-width: thin; scrollbar-color: var(--atlas-dim) transparent; }
@@ -47,7 +47,7 @@
 .expedition-panel .expedition-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--atlas-muted); font-weight: 600; }
 .expedition-routing, .expedition-route-results { display: grid; gap: 17px; }
 .expedition-route-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-.expedition-route-heading h2 { font-family: Georgia, serif; font-size: 31px; font-weight: 400; letter-spacing: -.04em; line-height: 1; }
+.expedition-route-heading h2 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; font-size: 27px; font-weight: 650; letter-spacing: -.04em; line-height: 1; }
 .expedition-route-heading .expedition-eyebrow { margin-bottom: 10px; }
 .expedition-example { display: inline-flex; gap: 5px; align-items: center; font-size: 10px !important; color: var(--atlas-muted) !important; padding: 0; }
 .expedition-endpoints { position: relative; display: grid; gap: 0; margin: 2px 0 8px; }
@@ -66,10 +66,10 @@
 .expedition-route-choices button[aria-pressed="true"]::before { border-color: var(--atlas-accent); background: var(--atlas-accent); box-shadow: inset 0 0 0 3px var(--atlas-bg); }
 .expedition-route-choices button span { display: grid; gap: 3px; font-size: 12px; }
 .expedition-route-choices button small { color: var(--atlas-muted); font-size: 9px; font-weight: 400; }
-.expedition-route-choices strong { font-family: Georgia, serif; font-size: 20px; font-weight: 400; white-space: nowrap; }
+.expedition-route-choices strong { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; font-size: 20px; font-weight: 400; white-space: nowrap; }
 .expedition-route-results > p { margin: -2px 0 0; }
 .expedition-launch { display: flex; align-items: center; gap: 13px; padding: 6px 0 4px; }
-.expedition .expedition-primary { display: inline-flex; align-items: center; justify-content: space-between; flex: 1; gap: 13px; background: var(--atlas-accent); color: var(--atlas-on-accent); border-radius: 50px; padding: 14px 20px; font-size: 12px; min-height: 48px; }
+.expedition .expedition-primary { display: inline-flex; align-items: center; justify-content: space-between; flex: 1; gap: 13px; background: var(--atlas-accent); color: var(--atlas-on-accent); border-radius: 0; padding: 14px 20px; font-size: 12px; min-height: 48px; }
 .expedition .expedition-primary:hover { background: #c58e65; }
 .expedition-launch > button + button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 0; font-size: 10px; color: var(--atlas-muted); }
 .expedition-disclosure { border-top: 1px solid var(--atlas-line); padding-top: 13px; margin-top: 0; font-size: 11px; }
@@ -99,7 +99,7 @@
 .expedition-scale rect { fill: #101719e6; }
 .expedition-scale line { stroke: #f8f0df; }
 .expedition-scale text { fill: #f8f0df; }
-.expedition-map-hint { position: absolute; top: 21px; left: 50%; transform: translateX(-50%); padding: 11px 19px; border-radius: 25px; color: #fbf5e8; background: #131a1de6; backdrop-filter: blur(9px); font-size: 11px; pointer-events: none; max-width: 83%; text-align: center; white-space: nowrap; }
+.expedition-map-hint { position: absolute; top: 21px; left: 50%; transform: translateX(-50%); padding: 11px 19px; border-radius: 0; color: #fbf5e8; background: #131a1de6; backdrop-filter: blur(9px); font-size: 11px; pointer-events: none; max-width: 83%; text-align: center; white-space: nowrap; }
 .expedition-site { cursor: pointer; outline: none; }
 .expedition-site circle { fill: #12191c; stroke: var(--atlas-accent); }
 .expedition-site text { fill: var(--atlas-accent); font-weight: 600; pointer-events: none; }
@@ -122,11 +122,11 @@
 .expedition-weather > :not(summary) { margin-top: 9px; }
 .expedition-weather a { display: inline-block; }
 .expedition-layer-menu { position: relative; }
-.expedition-layer-menu > summary { display: flex; align-items: center; gap: 7px; list-style: none; padding: 6px 12px; min-height: 38px; cursor: pointer; font-size: 11px; border: 1px solid var(--atlas-line); border-radius: 25px; }
+.expedition-layer-menu > summary { display: flex; align-items: center; gap: 7px; list-style: none; padding: 6px 12px; min-height: 38px; cursor: pointer; font-size: 11px; border: 1px solid var(--atlas-line); border-radius: 0; }
 .expedition-layer-menu > summary::-webkit-details-marker { display: none; }
 .expedition-layer-menu[open] > summary { background: var(--atlas-raised); }
-.expedition-layer-menu > div { position: absolute; z-index: 4; top: calc(100% + 8px); right: 0; width: 185px; border-radius: 20px; background: #12191ceF; padding: 10px; box-shadow: 0 10px 35px #00000066; display: grid; gap: 2px; backdrop-filter: blur(18px); }
-.expedition-layer-menu button { border-radius: 8px; justify-content: flex-start; text-align: left; padding: 8px 12px; }
+.expedition-layer-menu > div { position: absolute; z-index: 4; top: calc(100% + 8px); right: 0; width: 185px; border-radius: 0; background: #12191ceF; padding: 10px; box-shadow: 0 10px 35px #00000066; display: grid; gap: 2px; backdrop-filter: blur(18px); }
+.expedition-layer-menu button { border-radius: 0; justify-content: flex-start; text-align: left; padding: 8px 12px; }
 .expedition-layer-menu button::before { content: ''; width: 5px; height: 5px; background: var(--atlas-dim); border-radius: 50%; margin-right: 5px; }
 .expedition-layer-menu button[aria-pressed="true"], .expedition-layer-menu button[aria-pressed="true"]:hover { background: #dba47b12; color: var(--atlas-accent); }
 .expedition-layer-menu button[aria-pressed="true"]::before { background: var(--atlas-accent); }
@@ -156,7 +156,7 @@
   .expedition-back { font-size: 9px !important; gap: 6px; }
   .expedition-back svg { padding: 7px; }
   .expedition-content { grid-template-columns: 1fr; grid-template-areas: "map" "panel"; gap: 15px; min-height: auto; flex: none; }
-  .expedition-map { height: 43vh; min-height: 250px; border-radius: 20px; }
+  .expedition-map { height: 43vh; min-height: 250px; border-radius: 0; }
   .expedition-panel { overflow: visible; padding: 0 6px 28px; }
   .expedition-tools { flex-wrap: wrap; gap: 4px; }
   .expedition-tools > .expedition-map-tools { gap: 3px; justify-content: flex-start; }
@@ -180,3 +180,12 @@
 @media (prefers-reduced-motion: reduce) {
   .expedition * { scroll-behavior: auto; }
 }
+
+/* Navigation uses open edges and cut corners, with circles reserved for map symbols. */
+.expedition-map { clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
+.expedition .expedition-primary { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+.expedition .expedition-primary:focus-visible { clip-path: none; }
+.expedition-tools button[aria-pressed="true"] { color: var(--atlas-accent); background: transparent; box-shadow: inset 0 -1px var(--atlas-accent); }
+.expedition-tools button[aria-pressed="true"]:hover { color: var(--atlas-accent); background: var(--atlas-raised); }
+.expedition-layer-menu > summary { border: 0; border-left: 1px solid var(--atlas-line); }
+.expedition-map-hint { border-left: 2px solid var(--atlas-accent); }

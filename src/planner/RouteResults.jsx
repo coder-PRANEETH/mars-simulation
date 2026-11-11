@@ -8,13 +8,13 @@ export default function RouteResults({ routes, selected, onSelect, onLaunch }) {
   const route = routes[selected] ?? routes.terrain
 
   return <div className="expedition-route-results">
-    <h2 className="expedition-section-label">Route comparison</h2>
+    <h2 className="expedition-section-label">Two ways to explore</h2>
     <div className="expedition-route-choices">
       <button aria-pressed={selected === 'terrain'} type="button" onClick={() => onSelect('terrain')}>
-        <span>Terrain first<small>Fewer terrain penalties</small></span><strong>{distanceText(routes.terrain.distance)}</strong>
+        <span>Easier terrain<small>Favors gentler ground</small></span><strong>{distanceText(routes.terrain.distance)}</strong>
       </button>
       <button aria-pressed={selected === 'science'} type="button" onClick={() => onSelect('science')} disabled={!routes.science}>
-        <span>Science stop<small>A discovery along the way</small></span><strong>{routes.science ? distanceText(routes.science.distance) : 'Unavailable'}</strong>
+        <span>Science stop<small>Visit a place scientists study</small></span><strong>{routes.science ? distanceText(routes.science.distance) : 'Unavailable'}</strong>
       </button>
     </div>
     {route.stop && <p>Via {route.stop.name}</p>}
@@ -27,9 +27,9 @@ export default function RouteResults({ routes, selected, onSelect, onLaunch }) {
       <dl className="expedition-readings">
         <dt>Surface distance</dt><dd>{distanceText(route.distance)}</dd>
         <dt>Elevation gain</dt><dd>{Math.round(route.gain)} m</dd>
-        <dt>Steepest route cell</dt><dd>{route.maxSlope.toFixed(1)}°</dd>
+        <dt>Steepest slope</dt><dd>{route.maxSlope.toFixed(1)}°</dd>
         <dt>Estimated walk</dt><dd>{timeRange(route.time)}</dd>
-        <dt>Out and back</dt><dd>{timeRange(route.time + route.returnTime)}</dd>
+        <dt>There and back</dt><dd>{timeRange(route.time + route.returnTime)}</dd>
       </dl>
       <ol className="expedition-waypoints">{route.waypoints.map((waypoint, index) => <li key={index}>{waypoint.label} · {distanceText(waypoint.distance)}</li>)}</ol>
       <p>Walking estimates exclude stops and rest.</p>

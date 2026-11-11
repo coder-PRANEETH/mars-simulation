@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite (normally `http://localhost:5173`). Click **Enter simulation** or the viewport to capture the mouse. The original datasets have already been cropped and packaged in `public/terrain`; Python, external APIs, credentials, and a backend are not needed to run the prototype.
+Open the local URL printed by Vite (normally `http://localhost:5173`). Choose **Walk** and click **Start exploring** to capture the mouse, or choose **Drive a rover** to keep the cursor free. The original datasets have already been cropped and packaged in `public/terrain`; Python, external APIs, credentials, and a backend are not needed to run the prototype.
 
 ```bash
 npm run build       # production build in dist/
@@ -28,13 +28,22 @@ npm run test:browser
 
 The development server binds to all interfaces for local preview. Production deployments should serve `dist/` using ordinary static hosting. Pointer lock works on localhost or a secure HTTPS origin.
 
+## Discover Mars
+
+Explore uses a dark space-mission interface with short instructions for young
+explorers. **Discover** opens three revealable questions about gravity, rusty
+soil and Jezero's ancient lake. Each answer links to its NASA source and suggests
+something to try in the simulator. The questions are also available while driving.
+The planet illustration is decorative. The ground uses orbital terrain data,
+while its colours, local rocks and weather are simulated.
+
 ## Jezero Expedition Planner
 
 Select **Explore Jezero** to open the planner inside Jezero Crater. The crater
 overview uses the USGS 20 m CTX elevation mosaic. The outlined traverse area
 opens a 19.48 km² western-delta crop from the Mars 2020 USGS HiRISE products,
 with 1 m source elevation posts sampled every eighth post and matched 25 cm
-source imagery. Select **Return to surface** to walk the same mesh in first
+source imagery. Select **Back to exploring** to walk the same mesh in first
 person. **Southeast hills** returns to the original simulator terrain.
 
 The detailed map lets you inspect elevation and slope and highlight steep or
@@ -51,7 +60,7 @@ pressure, and local sunrise/sunset for sols 1130–1133. The source records are
 dated April 2024 and are provided as environmental context.
 
 To plan a traverse, click **Set start** and **Set destination**, or choose
-**Try example**. Use **Mark avoid zone** to exclude a 40 m radius around
+**Try a route**. Use **Mark avoid zone** to exclude a 40 m radius around
 an identified obstacle. The planner automatically compares a terrain-first route
 with a route that visits a selected science stop or the highest-priority
 reachable stop for the chosen objective. Both routes use the same slope and
@@ -102,7 +111,7 @@ Open **F3** diagnostics to see vertical velocity, height above ground, grounded 
 
 ## Car mode
 
-Choose **By rover**, then **Begin exploring** on the entry screen. Press **Esc** to pause
+Choose **Drive a rover**, then **Start exploring** on the entry screen. Press **Esc** to pause
 driving and return to the entry panel. Use **W/S** to drive or reverse, **A/D** to steer, **Space**
 to brake. Drag the terrain to orbit the chase camera. The cursor stays
 free for map and dashboard controls. The **Hazards** switch shows a local map

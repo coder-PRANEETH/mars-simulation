@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './hud.css';
 import Icon from './Icon.jsx';
+import DiscoverMars from './DiscoverMars.jsx';
 
 const number = (value, digits = 1) => value != null && Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : '—';
 const coordinate = (value, axis) => {
@@ -23,10 +24,10 @@ function DataPanel({ metadata, onClose }) {
   return (
     <section className="sim-data-panel sim-interactive" aria-label="Terrain source and attribution">
       <div className="sim-panel-heading">
-        <h2>Terrain & data</h2>
+        <h2>About this world</h2>
         <button className="sim-close" onClick={onClose} aria-label="Close terrain data">×</button>
       </div>
-      <p className="sim-data-intro">The primary terrain is reconstructed from measured Mars elevation data. Surface rocks and atmospheric effects are visual approximations.</p>
+      <p className="sim-data-intro">Spacecraft measured these hills from above Mars. Those measurements make the ground you explore here. The rocks, colours and dust effects help bring the scene to life.</p>
       <dl className="sim-data-details">
         <dt>Region</dt><dd>{metadata.region ?? metadata.name ?? 'Mars terrain region'}</dd>
         <dt>Center</dt><dd>{coordinate(metadata.centerLatitude ?? metadata.latitude ?? center.latitude ?? center.lat, 'lat')}<br />{coordinate(metadata.centerLongitude ?? metadata.longitude ?? center.longitude ?? center.lon, 'lon')}</dd>
@@ -64,6 +65,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
   const [helpOpen, setHelpOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
+  const [learnOpen, setLearnOpen] = useState(true);
 
   const active = locked || (driving && carActive);
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       setHasEntered(true);
       setDataOpen(false);
       setHelpOpen(false);
+      setLearnOpen(false);
     }
   }, [active]);
 
@@ -88,44 +91,53 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
   return (
     <div className={`sim-hud ${locked ? 'is-locked' : active ? 'is-driving' : 'is-paused'}`}>
       <div className="sim-scene-shade" aria-hidden="true" />
+      <div className="sim-mission-frame" aria-hidden="true"><span>04 — MARS</span><span>EXPLORE / LEARN / DISCOVER</span></div>
       <header className="sim-brand">
-        <span className="sim-eyebrow">FIELD ATLAS</span>
-        <h1 aria-label="MARS SURFACE SIMULATOR">Mars<span> / </span></h1>
+        <Icon name="rocket" size={34} />
+        <div><span className="sim-eyebrow">A MISSION TO DISCOVER</span>
+        <h1>MARS<span> EXPLORER</span></h1>
         <p className="sim-region">{region}</p>
+        </div>
       </header>
 
       {!driving && active && <div className="sim-crosshair" aria-hidden="true"><i /><i /><i /><i /></div>}
 
       <nav className="sim-top-actions sim-interactive" aria-label="Exploration">
+        <button className={`sim-tool-button ${learnOpen ? 'is-active' : ''}`} onClick={() => setLearnOpen(!learnOpen)} aria-expanded={learnOpen} aria-label="Discover Mars"><Icon name="spark" size={16} />Discover</button>
         {driving && carActive && <button type="button" className={`sim-tool-button ${showHazards ? 'is-active' : ''}`} aria-pressed={showHazards} onClick={onToggleHazards}>
           <Icon name="hazard" size={16} /><span>Hazards</span>
         </button>}
-        {onOpenMap && <button className="sim-tool-button sim-map-link" onClick={onOpenMap} aria-label="Expedition map"><Icon name="route" size={17} />Plan a route</button>}
+        {onOpenMap && <button className="sim-tool-button sim-map-link" onClick={onOpenMap} aria-label="Expedition map"><Icon name="route" size={17} />Mission map</button>}
         <button className="sim-tool-button" onClick={onChangeRegion}><Icon name="compass" size={17} />{regionId === 'jezero' ? 'Southeast hills' : 'Explore Jezero'}</button>
         <button className="sim-icon-button" onClick={() => setDataOpen((open) => !open)} aria-expanded={dataOpen} aria-label="Terrain & data"><Icon name="info" /></button>
       </nav>
 
       {dataOpen && <DataPanel metadata={metadata} onClose={() => setDataOpen(false)} />}
 
-      {!active && !dataOpen && <div className="sim-entry sim-interactive" role="region" aria-label="Enter simulation">
-        <div className="sim-entry-index">{loading ? 'PREPARING THE TERRAIN' : loadError ? 'CONNECTION TO TERRAIN LOST' : driving ? 'ARES 07 / ROVER EXPLORATION' : 'A WALK ON MARS'}</div>
-        <h2>{loading ? 'Finding your footing.' : loadError ? 'Terrain unavailable.' : regionId === 'jezero' ? <>Jezero’s<br /><em>western delta.</em></> : <>The southeast<br /><em>hills of Jezero.</em></>}</h2>
-        <p>{loading ? 'Loading the surface and its orbital imagery.' : loadError ? String(loadError.message ?? loadError) : `${number(metadata.areaKm2, 1)} km² of Martian terrain. Choose how you explore.`}</p>
+      {!active && !dataOpen && <div className="sim-launch-layout">
+      <div className="sim-entry sim-interactive" role="region" aria-label="Enter simulation">
+        <div className="sim-entry-index"><span />{loading ? 'LOADING YOUR MISSION' : loadError ? 'MISSION ON HOLD' : hasEntered ? 'MISSION PAUSED' : 'YOUR MISSION STARTS HERE'}</div>
+        <h2>{loading ? <>Getting<br /><em>ready.</em></> : loadError ? <>Let’s<br /><em>try again.</em></> : hasEntered ? <>Mission<br /><em>paused.</em></> : <>Explore<br /><em>Mars.</em></>}</h2>
+        <p>{loading ? 'Building the landscape from spacecraft images.' : loadError ? 'We couldn’t load the landscape. Reload this page to try again.' : regionId === 'jezero' ? 'Explore an ancient lakebed. Pick a path and visit the places scientists study.' : 'Walk or drive across real Martian hills mapped by spacecraft. What will you discover?'}</p>
         {!loading && !loadError && <>
           <div className="sim-mode-choice" role="group" aria-label="Travel mode">
-            <button type="button" aria-pressed={!driving} aria-label={driving ? 'Switch to foot mode' : 'Foot mode selected'} onClick={() => { if (driving) onToggleDriving(); }}><Icon name="walking" size={18} />On foot</button>
-            <button type="button" aria-pressed={driving} aria-label={driving ? 'Car mode selected' : 'Switch to car mode'} onClick={() => { if (!driving) onToggleDriving(); }}><Icon name="car" size={18} />By rover</button>
+            <button type="button" aria-pressed={!driving} aria-label={driving ? 'Switch to foot mode' : 'Foot mode selected'} onClick={() => { if (driving) onToggleDriving(); }}><Icon name="walking" size={23} /><span>Walk<small>Explore on foot</small></span></button>
+            <button type="button" aria-pressed={driving} aria-label={driving ? 'Car mode selected' : 'Switch to car mode'} onClick={() => { if (!driving) onToggleDriving(); }}><Icon name="car" size={23} /><span>Drive a rover<small>Cover more ground</small></span></button>
           </div>
           <button className="sim-enter-button" onClick={enter} aria-label={hasEntered ? 'Resume simulation' : 'Enter simulation'}>
-            <span className="sim-enter-orbit"><Icon name="arrow" size={23} /></span>{hasEntered ? 'Continue exploring' : 'Begin exploring'}
+            {hasEntered ? 'Resume mission' : 'Start exploring'}<Icon name="arrow" size={23} />
           </button>
-          <button type="button" className="sim-reset" onClick={onReset}>Back to starting point</button>
+          {hasEntered && <button type="button" className="sim-reset" onClick={onReset}>Return to the start</button>}
+          <p className="sim-entry-tip">{driving ? 'W / S to drive · A / D to steer · Space to brake' : 'W A S D to move · Mouse to look · Space to jump'}</p>
         </>}
         {loading && <div className="sim-load-line" aria-label="Loading" />}
+      </div>
+      {!loading && !loadError && learnOpen && <DiscoverMars />}
       </div>}
+      {active && learnOpen && !dataOpen && <DiscoverMars compact />}
 
       {inspection && <section className="sim-inspection sim-interactive" aria-label="Inspected terrain point">
-        <div className="sim-panel-heading"><h2><span className="sim-inspect-square" /> Surface sample</h2><button className="sim-close" onClick={onClearInspection} aria-label="Clear inspected point">×</button></div>
+        <div className="sim-panel-heading"><h2>Terrain scanner</h2><button className="sim-close" onClick={onClearInspection} aria-label="Clear inspected point">×</button></div>
         <div className="sim-inspection-coordinates">{coordinate(inspection.latitude ?? inspection.lat, 'lat')}<br />{coordinate(inspection.longitude ?? inspection.lon, 'lon')}</div>
         <dl className="sim-readout"><dt>Elevation</dt><dd>{number(inspection.elevation ?? inspection.altitude, 2)} m</dd><dt>Local slope</dt><dd>{number(inspection.slope, 1)}°</dd></dl>
         <p>{inspection.terrainInfo ?? inspection.surfaceInfo ?? inspection.surface ?? 'Elevation and slope from the terrain model. Mineral and material composition are not available.'}</p>
@@ -139,13 +151,13 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       <div className="sim-help-dock sim-interactive">
         <button className="sim-help-button" aria-expanded={helpOpen} onClick={() => setHelpOpen(!helpOpen)}><span>?</span> Controls</button>
         {helpOpen && <div className="sim-controls-legend">
-          <p>{driving ? 'DRIVING ARES 07' : 'EXPLORING ON FOOT'}</p>
+          <p>{driving ? 'ROVER CONTROLS' : 'EXPLORER CONTROLS'}</p>
           <div><kbd>{driving ? 'W / S' : 'W A S D'}</kbd><span>{driving ? 'Drive / reverse' : 'Move'}</span></div>
           {driving && <div><kbd>A / D</kbd><span>Steer</span></div>}
           <div><kbd>{driving ? 'DRAG' : 'MOUSE'}</kbd><span>Look around</span></div>
           <div><kbd>SPACE</kbd><span>{driving ? 'Brake' : 'Jump'}</span></div>
           <div><kbd>ESC</kbd><span>{driving ? 'Pause' : 'Release cursor'}</span></div>
-          <div><kbd>E</kbd><span>Inspect terrain</span></div>
+          <div><kbd>E</kbd><span>Scan the ground</span></div>
         </div>}
       </div>
       {driving && active && telemetry.surface && <div className="sim-surface-note" aria-label="Current surface condition">
@@ -155,7 +167,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       </div>}
 
       <section className="sim-telemetry" aria-label="Live telemetry">
-        <div className="sim-telemetry-title">SURFACE READINGS</div>
+        <div className="sim-telemetry-title">LIVE FROM THE SURFACE <span>Weather is simulated</span></div>
         <dl>
           <dt><Icon name="wind" size={16} />Wind</dt><dd title="Simulated wind speed">{number(simulation.windSpeed, 0)} <span>km/h</span></dd>
           <dt><Icon name="temperature" size={16} />Temperature</dt><dd title="Simulated air temperature">{number(simulation.temperature, 0)} <span>°C</span></dd>

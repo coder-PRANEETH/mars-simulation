@@ -12,7 +12,12 @@ test('drives faster than walking, steers, brakes, and switches back to foot mode
   await expect(page.locator(".sim-hud")).toHaveClass(/is-driving/);
   await expect(page.getByLabel('Current surface condition')).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('CANVAS');
+  await page.getByRole('button', { name: 'Discover Mars' }).click();
+  const lesson = page.getByRole('complementary', { name: 'Discover Mars' });
+  await lesson.getByRole('button', { name: 'Reveal answer' }).click();
+  await expect(lesson.getByText(/Mars has about 38%/)).toBeVisible();
   await page.keyboard.down('KeyW');
+  await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('CANVAS');
   await expect.poll(async () => (await telemetry(page)).speed, { timeout: 15000 }).toBeGreaterThan(8);
   const before = await telemetry(page);
   await page.keyboard.down('KeyD');

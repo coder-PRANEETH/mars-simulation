@@ -170,14 +170,14 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   return <section className="expedition" aria-label="Jezero expedition map">
     <header className="expedition-heading">
       <div className="expedition-title">
-        <span className="expedition-eyebrow">MARS / FIELD ATLAS</span>
-        <h1 aria-label="Jezero Expedition Planner">Jezero<span>.</span></h1>
+        <span className="expedition-eyebrow">MARS EXPLORER / MISSION MAP</span>
+        <h1 aria-label="Jezero Expedition Planner">Jezero crater</h1>
       </div>
-      <button type="button" className="expedition-back" onClick={onClose} aria-label="Return to surface">Back to terrain<Icon name="arrow" size={18} /></button>
+      <button type="button" className="expedition-back" onClick={onClose} aria-label="Return to surface">Back to exploring<Icon name="arrow" size={18} /></button>
     </header>
     <div className="expedition-tools">
       <div role="group" aria-label="Map extent">
-        <Tool active={!context} onClick={() => setContext(false)}>Traverse area</Tool>
+        <Tool active={!context} onClick={() => setContext(false)}>Exploration area</Tool>
         <Tool active={context} onClick={showCrater}>Crater overview</Tool>
       </div>
       <div className="expedition-map-tools" role="group" aria-label="Map tools">

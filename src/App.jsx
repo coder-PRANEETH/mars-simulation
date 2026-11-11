@@ -155,8 +155,8 @@ export default function App() {
     <Hud driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
     </div>
     {activeRoute && !mapOpen && <aside className="expedition-guide" aria-label="Traverse guidance">
-      <strong>{guide ? `Waypoint ${guide.number} of ${guide.count} · ${guide.waypoint.label}` : 'Destination reached'}</strong>
-      {guide && <span>{Math.round(guide.distance)} m · bearing {Math.round(guide.bearing) % 360}°</span>}
+      <strong>{guide ? `Next stop ${guide.number} of ${guide.count} · ${guide.waypoint.label === 'Traverse' ? 'Follow your route' : guide.waypoint.label}` : 'You reached your destination!'}</strong>
+      {guide && <span>{Math.round(guide.distance)} m to go · direction {Math.round(guide.bearing) % 360}°</span>}
     </aside>}
     {region === 'terrain' && drivingHazards && <DrivingHazards terrain={terrain} {...drivingHazards} />}
     {region === 'jezero' && !loading && !loadError && terrain &&

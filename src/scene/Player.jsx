@@ -129,6 +129,8 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       }
       if (driving && event.target instanceof Element) {
         if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return
+        // Movement resumes driving after using a lesson or another HUD button.
+        if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code)) canvas.focus({ preventScroll: true })
         if (event.code === 'Space' && event.target.closest('button:focus-visible, a:focus-visible, summary:focus-visible')) return
       }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyE'].includes(event.code)) {

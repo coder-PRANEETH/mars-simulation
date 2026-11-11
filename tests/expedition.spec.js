@@ -48,19 +48,19 @@ test('calculates and follows a science route on the Jezero terrain', async ({ pa
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
-  await page.getByRole('button', { name: 'Try example' }).click();
-  await expect(page.getByRole('heading', { name: 'Route comparison' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Terrain first/ })).toContainText('2.60 km');
+  await page.getByRole('button', { name: 'Try a route' }).click();
+  await expect(page.getByRole('heading', { name: 'Two ways to explore' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Easier terrain/ })).toContainText('2.60 km');
   await page.getByRole('button', { name: /Science stop/ }).click();
   await expect(page.getByText(/Via Western Delta front/)).toBeVisible();
   await page.getByText(/^Route details ·/).click();
   await expect(page.getByText('Estimated walk')).toBeVisible();
   await expect(page.getByText(/^Western Delta front ·/)).toBeVisible();
   await page.getByRole('button', { name: 'Walk route' }).click();
-  await expect(page.getByLabel('Traverse guidance')).toContainText('Waypoint 2');
+  await expect(page.getByLabel('Traverse guidance')).toContainText('Next stop 2');
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().longitude)).toBeCloseTo(77.4509, 3);
   await page.getByRole('button', { name: 'Expedition map' }).click();
-  await expect(page.getByRole('heading', { name: 'Route comparison' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Two ways to explore' })).toBeVisible();
   await page.getByRole('button', { name: 'Mark avoid zone' }).click();
   await page.getByRole('img', { name: 'Detailed traverse map' }).click();
   await expect(page.getByRole('button', { name: 'Undo last avoid zone' })).toBeVisible();
@@ -77,7 +77,7 @@ test('starts driving at the chosen start pin with the cursor free', async ({ pag
   await page.getByRole('button', { name: 'Three Forks area', exact: true }).click();
   await page.getByRole('button', { name: 'Drive route', exact: true }).click();
 
-  await expect(page.getByLabel('Traverse guidance')).toContainText('Waypoint 2');
+  await expect(page.getByLabel('Traverse guidance')).toContainText('Next stop 2');
   await expect(page.locator('.sim-hud')).toHaveClass(/is-driving/);
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().longitude)).toBeCloseTo(77.4509, 3);
   expect(await page.evaluate(() => document.pointerLockElement)).toBeNull();

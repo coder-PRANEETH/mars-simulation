@@ -33,7 +33,7 @@ test('the actual Mars scene supports FPS movement, gravity changes, inspection a
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
   await page.getByRole('button', { name: /^Enter simulation/ }).waitFor();
-  await expect(page.getByRole('heading', { name: 'MARS SURFACE SIMULATOR' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'MARS EXPLORER' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Environment', exact: true })).toHaveCount(0);
   const live = page.getByRole('region', { name: 'Live telemetry' });
   await expect(live.locator('dt')).toHaveText(['Wind', 'Temperature', 'Coordinates', 'Speed']);
