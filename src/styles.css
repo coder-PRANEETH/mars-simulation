@@ -1,10 +1,23 @@
+/* Shared dark palette for the scene controls, atlas and data drawers. */
+:root {
+  color-scheme: dark;
+  --atlas-bg: #101416;
+  --atlas-panel: #171d20;
+  --atlas-raised: #222c30;
+  --atlas-ink: #eee9e2;
+  --atlas-muted: #a7b0b1;
+  --atlas-dim: #8e9b9f;
+  --atlas-line: #344044;
+  --atlas-accent: #dba47b;
+  --atlas-on-accent: #171b1e;
+}
 * { box-sizing: border-box; }
 html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-body { background: #302d26; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+body { background: var(--atlas-bg); font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 button, a, summary, input, select { -webkit-tap-highlight-color: transparent; }
 .simulation-viewport { position: fixed; inset: 0; }
 .simulation-viewport canvas { display: block; outline: none; }
-.webgl-error { position: absolute; inset: 0; z-index: 30; display: grid; place-content: center; padding: 32px; background: #292d25; color: #f1eee5; }
+.webgl-error { position: absolute; inset: 0; z-index: 30; display: grid; place-content: center; padding: 32px; background: var(--atlas-bg); color: var(--atlas-ink); }
 .webgl-error p { max-width: 500px; line-height: 1.6; }
