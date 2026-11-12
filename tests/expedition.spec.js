@@ -19,12 +19,11 @@ test('opens real Jezero terrain and inspects its map layers', async ({ page }) =
   await expect(page.getByRole('img', { name: 'Jezero crater elevation overview' })).toBeVisible();
   await page.getByRole('button', { name: 'Open detailed traverse area' }).press('Enter');
   await expect(page.getByRole('img', { name: 'Detailed traverse map' })).toBeVisible();
-  await page.getByText('Layers', { exact: true }).click();
-  await page.getByRole('button', { name: 'Geology', exact: true }).click();
-  await page.getByText('Layers', { exact: true }).click();
-  await page.getByText('Map information', { exact: true }).click();
+  await page.getByRole('button', { name: 'Geologic regions', exact: true }).click();
   await expect(page.getByText('Published geologic units')).toBeVisible();
-  await expect(page.getByText(/Eolian bedform unit/)).toBeVisible();
+  await page.getByRole('combobox', { name: 'Explore a geologic region' }).selectOption('8');
+  await expect(page.getByLabel('Selected geologic region')).toContainText('Eolian bedform unit');
+  await page.getByText('Map information', { exact: true }).click();
   await page.getByText('Perseverance weather observations').click();
   await page.getByRole('combobox', { name: 'Weather observation sol' }).selectOption('1130');
   await expect(page.getByText('777.1 Pa')).toBeVisible();

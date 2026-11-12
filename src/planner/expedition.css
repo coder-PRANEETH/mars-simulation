@@ -189,3 +189,16 @@
 .expedition-tools button[aria-pressed="true"]:hover { color: var(--atlas-accent); background: var(--atlas-raised); }
 .expedition-layer-menu > summary { border: 0; border-left: 1px solid var(--atlas-line); }
 .expedition-map-hint { border-left: 2px solid var(--atlas-accent); }
+
+.expedition-region-explorer { margin-bottom: 26px; padding-bottom: 20px; border-bottom: 1px solid var(--atlas-line); }
+.expedition-region-select { display: grid; gap: 6px; font-size: 11px; color: var(--atlas-muted); margin-top: 15px; }
+.expedition-region-key { list-style: none; padding: 0; margin: 13px 0; display: grid; gap: 1px; }
+.expedition-region-key button { display: grid; grid-template-columns: 9px 43px 1fr; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 6px 2px; text-align: left; font-size: 10px; color: #b7c7cf; }
+.expedition-region-key button span { font-size: 11px; color: var(--atlas-ink); }
+.expedition-region-key button[aria-pressed="true"] { background: #dba47b12; }
+.expedition-region-key i { width: 6px; height: 14px; }
+.expedition-region-description { border-left: 2px solid var(--atlas-accent); padding-left: 12px; margin: 17px 0; }
+.expedition-region-description h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.expedition-region-description small { color: var(--atlas-muted); font-size: 9px; }
+.expedition-unit-label { font-weight: 700; pointer-events: none; }
+.expedition-panel .expedition-region-source { font-size: 9px; color: #9caeb7; }

@@ -76,14 +76,27 @@ are scenario settings informed qualitatively by the [Norcross suit study](https:
 The study used level treadmill trials. Estimates exclude rest and time spent
 on science, and carry no operational EVA limits.
 
-The **Geology** layer shows published USGS geologic units at their regional
-1:75,000 map scale. The planner adds an advisory travel cost for cells
+The **Regions** switch shows published USGS geologic units at their regional
+1:75,000 map scale. Six unit types intersect the playable western-delta crop.
+Select a region in the legend, or inspect a map point, to see its name and a
+short geological description. The crater overview includes the wider set of
+mapped units. Unit symbols preserve the source numeric suffixes.
+The planner adds an advisory travel cost for cells
 intersecting mapped eolian bedforms or dark mantling material. These are broad
 geologic observations. Mark a local obstacle as an avoid zone when its position
 is known. Rebuild the geology and advisory grid with
 `python scripts/prepare-jezero-geology.py PATH_TO_NILI_GDB`, using the
-[USGS SIM 3464 database](https://pubs.usgs.gov/publication/sim3464), Shapely and
-Pyogrio in addition to the terrain dependencies.
+[USGS SIM 3464 database](https://pubs.usgs.gov/publication/sim3464) and
+`pip install -r scripts/geology-requirements.txt`. A registered Uint8 grid
+stores one published unit ID per terrain cell. Zero means unmapped. The original
+southeast-hills crop is outside this geologic map and remains explicitly unmapped.
+
+The public [NASA M20 map](https://mars.nasa.gov/maps/?mission=M20), built with
+[MMGIS](https://github.com/NASA-AMMOS/MMGIS), was checked on November 12, 2026.
+Its public layer configuration provides imagery, rover paths, waypoints and
+sample locations, but no soil-strength, vehicle-speed or wheel-sinkage raster.
+The regional boundary source here is USGS SIM 3464, rather than an inferred
+segmentation of the NASA viewer's imagery.
 
 The packaged data works offline. To rebuild the detailed or crater-wide
 assets, install `numpy`, `Pillow`, `rasterio` and `pyproj` and run

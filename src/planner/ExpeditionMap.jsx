@@ -7,7 +7,8 @@ import RouteControls from './RouteControls.jsx'
 import DrivingHazards from './DrivingHazards.jsx'
 import Icon from '../ui/Icon.jsx'
 import WeatherObservations from './WeatherObservations.jsx'
-import { GeologyLayer, GeologyLegend } from './GeologyLayer.jsx'
+import { GeologyLayer, GeologyExplorer } from './GeologyLayer.jsx'
+import { geologicUnitAt } from '../terrain/geology.js'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -48,8 +49,8 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const mapInformation = useRef(null)
   const [selectedSite, setSelectedSite] = useState(null)
   const [showGeology, setShowGeology] = useState(false)
-  const [geology, setGeology] = useState(null)
-  const [geologyError, setGeologyError] = useState(false)
+  const geology = terrain.geology
+  const [selectedUnit, setSelectedUnit] = useState(null)
   const [thermal, setThermal] = useState(false)
   const [context, setContext] = useState(false)
   const [crater, setCrater] = useState(null)
@@ -121,15 +122,6 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
 
   function toggleGeology() {
     setShowGeology(!showGeology)
-    if (showGeology || geology) return
-    setGeologyError(false)
-    fetch(`${terrain.assetBase}/geology.json`)
-      .then((response) => {
-        if (!response.ok) throw new Error('Mapped geology unavailable')
-        return response.json()
-      })
-      .then(setGeology)
-      .catch(() => setGeologyError(true))
   }
 
   function toggleThermal() {
@@ -162,7 +154,10 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     } else if (mode === 'Mark avoid zone') {
       update(setZones, [...zones, { x, z, radius: 40 }])
       setHazards(true)
-    } else setInspection({ x, z })
+    } else {
+      setInspection({ x, z })
+      setSelectedUnit(geologicUnitAt(terrain, { x, z })?.id ?? null)
+    }
   }
 
   if (!open) return drivingHazards ? <DrivingHazards terrain={terrain} grid={grid} avoid={avoid} maxSlope={maxSlope} {...drivingHazards} /> : null
@@ -187,11 +182,11 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
           {!!zones.length && <Tool onClick={() => update(setZones, zones.slice(0, -1))}>Undo last avoid zone</Tool>}
           <Tool active={hazards} onClick={() => setHazards(!hazards)}><Icon name="hazard" size={16} />Hazards</Tool>
         </>}
+        <Tool active={showGeology} onClick={toggleGeology} aria-label="Geologic regions"><Icon name="layers" size={16} />Regions</Tool>
         <details className="expedition-layer-menu">
           <summary><Icon name="layers" size={17} />Layers</summary>
           <div role="group" aria-label="Terrain layers">
             {!context && ['Imagery', 'Elevation', 'Slope'].map((name) => <Tool key={name} active={layer === name} onClick={() => setLayer(name)}>{name}</Tool>)}
-            <Tool active={showGeology} onClick={toggleGeology}>Geology</Tool>
             <Tool active={thermal} onClick={toggleThermal}>Thermal IR</Tool>
             <Tool active={sitesVisible} onClick={() => setSitesVisible(!sitesVisible)}>Science sites</Tool>
           </div>
@@ -201,13 +196,13 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     <div className="expedition-content">
       <div className="expedition-map">
         {context ? (
-          crater ? <CraterMap crater={crater} terrain={terrain} geology={showGeology ? geology : null} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
+          crater ? <CraterMap crater={crater} terrain={terrain} geology={showGeology ? geology : null} selectedUnit={selectedUnit} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
             : <p role="status">{contextError ? 'Crater overview could not be loaded. Select Crater overview to retry.' : 'Loading crater overview…'}</p>
         ) : <svg viewBox={`0 0 ${widthMeters} ${depthMeters}`} onClick={inspect} aria-label="Detailed traverse map" role="img">
           <clipPath id="expedition-detail"><rect width={widthMeters} height={depthMeters} /></clipPath>
           <image href={raster ?? `${terrain.assetBase}/texture.jpg`} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />
           {thermal && crater && <LocalThermal terrain={terrain} crater={crater} />}
-          {showGeology && geology && <GeologyLayer data={geology} locate={locate} clipPath="url(#expedition-detail)" />}
+          {showGeology && geology && <GeologyLayer data={geology} locate={locate} clipPath="url(#expedition-detail)" selectedId={selectedUnit} labels />}
           {hazard && <image href={hazard} width={widthMeters} height={depthMeters} preserveAspectRatio="none" className="expedition-pixels" />}
           <g transform={`translate(${widthMeters * 0.03} ${depthMeters * 0.94})`} className="expedition-scale">
             <rect x={-widthMeters * .012} y={-widthMeters * .047} width={scaleBar + widthMeters * .025} height={widthMeters * .067} rx={widthMeters * .007} />
@@ -228,6 +223,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         <div className="expedition-north" aria-hidden="true">↑<span>N</span></div>
       </div>
       <aside className="expedition-panel">
+        {showGeology && <GeologyExplorer data={geology} selectedId={selectedUnit} onSelect={setSelectedUnit} context={context} />}
         {!context && <RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={setMode}
           maxSlope={maxSlope} setMaxSlope={(value) => update(setMaxSlope, value)} pace={pace} setPace={(value) => update(setPace, value)}
           dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
@@ -240,7 +236,6 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
           <p>{context ? 'Jezero Crater · CTX elevation mosaic' : `Western Delta · HiRISE imagery and elevation · ${metadata.areaKm2.toFixed(1)} km²`}</p>
           {thermal && <p>{contextError ? 'Thermal layer unavailable.' : 'Mars Odyssey THEMIS nighttime infrared · relative brightness at 100 m resolution.'}</p>}
           <WeatherObservations assetBase={terrain.assetBase} />
-          {showGeology && <GeologyLegend data={geology} error={geologyError} />}
           {sitesVisible && <SciencePanel selected={selectedSite} onSelect={selectSite} />}
         </details>
         {!context && <>
@@ -256,6 +251,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
             <h2>Location inspector</h2>
             <dl className="expedition-readings">
               <dt>Coordinates</dt><dd>{terrain.coordinates(inspection.x, inspection.z).latitude.toFixed(5)}° N, {terrain.coordinates(inspection.x, inspection.z).longitude.toFixed(5)}° E</dd>
+              <dt>Geologic region</dt><dd>{geologicUnitAt(terrain, inspection)?.label ?? 'Outside mapped coverage'}</dd>
               <dt>Elevation</dt><dd>{terrain.getElevation(inspection.x, inspection.z).toFixed(1)} m</dd>
               <dt>Slope</dt><dd>{terrain.sampleSlope(inspection.x, inspection.z).toFixed(1)}°</dd>
               <dt>Terrain class</dt><dd>{terrainClass(grid, cellAt(grid, inspection), maxSlope, avoid)}</dd>
@@ -267,7 +263,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   </section>
 }
 
-function CraterMap({ crater, terrain, geology, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
+function CraterMap({ crater, terrain, geology, selectedUnit, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
   const { width, height, bounds: [west, south, east, north] } = crater
   const metadata = terrain.metadata
   const locate = useMemo(() => (longitude, latitude) => ({
@@ -279,7 +275,7 @@ function CraterMap({ crater, terrain, geology, thermal, sitesVisible, selectedSi
   return <svg viewBox={`0 0 ${width} ${height}`} aria-label="Jezero crater elevation overview" role="img">
     <image href={`${terrain.assetBase}/crater.jpg`} width={width} height={height} />
     {thermal && <image href={`${terrain.assetBase}/thermal.png`} width={width} height={height} preserveAspectRatio="none" className="expedition-pixels" />}
-    {geology && <GeologyLayer data={geology} locate={locate} />}
+    {geology && <GeologyLayer data={geology} locate={locate} selectedId={selectedUnit} />}
     <rect x={top.x} y={top.y} width={bottom.x - top.x} height={bottom.y - top.y}
       className="expedition-footprint" role="button" tabIndex="0" aria-label="Open detailed traverse area"
       onClick={onDetail} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onDetail() } }} />

@@ -1,4 +1,5 @@
 import { Vector3 } from 'three'
+import { attachGeology } from './geology.js'
 
 const pendingTerrain = new Map()
 
@@ -9,14 +10,14 @@ export function loadTerrain(assetDirectory = 'terrain') {
     const loading = Promise.all([
       fetch(`${assetBase}/metadata.json`).then(checkResponse).then((response) => response.json()),
       fetch(`${assetBase}/heights.bin`).then(checkResponse).then((response) => response.arrayBuffer()),
-      assetDirectory === 'jezero'
-        ? fetch(`${assetBase}/surface-flags.bin`).then(checkResponse).then((response) => response.arrayBuffer()).catch(() => null)
-        : Promise.resolve(null),
-    ]).then(([metadata, buffer, flags]) => {
+      fetch(`${assetBase}/surface-flags.bin`).then(checkResponse).then((response) => response.arrayBuffer()).catch(() => null),
+      fetch(`${assetBase}/geology.json`).then(checkResponse).then((response) => response.json()).catch(() => null),
+      fetch(`${assetBase}/geology-grid.bin`).then(checkResponse).then((response) => response.arrayBuffer()).catch(() => null),
+    ]).then(([metadata, buffer, flags, geology, ids]) => {
       const terrain = createTerrain(metadata, new Float32Array(buffer), assetBase)
       const count = (metadata.columns - 1) * (metadata.rows - 1)
       terrain.surfaceFlags = flags?.byteLength === count ? new Uint8Array(flags) : null
-      return terrain
+      return attachGeology(terrain, geology, ids ? new Uint8Array(ids) : null)
     })
       .catch((error) => {
         pendingTerrain.delete(assetDirectory)
