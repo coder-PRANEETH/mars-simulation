@@ -3,6 +3,8 @@ import { FIRM_SURFACE } from '../simulation/surface.js'
 // A small, deterministic heightfield character simulation. Distances are metres,
 // time is seconds, and position.y is the player's feet (not the camera).
 export const PLAYER_CONFIG = Object.freeze({
+  surfaceResponse: true,
+  sinkScale: 0,
   eyeHeight: 1.7,
   radius: 0.28,
   walkSpeed: 4.3,
@@ -23,6 +25,7 @@ export const CAR_CONFIG = Object.freeze({
   ...PLAYER_CONFIG,
   radius: 1.8,
   surfaceResponse: true,
+  sinkScale: 1,
   walkSpeed: 15,
   sprintSpeed: 15,
   reverseSpeed: 5,
@@ -55,6 +58,9 @@ export class PlayerPhysics {
     this.lastAirborneTime = 0
     this.landingSpeed = 0
     this.landingCount = 0
+    this.sinkDepth = 0
+    this.wheelSlip = 0
+    this.groundGrip = 1
     this.elapsed = 0
     this.lastGroundedAt = 0
     this.jumpBufferedUntil = -1
@@ -86,6 +92,9 @@ export class PlayerPhysics {
     this.jumpWasHeld = false
     this.landingSpeed = 0
     this.landingCount = 0
+    this.sinkDepth = 0
+    this.wheelSlip = 0
+    this.groundGrip = 1
   }
 
   step(dt, input = {}) {
@@ -100,6 +109,16 @@ export class PlayerPhysics {
     const friction = clamp(this.environment.getSurfaceFriction(position), 0.05, 1.5)
     const surface = config.surfaceResponse ? this.environment.getSurfaceCondition?.(position) ?? FIRM_SURFACE : FIRM_SURFACE
     const grip = friction * surface.gripFactor
+    this.groundGrip = surface.gripFactor
+    const sinkLimit = (surface.sinkDepth ?? 0) * config.sinkScale
+    const throttle = input.active === false ? 0 : Math.abs(input.forward || 0)
+    const targetSink = this.grounded ? sinkLimit * (0.55 + Math.min(1, throttle) * 0.45) : 0
+    // Visual wheel settling never modifies the measured heightfield or contact plane.
+    this.sinkDepth += (targetSink - this.sinkDepth) * (1 - Math.exp(-dt * (targetSink > this.sinkDepth ? 1.7 : 4)))
+    const sinkFraction = sinkLimit > 0 ? this.sinkDepth / sinkLimit : 0
+    const targetSlip = config.sinkScale && this.grounded && !input.brake
+      ? Math.min(0.65, throttle * ((1 - surface.gripFactor) * 0.95 + sinkFraction * 0.18)) : 0
+    this.wheelSlip += (targetSlip - this.wheelSlip) * (1 - Math.exp(-dt * 5))
     const normal = this.normal(position.x, position.z)
     const groundHeight = this.height(position.x, position.z)
     const slope = Math.acos(clamp(normal.y, 0, 1))
@@ -135,7 +154,7 @@ export class PlayerPhysics {
     const sprinting = input.sprint && input.active !== false
     const speedLimit = forward < 0 && config.reverseSpeed != null
       ? config.reverseSpeed : sprinting ? config.sprintSpeed : config.walkSpeed
-    const speed = speedLimit * (1 - softness * 0.48) * surface.speedFactor
+    const speed = speedLimit * (1 - softness * 0.48) * surface.speedFactor * (1 - 0.2 * sinkFraction)
     const braking = input.brake ? config.brakeAcceleration ?? config.stopAcceleration : config.stopAcceleration
 
     if (this.grounded) {
@@ -279,6 +298,8 @@ export class PlayerPhysics {
       position: { ...position },
       velocity: { ...this.velocity },
       speed: Math.hypot(this.velocity.x, this.velocity.z),
+      sinkDepth: this.sinkDepth,
+      wheelSlip: this.wheelSlip,
       surface: this.config.surfaceResponse ? this.environment.getSurfaceCondition?.(position) ?? FIRM_SURFACE : null,
       verticalVelocity: this.velocity.y,
       grounded: this.grounded,

@@ -1,7 +1,9 @@
+import { materialAtCell } from '../terrain/materials.js'
+
 const degrees = 180 / Math.PI
 
 // Each cell matches the two triangles in the rendered mesh.
-export function buildGrid(terrain, surface) {
+export function buildGrid(terrain, surface = terrain.surfaceFlags) {
   const { columns, rows, widthMeters, depthMeters } = terrain.metadata
   const width = columns - 1
   const height = rows - 1
@@ -27,7 +29,12 @@ export function buildGrid(terrain, surface) {
     }
   }
 
-  return { width, height, dx, dz, slope, roughness, elevation, surface, heights: terrain.heights }
+  // Keep worker messages and telemetry small: geometry stays on terrain.geology.
+  const units = Object.fromEntries(Object.values(terrain.geologicUnits ?? {}).map(({ polygons, ...unit }) => [unit.id, unit]))
+  const grid = { width, height, dx, dz, slope, roughness, elevation, surface, heights: terrain.heights,
+    unitIds: terrain.geologyGrid, units, groundSpeed: new Float32Array(width * height) }
+  for (let i = 0; i < grid.groundSpeed.length; i++) grid.groundSpeed[i] = materialAtCell(grid, i).speedFactor
+  return grid
 }
 
 export function cellAt(grid, { x, z }) {
@@ -47,7 +54,7 @@ export function cellPoint(grid, index) {
 export function terrainClass(grid, index, maxSlope, closed) {
   if (!Number.isFinite(grid.slope[index])) return 'unknown'
   if (closed?.has(index) || grid.slope[index] > maxSlope) return 'blocked'
-  if (grid.slope[index] > maxSlope * 0.65 || grid.roughness[index] >= 0.12 || grid.surface?.[index]) return 'caution'
+  if (grid.slope[index] > maxSlope * 0.65 || grid.roughness[index] >= 0.12 || grid.surface?.[index] || grid.groundSpeed?.[index] < 0.75) return 'caution'
   return 'open'
 }
 

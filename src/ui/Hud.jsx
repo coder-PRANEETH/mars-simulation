@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import './hud.css';
 import Icon from './Icon.jsx';
 import DiscoverMars from './DiscoverMars.jsx';
+import { GroundInfo } from './GroundResponse.jsx';
 
 const number = (value, digits = 1) => value != null && Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : '—';
 const coordinate = (value, axis) => {
@@ -66,6 +67,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
   const [learnOpen, setLearnOpen] = useState(true);
+  const [groundOpen, setGroundOpen] = useState(false);
 
   const active = locked || (driving && carActive);
   useEffect(() => {
@@ -74,6 +76,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       setDataOpen(false);
       setHelpOpen(false);
       setLearnOpen(false);
+      setGroundOpen(false);
     }
   }, [active]);
 
@@ -103,7 +106,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       {!driving && active && <div className="sim-crosshair" aria-hidden="true"><i /><i /><i /><i /></div>}
 
       <nav className="sim-top-actions sim-interactive" aria-label="Exploration">
-        <button className={`sim-tool-button ${learnOpen ? 'is-active' : ''}`} onClick={() => setLearnOpen(!learnOpen)} aria-expanded={learnOpen} aria-label="Discover Mars"><Icon name="spark" size={16} />Discover</button>
+        <button className={`sim-tool-button ${learnOpen ? 'is-active' : ''}`} onClick={() => { setLearnOpen(!learnOpen); setGroundOpen(false); }} aria-expanded={learnOpen} aria-label="Discover Mars"><Icon name="spark" size={16} />Discover</button>
         {driving && carActive && <button type="button" className={`sim-tool-button ${showHazards ? 'is-active' : ''}`} aria-pressed={showHazards} onClick={onToggleHazards}>
           <Icon name="hazard" size={16} /><span>Hazards</span>
         </button>}
@@ -135,12 +138,17 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       {!loading && !loadError && learnOpen && <DiscoverMars />}
       </div>}
       {active && learnOpen && !dataOpen && <DiscoverMars compact />}
+      {groundOpen && !dataOpen && <section className="sim-ground-panel sim-interactive" aria-label="Ground beneath you">
+        <div className="sim-panel-heading"><h2>Ground beneath you</h2><button className="sim-close" aria-label="Close ground information" onClick={() => setGroundOpen(false)}>×</button></div>
+        <div className="sim-ground-body"><GroundInfo surface={telemetry.surface} sinkDepth={driving ? telemetry.sinkDepth : undefined} wheelSlip={driving ? telemetry.wheelSlip : undefined} /></div>
+      </section>}
 
       {inspection && <section className="sim-inspection sim-interactive" aria-label="Inspected terrain point">
         <div className="sim-panel-heading"><h2>Terrain scanner</h2><button className="sim-close" onClick={onClearInspection} aria-label="Clear inspected point">×</button></div>
         <div className="sim-inspection-coordinates">{coordinate(inspection.latitude ?? inspection.lat, 'lat')}<br />{coordinate(inspection.longitude ?? inspection.lon, 'lon')}</div>
         <dl className="sim-readout"><dt>Elevation</dt><dd>{number(inspection.elevation ?? inspection.altitude, 2)} m</dd><dt>Local slope</dt><dd>{number(inspection.slope, 1)}°</dd></dl>
         <p>{inspection.terrainInfo ?? inspection.surfaceInfo ?? inspection.surface ?? 'Elevation and slope from the terrain model. Mineral and material composition are not available.'}</p>
+        {inspection.ground && <div className="sim-scanner-ground"><GroundInfo surface={inspection.ground} /></div>}
       </section>}
 
       {debug && <section className="sim-debug sim-interactive" aria-label="Physics debug telemetry">
@@ -160,11 +168,13 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
           <div><kbd>E</kbd><span>Scan the ground</span></div>
         </div>}
       </div>
-      {driving && active && telemetry.surface && <div className="sim-surface-note" aria-label="Current surface condition">
-        <span className={telemetry.surface.speedFactor < 0.7 ? 'surface-slow' : ''} />
-        {telemetry.surface.name}
-        {telemetry.surface.speedFactor < 0.95 && <small>Reduced speed</small>}
-      </div>}
+      {(active || hasEntered) && !loading && telemetry.surface && <button className="sim-surface-note sim-interactive" aria-label="Current surface condition" aria-expanded={groundOpen}
+        onClick={() => { setGroundOpen(!groundOpen); setLearnOpen(false); onClearInspection?.(); }}>
+        <i className={telemetry.surface.speedFactor < 0.7 ? 'surface-slow' : ''} />
+        <span>{telemetry.surface.unit?.label ?? telemetry.surface.name}</span>
+        {driving && telemetry.wheelSlip > 0.3 ? <small>Wheels slipping</small> : telemetry.surface.speedFactor < 0.7 && <small>Slow ground</small>}
+        <Icon name="info" size={14} />
+      </button>}
 
       <section className="sim-telemetry" aria-label="Live telemetry">
         <div className="sim-telemetry-title">LIVE FROM THE SURFACE <span>Weather is simulated</span></div>

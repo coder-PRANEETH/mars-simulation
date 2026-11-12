@@ -81,9 +81,10 @@ export default function App() {
           dustParticleCount: dust?.visible ? dust.geometry.drawRange.count : 0,
           cameraPosition: rendering?.camera.position.toArray(),
           cameraFov: rendering?.camera.fov,
+          vehiclePosition: rendering?.scene.getObjectByName('mars-expedition-car')?.position.toArray(),
         };
       },
-      reset: () => playerRef.current?.reset(),
+      reset: (spawn) => playerRef.current?.reset(spawn),
     };
     return () => { delete window.__MARS_SIM__; };
   }, [terrain]);

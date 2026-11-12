@@ -40,3 +40,22 @@ test('route measurements follow both surface triangles and uphill takes longer',
   assert.equal(cellAt(grid, cellPoint(grid, 0)), 0)
   assert.equal(cellAt(grid, { x: 30, z: 0 }), -1)
 })
+
+test('A* detours around a sand region and accounts for its slower travel when forced through it', () => {
+  const terrain = createTerrain(metadata, new Float32Array(25))
+  terrain.geologyGrid = new Uint8Array(16).fill(3)
+  terrain.geologyGrid[5] = terrain.geologyGrid[6] = 8
+  terrain.geologicUnits = {
+    3: { id: 3, label: 'Crater-floor rock', material: 'floor-rock' },
+    8: { id: 8, label: 'Wind-blown sand', material: 'sand' },
+  }
+  const grid = buildGrid(terrain)
+  const detour = planRoutes(grid, { start: 4, end: 7, profile }).terrain
+  assert.ok(detour.distance > 30)
+  assert.ok(detour.points.filter((_, index) => index % 2 === 0)
+    .every((point) => ![5, 6].includes(cellAt(grid, point))))
+  const forced = planRoutes(grid, { start: 4, end: 7, profile, avoid: [0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15] }).terrain
+  assert.equal(forced.distance, 30)
+  assert.ok(forced.time > 60)
+  assert.ok(forced.regions.includes('Wind-blown sand'))
+})

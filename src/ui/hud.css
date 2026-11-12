@@ -193,3 +193,31 @@
   .sim-enter-button { transition: none; }
   .sim-load-line::after { animation: none; width: 100%; opacity: .6; }
 }
+
+/* Contextual geology stays outside the four live telemetry readings. */
+.sim-hud .sim-surface-note { bottom: 125px; background: none; border: 0; padding: 0; text-align: left; max-width: min(380px, calc(100vw - 180px)); }
+.sim-surface-note > span { width: auto; height: auto; transform: none; background: none; }
+.sim-surface-note > i { flex-shrink: 0; width: 5px; height: 5px; background: #b4d1a8; transform: rotate(45deg); }
+.sim-surface-note > i.surface-slow { background: #e7b67a; }
+.sim-ground-panel { position: absolute; top: 140px; left: 44px; width: 330px; max-height: calc(100% - 290px); overflow: auto; scrollbar-width: thin; background: #07131bf5; border-left: 2px solid var(--atlas-accent); z-index: 4; }
+.sim-hud.is-paused .sim-ground-panel { left: auto; right: 6%; }
+.sim-ground-body { padding: 22px 23px; }
+.ground-region-name { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 650; line-height: 1.25; }
+.ground-region-name i { height: 18px; width: 6px; flex-shrink: 0; }
+.ground-region-description { color: #b7c9d3; font-size: 12px; line-height: 1.7; margin: 13px 0; }
+.ground-region-unit { font-size: 10px; color: #9db1be; line-height: 1.5; }
+.ground-response { margin-top: 18px; }
+.ground-response h4 { font: 9px var(--sim-mono); letter-spacing: .05em; text-transform: uppercase; color: #b6c9d4; margin: 0 0 13px; }
+.ground-response dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 14px; font-size: 11px; }
+.ground-response dt { color: #9eb5c3; }
+.ground-response dd { color: #ecf0f2; margin: 0; text-align: right; line-height: 1.5; }
+.ground-response > p { color: #9fb4c0; font-size: 10px; line-height: 1.7; }
+.ground-source { color: var(--atlas-accent); font-size: 10px; text-underline-offset: 4px; }
+.sim-inspection { max-height: calc(100% - 270px); overflow: auto; scrollbar-width: thin; }
+.sim-scanner-ground { padding: 0 20px 4px; }
+@media (max-width: 700px) {
+  .sim-hud .sim-surface-note { bottom: 129px; right: 25px; max-width: calc(100vw - 145px); font-size: 9px; }
+  .sim-ground-panel, .sim-hud.is-paused .sim-ground-panel { top: 142px; left: 25px; right: 25px; width: auto; max-height: calc(100% - 320px); }
+  .sim-ground-body { padding: 18px 20px; }
+  .sim-ground-panel .sim-panel-heading { padding: 14px 20px; }
+}

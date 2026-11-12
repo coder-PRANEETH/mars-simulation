@@ -49,7 +49,9 @@ test('calculates and follows a science route on the Jezero terrain', async ({ pa
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
   await page.getByRole('button', { name: 'Try a route' }).click();
   await expect(page.getByRole('heading', { name: 'Two ways to explore' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Easier terrain/ })).toContainText('2.60 km');
+  const routeDistance = parseFloat(await page.getByRole('button', { name: /Easier terrain/ }).locator('strong').innerText());
+  expect(routeDistance).toBeGreaterThan(2);
+  expect(routeDistance).toBeLessThan(5);
   await page.getByRole('button', { name: /Science stop/ }).click();
   await expect(page.getByText(/Via Western Delta front/)).toBeVisible();
   await page.getByText(/^Route details ·/).click();

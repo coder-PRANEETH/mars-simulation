@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import GroundResponse from '../ui/GroundResponse.jsx'
+import { SURFACE_MODELS } from '../terrain/materials.js'
 
 export function GeologyLayer({ data, locate, clipPath, selectedId, labels = false }) {
   const paths = useMemo(() => data.units.map((unit) => ({
@@ -47,6 +49,7 @@ export function GeologyExplorer({ data, selectedId, onSelect, context = false })
     {selected ? <div className="expedition-region-description" aria-label="Selected geologic region">
       <h3 style={{ color: selected.color }}>{selected.label}</h3>
       <p>{selected.description}</p><small>{selected.symbol} · {selected.name}</small>
+      <GroundResponse surface={SURFACE_MODELS[selected.material]} />
     </div> : <p>Colors mark different rock and sediment regions. Select one, or use Inspect and click the map.</p>}
     <p className="expedition-region-source">{data.authors} · 1:{data.scale.toLocaleString('en-US')} scale. Boundaries are regional interpretations.</p>
     <a href={data.source} target="_blank" rel="noreferrer">Read the USGS geologic map ↗</a>

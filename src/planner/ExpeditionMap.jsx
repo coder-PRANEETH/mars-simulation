@@ -9,6 +9,8 @@ import Icon from '../ui/Icon.jsx'
 import WeatherObservations from './WeatherObservations.jsx'
 import { GeologyLayer, GeologyExplorer } from './GeologyLayer.jsx'
 import { geologicUnitAt } from '../terrain/geology.js'
+import { createSurfaceSampler } from '../simulation/surface.js'
+import GroundResponse from '../ui/GroundResponse.jsx'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -25,6 +27,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const { widthMeters, depthMeters } = metadata
   const surface = terrain.surfaceFlags
   const grid = useMemo(() => buildGrid(terrain, surface), [terrain, surface])
+  const sampleSurface = useMemo(() => createSurfaceSampler(terrain), [terrain])
   const locate = useMemo(() => (longitude, latitude) => origin(terrain.location(latitude, longitude), metadata), [terrain, metadata])
   const [layer, setLayer] = useState('Imagery')
   const [hazards, setHazards] = useState(false)
@@ -256,6 +259,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
               <dt>Slope</dt><dd>{terrain.sampleSlope(inspection.x, inspection.z).toFixed(1)}°</dd>
               <dt>Terrain class</dt><dd>{terrainClass(grid, cellAt(grid, inspection), maxSlope, avoid)}</dd>
             </dl>
+            <GroundResponse surface={sampleSurface(inspection)} />
           </div>}
         </>}
       </aside>

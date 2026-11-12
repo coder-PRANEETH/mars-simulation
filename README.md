@@ -81,7 +81,7 @@ The **Regions** switch shows published USGS geologic units at their regional
 Select a region in the legend, or inspect a map point, to see its name and a
 short geological description. The crater overview includes the wider set of
 mapped units. Unit symbols preserve the source numeric suffixes.
-The planner adds an advisory travel cost for cells
+The planner adds a travel cost for geological region models and for cells
 intersecting mapped eolian bedforms or dark mantling material. These are broad
 geologic observations. Mark a local obstacle as an avoid zone when its position
 is known. Rebuild the geology and advisory grid with
@@ -135,11 +135,44 @@ selected Jezero route. Route time estimates describe walking.
 
 The expedition car uses the measured heightfield and a separate handling
 profile, with a flat, firm-ground speed limit of 54 km/h before traction
-and softness adjustments. It is a simplified vehicle simulation. Driving samples the surface at the
-car's position. Mapped eolian bedforms reduce speed and grip, surface deposits
-add rolling resistance, and the elevation mesh supplies roughness and slope
-penalties. Responses blend across cell boundaries. These handling coefficients
-are illustrative. The mapped categories come from USGS SIM 3464.
+and softness adjustments. These are game-vehicle speeds, not Perseverance's
+operational speeds. Both walking and driving sample the registered unit and
+overlying surface cover at the current position. Responses blend across cell
+boundaries. The elevation mesh supplies additional roughness and slope penalties.
+The route engine uses the same regional base speed factors for path costs and
+walking-time penalties, and lists the regions crossed in Route details.
+
+### Modeled surface characteristics
+
+The published polygons identify geological units, not uniform soil strength.
+The coefficients below are explicit educational assumptions in
+`src/terrain/materials.js`. They are not values supplied by NASA's map or USGS.
+Source morphology and unit descriptions inform the choice of model category.
+Sand and dark mantling observations can override the underlying unit's response.
+
+| Model category | Base speed factor | Grip factor | Maximum modeled wheel settling |
+| --- | ---: | ---: | ---: |
+| Crater-floor rock | 100% | 1.00 | 0 cm |
+| Layered delta rock | 84% | 0.92 | 0 cm |
+| Etched rock | 76% | 0.88 | 0 cm |
+| Broken rock / crater rim | 67% | 0.86 | 0 cm |
+| Mixed rock | 88% | 0.94 | 0 cm |
+| Eolian sand | 42% | 0.64 | 16 cm |
+| Smooth loose cover | 70% | 0.78 | 7 cm |
+| Dark mantling cover | 75% | 0.80 | 5.5 cm |
+
+Wheel settling grows gradually under load and throttle, adds rolling resistance,
+and recovers on firm ground. Slipping wheels rotate faster than their ground
+travel would imply. Grip also affects steering and braking. The vehicle model
+is lowered visually by the settling depth, while collision and source DEM
+elevations remain unchanged. This is not soil deformation or a calibrated
+terramechanics solver. Walkers slow on the same materials but have no wheel sinkage.
+
+The **Current surface condition** control opens mapped unit information and
+the simulated response. The terrain scanner (**E**) reports the same local
+ground model at the point being inspected. These details stay separate from
+the four live telemetry fields. On unmapped terrain, only slope and roughness
+modify the neutral model; no sand or wheel sinking is invented.
 
 ## Simulated surface weather
 
@@ -234,13 +267,13 @@ environment.getState();
 
 To add a rover, pass the **same environment object and terrain** to its controller. Query height, normal and grip at each wheel contact, apply vehicle forces at a fixed timestep, and consume `getTemperature` in future battery/thermal models. If using Rapier for a rover, construct its heightfield or triangle collider from these same measured heights and topology; update world gravity from the store. Vehicle mass, suspension and tire response belong to the vehicle. Do not create a separate environmental state or flat ground collider.
 
-`E` casts a camera-center ray to the actual terrain mesh and reports coordinates, areoid elevation, local triangular slope and available source information. This query path can later sample mineral/geology rasters in the same projection.
+`E` casts a camera-center ray to the actual terrain mesh and reports coordinates, areoid elevation, local triangular slope, the registered geologic unit and the modeled local ground response. Mineral measurements are not inferred from the image color.
 
 ## Known simplifications and performance
 
 - DEM downsampling omits detail below about 6 m. Triangular interpolation does not invent higher-resolution measurements. Mesh normals are smoothed for lighting; scientific/contact normals are the actual triangle normals.
 - No terrain overhangs or caves; no general rigid-body object collisions. Illustrative pebbles are small visual dressing, without individual colliders or mapped geological positions.
-- Global friction/softness values are user-defined, not spatial geological measurements. Sliding uses a simplified Coulomb model; no foot biomechanics, deformable soil or pressure-dependent regolith mechanics.
+- Global friction/softness values and regional handling coefficients are simulation parameters, not spatial geotechnical measurements. Sliding uses a simplified Coulomb model; shallow wheel settling is visual and adds modeled resistance. There is no foot biomechanics, deformable soil or pressure-dependent terramechanics solver.
 - Orbital imagery contains acquisition shadows. Added sunlight is visual and is not a reconstructed illumination epoch. Sky, dust and fog are artistic browser approximations, not atmospheric circulation or radiative-transfer simulations.
 - The local plane omits planetary curvature and has a bounded edge. The player cannot move outside the measured crop. Temperature is currently informational.
 - Nominal speeds (4.3 m/s walk, 7 m/s sprint before soil/slope effects) are FPS tuning values. No oxygen, life support, fatigue or suit model is included.

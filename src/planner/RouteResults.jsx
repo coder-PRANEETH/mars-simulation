@@ -30,6 +30,7 @@ export default function RouteResults({ routes, selected, onSelect, onLaunch }) {
         <dt>Steepest slope</dt><dd>{route.maxSlope.toFixed(1)}°</dd>
         <dt>Estimated walk</dt><dd>{timeRange(route.time)}</dd>
         <dt>There and back</dt><dd>{timeRange(route.time + route.returnTime)}</dd>
+        {route.regions?.length > 0 && <><dt>Geologic regions</dt><dd>{route.regions.join(', ')}</dd></>}
       </dl>
       <ol className="expedition-waypoints">{route.waypoints.map((waypoint, index) => <li key={index}>{waypoint.label} · {distanceText(waypoint.distance)}</li>)}</ol>
       <p>Walking estimates exclude stops and rest.</p>

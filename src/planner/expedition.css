@@ -202,3 +202,8 @@
 .expedition-region-description small { color: var(--atlas-muted); font-size: 9px; }
 .expedition-unit-label { font-weight: 700; pointer-events: none; }
 .expedition-panel .expedition-region-source { font-size: 9px; color: #9caeb7; }
+.expedition-region-description .ground-response { border-top: 1px solid var(--atlas-line); padding-top: 15px; }
+.expedition-panel .ground-response p { font-size: 10px; color: #9fb4c0; }
+.expedition-readings dd { overflow-wrap: anywhere; }
+.drive-hazards { bottom: 190px; }
+@media (max-width: 700px) { .drive-hazards { bottom: 183px; } }

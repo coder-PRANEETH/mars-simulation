@@ -16,6 +16,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
   const callbacks = useRef({ carActive, onPauseCar, onTelemetry, onLockChange, onInspect })
   callbacks.current = { carActive, onPauseCar, onTelemetry, onLockChange, onInspect }
   const keys = useRef(new Set())
+  const keyboardUi = useRef(false)
   const vehicle = useRef(null)
   const wheels = useRef([])
   const driverYaw = useRef(terrain.metadata?.spawn?.yaw ?? 0)
@@ -53,6 +54,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       // Hand keyboard control to the view after launching from an HTML button.
       gl.domElement.tabIndex = -1
       gl.domElement.focus({ preventScroll: true })
+      keyboardUi.current = false
     } else {
       keys.current.clear()
       orbitPointer.current = null
@@ -118,10 +120,12 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
         distance: hit.distance,
         surface: terrain.metadata?.surfaceInformation
           || 'Orbital elevation raster; local material properties are simulation parameters.',
+        ground: environment.getSurfaceCondition?.({ x: point.x, z: point.z }),
       })
     }
     const down = (event) => {
       if (!(driving ? callbacks.current.carActive : locked.current)) return
+      if (driving && event.code === 'Tab') { keyboardUi.current = true; return }
       if (event.code === 'Escape') {
         if (driving) callbacks.current.onPauseCar()
         else document.exitPointerLock()
@@ -130,8 +134,11 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       if (driving && event.target instanceof Element) {
         if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return
         // Movement resumes driving after using a lesson or another HUD button.
-        if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code)) canvas.focus({ preventScroll: true })
-        if (event.code === 'Space' && event.target.closest('button:focus-visible, a:focus-visible, summary:focus-visible')) return
+        if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code)) {
+          keyboardUi.current = false
+          canvas.focus({ preventScroll: true })
+        }
+        if (event.code === 'Space' && keyboardUi.current && event.target.closest('button, a, summary')) return
       }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyE'].includes(event.code)) {
         event.preventDefault()
@@ -140,6 +147,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       if (event.code === 'KeyE' && !event.repeat) inspect()
     }
     const up = (event) => keys.current.delete(event.code)
+    const pointerControl = () => { keyboardUi.current = false }
     const blur = () => { keys.current.clear(); endOrbit() }
     const focus = (event) => {
       if (driving && event.target.matches('input, select, textarea, [contenteditable="true"]')) keys.current.clear()
@@ -165,6 +173,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     canvas.addEventListener('pointermove', dragOrbit)
     canvas.addEventListener('lostpointercapture', endOrbit)
     document.addEventListener('focusin', focus)
+    document.addEventListener('pointerdown', pointerControl)
     document.addEventListener('pointerlockchange', changeLock)
     document.addEventListener('mousemove', moveMouse)
     document.addEventListener('keydown', down)
@@ -177,6 +186,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       canvas.removeEventListener('pointermove', dragOrbit)
       canvas.removeEventListener('lostpointercapture', endOrbit)
       document.removeEventListener('focusin', focus)
+      document.removeEventListener('pointerdown', pointerControl)
       document.removeEventListener('pointerlockchange', changeLock)
       document.removeEventListener('mousemove', moveMouse)
       document.removeEventListener('keydown', down)
@@ -184,7 +194,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       window.removeEventListener('blur', blur)
       if (resetRef) resetRef.current = null
     }
-  }, [camera, center, driving, gl, physics, raycaster, resetRef, scene, terrain])
+  }, [camera, center, driving, environment, gl, physics, raycaster, resetRef, scene, terrain])
 
   useFrame((_, realDelta) => {
     const frame = state.current
@@ -214,7 +224,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
         const along = -Math.sin(yaw) * physics.velocity.x - Math.cos(yaw) * physics.velocity.z
         if (input.active && physics.grounded) {
           const direction = Math.abs(along) > 0.2 ? Math.sign(along) : throttle
-          const turning = Math.min(Math.abs(along) / 2 + Math.abs(throttle) * 0.25, 1) * 0.86
+          const turning = Math.min(Math.abs(along) / 2 + Math.abs(throttle) * 0.25, 1) * 0.86 * (0.55 + 0.45 * physics.groundGrip)
           driverYaw.current -= steer * direction * turning * PLAYER_CONFIG.fixedStep
         }
         input.yaw = driverYaw.current
@@ -236,22 +246,24 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     const bobY = Math.sin(frame.bob) * 0.023 * bobStrength
     const { x, y, z } = physics.position
     if (driving) {
+      const bodyY = y - physics.sinkDepth
       const yaw = driverYaw.current
       const orbit = yaw + view.yaw
       const back = 6.9 * Math.cos(view.pitch)
       const cameraX = x + Math.sin(orbit) * back
       const cameraZ = z + Math.cos(orbit) * back
-      const cameraY = Math.max(y + 3.2 + Math.sin(view.pitch) * 4, terrain.sampleHeight(cameraX, cameraZ) + 0.8)
+      const cameraY = Math.max(bodyY + 3.2 + Math.sin(view.pitch) * 4, terrain.sampleHeight(cameraX, cameraZ) + 0.8)
       camera.position.set(cameraX, cameraY, cameraZ)
-      camera.lookAt(x - Math.sin(yaw) * 4.6, y + 0.95, z - Math.cos(yaw) * 4.6)
+      camera.lookAt(x - Math.sin(yaw) * 4.6, bodyY + 0.95, z - Math.cos(yaw) * 4.6)
       if (vehicle.current) {
-        vehicle.current.position.set(x, y, z)
+        vehicle.current.position.set(x, bodyY, z)
         terrain.sampleNormal(x, z, groundNormal)
         surfaceTilt.setFromUnitVectors(UP, groundNormal)
         facing.setFromAxisAngle(UP, yaw)
         vehicle.current.quaternion.slerp(surfaceTilt.multiply(facing), 1 - Math.exp(-dt * 14))
         const forwardSpeed = -Math.sin(yaw) * physics.velocity.x - Math.cos(yaw) * physics.velocity.z
-        for (const wheel of wheels.current) if (wheel) wheel.rotation.x -= forwardSpeed / 0.45 * dt
+        const wheelSpeed = forwardSpeed / Math.max(0.35, 1 - physics.wheelSlip)
+        for (const wheel of wheels.current) if (wheel) wheel.rotation.x -= wheelSpeed / 0.45 * dt
       }
     } else {
       camera.position.set(x, y + PLAYER_CONFIG.eyeHeight + bobY + frame.landing, z)

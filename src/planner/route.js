@@ -46,7 +46,7 @@ function passable(grid, index, profile, avoid) {
 function shortestPath(grid, start, end, profile, avoid) {
   if (!passable(grid, start, profile, avoid) || !passable(grid, end, profile, avoid)) return null
 
-  const { width, height, dx, dz, slope, roughness, elevation, surface } = grid
+  const { width, height, dx, dz, slope, roughness, elevation } = grid
   const endColumn = end % width
   const endRow = Math.floor(end / width)
   const distance = new Float64Array(width * height).fill(Infinity)
@@ -79,7 +79,7 @@ function shortestPath(grid, start, end, profile, avoid) {
       const rise = elevation[next] - elevation[cell]
       const incline = Math.max(slope[cell], slope[next]) / profile.maxSlope
       const uneven = Math.max(roughness[cell], roughness[next])
-      const material = surfacePenalty(surface?.[cell] | surface?.[next])
+      const material = surfacePenalty(grid, cell, next)
       const nextCost = cost + Math.hypot(horizontal, rise) * (1 + 2.2 * incline ** 2 + 2 * uneven + material)
       if (nextCost >= distance[next]) continue
       distance[next] = nextCost
@@ -92,8 +92,11 @@ function shortestPath(grid, start, end, profile, avoid) {
 }
 
 // Mapped surface units are broad caution areas with configurable field conditions.
-function surfacePenalty(flags) {
-  return (flags & 1 ? 0.4 : 0) + (flags & 2 ? 0.18 : 0)
+function surfacePenalty(grid, from, to) {
+  const flags = grid.surface?.[from] | grid.surface?.[to]
+  const legacy = (flags & 1 ? 0.4 : 0) + (flags & 2 ? 0.18 : 0)
+  const speed = Math.min(grid.groundSpeed?.[from] ?? 1, grid.groundSpeed?.[to] ?? 1)
+  return Math.max(legacy, 1 / Math.max(0.2, speed) - 1)
 }
 
 function sharedElevation(grid, from, to) {
@@ -109,7 +112,7 @@ function sharedElevation(grid, from, to) {
 }
 
 function describeRoute(grid, path, profile, stop) {
-  const { elevation, roughness, slope, surface } = grid
+  const { elevation, roughness, slope } = grid
   const first = { ...cellPoint(grid, path[0]), y: elevation[path[0]] }
   const points = [first]
   const waypoints = [{ ...first, distance: 0, label: 'Start' }]
@@ -119,6 +122,7 @@ function describeRoute(grid, path, profile, stop) {
   let returnTime = 0
   let maxSlope = slope[path[0]]
   let lastWaypoint = 0
+  const regionIds = new Set(path.map((cell) => grid.unitIds?.[cell]).filter(Boolean))
 
   for (let i = 1; i < path.length; i++) {
     const from = path[i - 1]
@@ -133,7 +137,7 @@ function describeRoute(grid, path, profile, stop) {
       const rise = b.y - a.y
       const length = Math.hypot(run, rise)
       const penalty = 1 + Math.max(roughness[from], roughness[to])
-        + surfacePenalty(surface?.[from] | surface?.[to])
+        + surfacePenalty(grid, from, to)
         + profile.dustPenalty + (profile.thermalPenalty ?? 0)
       distance += length
       gain += Math.max(0, rise)
@@ -148,7 +152,8 @@ function describeRoute(grid, path, profile, stop) {
     }
   }
 
-  return { points, waypoints, distance, gain, time, returnTime, maxSlope, stop }
+  return { points, waypoints, distance, gain, time, returnTime, maxSlope, stop,
+    regions: [...regionIds].map((id) => grid.units[id]?.label).filter(Boolean) }
 }
 
 export function planRoutes(grid, { start, end, profile, avoid = [], sites = [] }) {
