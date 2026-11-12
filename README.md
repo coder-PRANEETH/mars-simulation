@@ -172,6 +172,29 @@ is lowered visually by the settling depth, while collision and source DEM
 elevations remain unchanged. This is not soil deformation or a calibrated
 terramechanics solver. Walkers slow on the same materials but have no wheel sinkage.
 
+### Visible traction and rover movement
+
+A separate **Rover / Ground contact** display shows wheel slip, sideways slide
+and wheel sinking, with short recovery hints. The four live telemetry fields
+remain wind, temperature, coordinates and speed. The traction display yields
+space when opening learning or ground-information panels.
+
+The rover uses gradual front-wheel steering and a 2.59 m bicycle-model
+wheelbase, matched to the visual wheel positions. Heading changes depend on
+forward/reverse speed. The horizontal velocity retains momentum while tire
+forces correct lateral motion. Acceleration, cornering and braking share a
+gravity- and grip-dependent force budget. Releasing throttle allows coasting;
+pausing applies a parking brake. Small body pitch/roll and a damped chase camera
+provide movement feedback. This remains an illustrative game model, not a
+validated dynamics model of Perseverance or a full suspension solver.
+
+Mapped loose cover produces bounded wheel dust and paired tread marks during
+motion. Tracks conform to the terrain and fade, with a maximum of 320 segments;
+wheel dust is pooled to 96 particles. They clear on reset and are not emitted on
+unmapped or exposed-rock surfaces. These are artistic motion cues, not source
+imagery or physical soil deformation. The minimap's blue dashed line shows the
+direction of travel, which can differ from the rover's nose during a slide.
+
 The **Current surface condition** control opens mapped unit information and
 the simulated response. The terrain scanner (**E**) reports the same local
 ground model at the point being inspected. These details stay separate from
@@ -254,7 +277,7 @@ React + JavaScript, Vite, Three.js, React Three Fiber and drei are used. This pr
 
 The physics runs at **120 Hz** with an accumulator independent of rendering. Jumping applies **3.4 m/s upward velocity**, then integrates the selected gravity. On flat ground this yields roughly 1.54 m / 1.83 s under Mars gravity and 0.58 m / 0.69 s under Earth gravity. Gravity is queried each step. Horizontal movement uses traction-dependent acceleration and braking, reduced speed on loose regolith, slope response, and restricted air acceleration. The camera follows the body with restrained gait, landing impact and sprint FOV feedback.
 
-Validation includes 19 passing deterministic tests (original PDS sample values, exact collision triangles, measured-terrain traversal/jumps/sliding, environment updates) and a passing Playwright acceptance flow. The browser flow enters pointer lock, walks on the real terrain, compares Mars/Earth jumps, looks and inspects, toggles F3, uses the internal simulation API to verify particle and fog response, and checks the four live telemetry fields. Browser-measured jump samples were approximately **1.52 m / 1.82 s** on Mars and **0.57 m / 0.69 s** on Earth.
+Validation covers original PDS samples, collision triangles, real-terrain movement, gravity, registered geology, material transitions and route costs. Rover checks verify stationary/reverse steering, force limits, coasting and braking under different gravity, plus visible dust, tracks, steering, wheel sinking and minimap overlays in the browser. The browser flows also exercise pointer lock, Mars/Earth jumps, inspection, F3 diagnostics, weather and the four live telemetry fields.
 
 The environment API is intentionally small:
 

@@ -3,6 +3,7 @@ import './hud.css';
 import Icon from './Icon.jsx';
 import DiscoverMars from './DiscoverMars.jsx';
 import { GroundInfo } from './GroundResponse.jsx';
+import RoverTraction from './RoverTraction.jsx';
 
 const number = (value, digits = 1) => value != null && Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : '—';
 const coordinate = (value, axis) => {
@@ -138,6 +139,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
       {!loading && !loadError && learnOpen && <DiscoverMars />}
       </div>}
       {active && learnOpen && !dataOpen && <DiscoverMars compact />}
+      {driving && active && !learnOpen && !groundOpen && !dataOpen && <RoverTraction telemetry={telemetry} />}
       {groundOpen && !dataOpen && <section className="sim-ground-panel sim-interactive" aria-label="Ground beneath you">
         <div className="sim-panel-heading"><h2>Ground beneath you</h2><button className="sim-close" aria-label="Close ground information" onClick={() => setGroundOpen(false)}>×</button></div>
         <div className="sim-ground-body"><GroundInfo surface={telemetry.surface} sinkDepth={driving ? telemetry.sinkDepth : undefined} wheelSlip={driving ? telemetry.wheelSlip : undefined} /></div>

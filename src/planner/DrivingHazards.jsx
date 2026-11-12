@@ -26,10 +26,13 @@ export default function DrivingHazards({ terrain, grid, avoid, maxSlope = 20, te
       {land && <image data-layer="land-types" className="expedition-pixels" href={land} x={-widthMeters / 2} y={-depthMeters / 2} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />}
       <image data-layer="hazards" className="expedition-pixels" href={raster} x={-widthMeters / 2} y={-depthMeters / 2} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />
       {routeLine && <polyline points={routeLine} fill="none" stroke="#8ef0d8" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
+      {telemetry.velocity && Math.hypot(telemetry.velocity.x, telemetry.velocity.z) > 0.5 && <line
+        x1={x} y1={z} x2={x + telemetry.velocity.x * 5} y2={z + telemetry.velocity.z * 5}
+        stroke="#90e8ff" strokeWidth="2" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />}
       <path d="M0 -14 L9 9 L0 5 L-9 9 Z" transform={`translate(${x} ${z}) rotate(${telemetry.heading ?? 0})`}
         fill="#fff" stroke="#102126" strokeWidth="2" />
     </svg>
-    <footer><span><i className="hazard-blocked" /> Avoid</span><span><i className="hazard-caution" /> Caution</span></footer>
+    <footer><span><i className="hazard-blocked" /> Avoid</span><span><i className="hazard-caution" /> Caution</span><span><i className="drive-motion-line" />Travel</span></footer>
     <div className={`drive-local-hazard is-${hazard}`} aria-label="Local hazard level">{({ blocked: 'Avoid this ground', caution: 'Use caution', open: 'Below hazard limits', unknown: 'No elevation data' })[hazard]}</div>
     {showLandTypes && <div className="drive-land-name" aria-label="Land type at rover"><i style={{ background: landType.color }} />{landType.name}</div>}
   </aside>

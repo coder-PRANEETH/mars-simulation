@@ -218,3 +218,6 @@
 .drive-land-name { display: flex; justify-content: center; gap: 6px; align-items: center; font-size: 10px; color: #eee5d8; margin-top: 7px; text-align: center; }
 .drive-land-name i { flex-shrink: 0; width: 6px; height: 13px; }
 @media (max-width: 700px) { .drive-land-name, .drive-local-hazard { font-size: 8px; } }
+.drive-hazards footer { gap: 10px; }
+.drive-hazards .drive-motion-line { background: #90e8ff; border-radius: 0; height: 2px; width: 8px; }
+@media (max-width: 700px) { .drive-hazards footer { gap: 5px; font-size: 7px; } }

@@ -40,9 +40,9 @@ function HullSection({ profile, width, color, roughness }) {
   </mesh>;
 }
 
-function Wheel({ x, z, treads, wheelRef }) {
+function Wheel({ x, z, treads, wheelRef, steerRef }) {
   const outside = Math.sign(x);
-  return <group ref={wheelRef} position={[x, 0.45, z]}>
+  return <group position={[x, 0.45, z]}><group ref={steerRef} name={z < 0 ? `rover-steering-${x < 0 ? 'left' : 'right'}` : undefined}><group ref={wheelRef}>
     <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
       <latheGeometry args={[tireProfile, 32]} />
       <meshStandardMaterial color="#27282a" roughness={0.99} />
@@ -58,7 +58,7 @@ function Wheel({ x, z, treads, wheelRef }) {
       <cylinderGeometry args={[0.115, 0.155, 0.075, 8]} />
       <meshStandardMaterial color="#514b45" roughness={0.66} />
     </mesh>
-  </group>;
+  </group></group></group>;
 }
 
 function createPlate() {
@@ -78,7 +78,7 @@ function createPlate() {
   return texture;
 }
 
-export default function Car({ bodyRef, wheelRefs }) {
+export default function Car({ bodyRef, wheelRefs, steeringRefs }) {
   const plate = useMemo(createPlate, []);
   const treads = useMemo(() => {
     const blocks = Array.from({ length: 32 }, (_, i) => {
@@ -132,6 +132,7 @@ export default function Car({ bodyRef, wheelRefs }) {
         <meshStandardMaterial color="#244a52" roughness={0.31} />
       </mesh>
     </group>
-    {wheels.map(([x, z], i) => <Wheel key={i} x={x} z={z} treads={treads} wheelRef={(wheel) => { wheelRefs.current[i] = wheel; }} />)}
+    {wheels.map(([x, z], i) => <Wheel key={i} x={x} z={z} treads={treads} wheelRef={(wheel) => { wheelRefs.current[i] = wheel; }}
+      steerRef={z < 0 ? (wheel) => { steeringRefs.current[i] = wheel; } : undefined} />)}
   </group>;
 }

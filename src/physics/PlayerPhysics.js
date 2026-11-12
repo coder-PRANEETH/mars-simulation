@@ -1,4 +1,5 @@
 import { FIRM_SURFACE } from '../simulation/surface.js'
+import { stepVehicleMotion } from './vehicleMotion.js'
 
 // A small, deterministic heightfield character simulation. Distances are metres,
 // time is seconds, and position.y is the player's feet (not the camera).
@@ -34,6 +35,12 @@ export const CAR_CONFIG = Object.freeze({
   brakeAcceleration: 17,
   airAcceleration: 0,
   maxWalkSlope: 30,
+  vehicleMotion: true,
+  wheelbase: 2.59,
+  maxSteeringAngle: 0.52,
+  steeringRate: 1.5,
+  steeringReturnRate: 2.1,
+  coastDeceleration: 0.7,
 })
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
@@ -78,6 +85,7 @@ export class PlayerPhysics {
   }
 
   reset(spawn) {
+    this.resetVersion = (this.resetVersion ?? 0) + 1
     const location = spawn || this.terrain.metadata?.spawn || this.terrain.spawn || { x: 0, z: 0 }
     this.position.x = location.x || 0
     this.position.z = location.z || 0
@@ -95,6 +103,14 @@ export class PlayerPhysics {
     this.sinkDepth = 0
     this.wheelSlip = 0
     this.groundGrip = 1
+    this.yaw = location.yaw ?? this.terrain.metadata?.spawn?.yaw ?? 0
+    this.steeringAngle = 0
+    this.yawRate = 0
+    this.forwardSpeed = 0
+    this.sideSpeed = 0
+    this.slideAngle = 0
+    this.longitudinalAcceleration = 0
+    this.lateralAcceleration = 0
   }
 
   step(dt, input = {}) {
@@ -108,6 +124,7 @@ export class PlayerPhysics {
     // The shared environment already applies regolith's traction reduction.
     const friction = clamp(this.environment.getSurfaceFriction(position), 0.05, 1.5)
     const surface = config.surfaceResponse ? this.environment.getSurfaceCondition?.(position) ?? FIRM_SURFACE : FIRM_SURFACE
+    this.currentSurface = surface
     const grip = friction * surface.gripFactor
     this.groundGrip = surface.gripFactor
     const sinkLimit = (surface.sinkDepth ?? 0) * config.sinkScale
@@ -148,7 +165,7 @@ export class PlayerPhysics {
       forward /= inputLength
       right /= inputLength
     }
-    const yaw = input.yaw || 0
+    const yaw = config.vehicleMotion ? this.yaw : input.yaw || 0
     const desiredX = -Math.sin(yaw) * forward + Math.cos(yaw) * right
     const desiredZ = -Math.cos(yaw) * forward - Math.sin(yaw) * right
     const sprinting = input.sprint && input.active !== false
@@ -161,7 +178,9 @@ export class PlayerPhysics {
       const tanSlope = Math.tan(slope)
       const isSliding = tanSlope > grip
       const traction = clamp(grip / 0.75, 0.12, 1.8)
-      if (inputLength > 0) {
+      if (config.vehicleMotion) {
+        stepVehicleMotion(this, dt, input, { speed, grip, softness, gravity, normal, surface })
+      } else if (inputLength > 0) {
         const uphill = Math.max(0, -(desiredX * normal.x + desiredZ * normal.z))
         const slopeSpeed = speed / (1 + uphill * 1.35)
         ;[velocity.x, velocity.z] = approachVector(
@@ -282,6 +301,11 @@ export class PlayerPhysics {
     position.x = nextX
     position.y = nextY
     position.z = nextZ
+    if (config.vehicleMotion) {
+      this.forwardSpeed = -Math.sin(this.yaw) * velocity.x - Math.cos(this.yaw) * velocity.z
+      this.sideSpeed = Math.abs(Math.cos(this.yaw) * velocity.x - Math.sin(this.yaw) * velocity.z)
+      this.slideAngle = Math.atan2(this.sideSpeed, Math.max(0.2, Math.abs(this.forwardSpeed))) * 180 / Math.PI
+    }
   }
 
   telemetry() {
@@ -300,6 +324,11 @@ export class PlayerPhysics {
       speed: Math.hypot(this.velocity.x, this.velocity.z),
       sinkDepth: this.sinkDepth,
       wheelSlip: this.wheelSlip,
+      sideSpeed: this.sideSpeed,
+      slideAngle: this.slideAngle,
+      steeringAngle: this.steeringAngle,
+      yawRate: this.yawRate,
+      yaw: this.yaw,
       surface: this.config.surfaceResponse ? this.environment.getSurfaceCondition?.(position) ?? FIRM_SURFACE : null,
       verticalVelocity: this.velocity.y,
       grounded: this.grounded,

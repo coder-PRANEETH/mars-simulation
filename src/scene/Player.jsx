@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Quaternion, Raycaster, Vector2, Vector3 } from 'three'
+import { Euler, Quaternion, Raycaster, Vector2, Vector3 } from 'three'
 import { CAR_CONFIG, PlayerPhysics, PLAYER_CONFIG } from '../physics/PlayerPhysics.js'
 
 import Car from './Car.jsx'
+import RoverEffects from './RoverEffects.jsx'
 
 const UP = new Vector3(0, 1, 0)
 const LOOK_SENSITIVITY = 0.002
@@ -19,10 +20,15 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
   const keyboardUi = useRef(false)
   const vehicle = useRef(null)
   const wheels = useRef([])
+  const steeringWheels = useRef([])
   const driverYaw = useRef(terrain.metadata?.spawn?.yaw ?? 0)
   const surfaceTilt = useMemo(() => new Quaternion(), [])
   const facing = useMemo(() => new Quaternion(), [])
   const groundNormal = useMemo(() => new Vector3(), [])
+  const cameraTarget = useMemo(() => new Vector3(), [])
+  const cameraDestination = useMemo(() => new Vector3(), [])
+  const bodyLean = useMemo(() => new Quaternion(), [])
+  const leanAngles = useMemo(() => new Euler(), [])
   const locked = useRef(false)
   const skipMouseEvent = useRef(false)
   const orbitPointer = useRef(null)
@@ -32,7 +38,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     targetYaw: terrain.metadata?.spawn?.yaw || 0,
     targetPitch: -0.035,
   })
-  const state = useRef({ accumulator: 0, telemetryTime: 0, bob: 0, landing: 0, landingVelocity: 0, fps: 60 })
+  const state = useRef({ accumulator: 0, telemetryTime: 0, bob: 0, landing: 0, landingVelocity: 0, fps: 60, cameraReady: false, pitch: 0, roll: 0 })
   const raycaster = useMemo(() => new Raycaster(), [])
   const center = useMemo(() => new Vector2(0, 0), [])
   const defaultFov = useRef(camera.fov || 70)
@@ -42,6 +48,9 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     const yaw = driverYaw.current
     if (!driving && physics.config === PLAYER_CONFIG) return
     physics.config = driving ? CAR_CONFIG : PLAYER_CONFIG
+    physics.yaw = yaw
+    physics.steeringAngle = physics.yawRate = 0
+    state.current.cameraReady = false
     physics.velocity.x = physics.velocity.z = 0
     physics.jumpBufferedUntil = -1
     keys.current.clear()
@@ -158,6 +167,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       state.current.accumulator = 0
       state.current.landing = 0
       state.current.landingVelocity = 0
+      state.current.cameraReady = false
       driverYaw.current = spawn?.yaw ?? terrain.metadata?.spawn?.yaw ?? 0
       look.current.yaw = look.current.targetYaw = driving ? 0 : driverYaw.current
       look.current.pitch = look.current.targetPitch = driving ? 0.08 : -0.035
@@ -211,6 +221,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     const input = {
       forward: brake ? 0 : throttle,
       right: driving ? 0 : steer,
+      steer: driving ? steer : 0,
       jump: !driving && pressed.has('Space'),
       brake,
       sprint: !driving && (pressed.has('ShiftLeft') || pressed.has('ShiftRight')),
@@ -219,17 +230,8 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     }
     frame.accumulator += dt
     while (frame.accumulator >= PLAYER_CONFIG.fixedStep) {
-      if (driving) {
-        const yaw = driverYaw.current
-        const along = -Math.sin(yaw) * physics.velocity.x - Math.cos(yaw) * physics.velocity.z
-        if (input.active && physics.grounded) {
-          const direction = Math.abs(along) > 0.2 ? Math.sign(along) : throttle
-          const turning = Math.min(Math.abs(along) / 2 + Math.abs(throttle) * 0.25, 1) * 0.86 * (0.55 + 0.45 * physics.groundGrip)
-          driverYaw.current -= steer * direction * turning * PLAYER_CONFIG.fixedStep
-        }
-        input.yaw = driverYaw.current
-      }
       physics.step(PLAYER_CONFIG.fixedStep, input)
+      if (driving) driverYaw.current = physics.yaw
       frame.accumulator -= PLAYER_CONFIG.fixedStep
       if (physics.landingSpeed > 0) {
         frame.landingVelocity -= Math.min(2.1, physics.landingSpeed * 0.21)
@@ -253,17 +255,31 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       const cameraX = x + Math.sin(orbit) * back
       const cameraZ = z + Math.cos(orbit) * back
       const cameraY = Math.max(bodyY + 3.2 + Math.sin(view.pitch) * 4, terrain.sampleHeight(cameraX, cameraZ) + 0.8)
-      camera.position.set(cameraX, cameraY, cameraZ)
-      camera.lookAt(x - Math.sin(yaw) * 4.6, bodyY + 0.95, z - Math.cos(yaw) * 4.6)
+      cameraDestination.set(cameraX, cameraY, cameraZ)
+      const targetX = x - Math.sin(yaw) * 4.6, targetZ = z - Math.cos(yaw) * 4.6
+      if (!frame.cameraReady) {
+        camera.position.copy(cameraDestination)
+        cameraTarget.set(targetX, bodyY + 0.95, targetZ)
+        frame.cameraReady = true
+      } else {
+        camera.position.lerp(cameraDestination, 1 - Math.exp(-dt * 8))
+        cameraTarget.lerp(cameraDestination.set(targetX, bodyY + 0.95, targetZ), 1 - Math.exp(-dt * 11))
+      }
+      camera.position.y = Math.max(camera.position.y, terrain.sampleHeight(camera.position.x, camera.position.z) + 0.8)
+      camera.lookAt(cameraTarget)
       if (vehicle.current) {
         vehicle.current.position.set(x, bodyY, z)
         terrain.sampleNormal(x, z, groundNormal)
         surfaceTilt.setFromUnitVectors(UP, groundNormal)
         facing.setFromAxisAngle(UP, yaw)
-        vehicle.current.quaternion.slerp(surfaceTilt.multiply(facing), 1 - Math.exp(-dt * 14))
+        frame.pitch += (clamp(physics.longitudinalAcceleration * 0.012, -0.045, 0.045) - frame.pitch) * (1 - Math.exp(-dt * 7))
+        frame.roll += (clamp(physics.lateralAcceleration * 0.014, -0.055, 0.055) - frame.roll) * (1 - Math.exp(-dt * 7))
+        bodyLean.setFromEuler(leanAngles.set(frame.pitch, 0, frame.roll))
+        vehicle.current.quaternion.slerp(surfaceTilt.multiply(facing).multiply(bodyLean), 1 - Math.exp(-dt * 14))
         const forwardSpeed = -Math.sin(yaw) * physics.velocity.x - Math.cos(yaw) * physics.velocity.z
         const wheelSpeed = forwardSpeed / Math.max(0.35, 1 - physics.wheelSlip)
         for (const wheel of wheels.current) if (wheel) wheel.rotation.x -= wheelSpeed / 0.45 * dt
+        for (const wheel of steeringWheels.current) if (wheel) wheel.rotation.y = -physics.steeringAngle
       }
     } else {
       camera.position.set(x, y + PLAYER_CONFIG.eyeHeight + bobY + frame.landing, z)
@@ -286,5 +302,8 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     }
   })
 
-  return driving ? <Car bodyRef={vehicle} wheelRefs={wheels} /> : null
+  return driving ? <>
+    <Car bodyRef={vehicle} wheelRefs={wheels} steeringRefs={steeringWheels} />
+    <RoverEffects physics={physics} terrain={terrain} active={carActive} />
+  </> : null
 }

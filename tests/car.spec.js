@@ -28,7 +28,7 @@ test('drives faster than walking, steers, brakes, and switches back to foot mode
   await page.keyboard.up('KeyD');
   await page.keyboard.up('KeyW');
   await page.keyboard.down('Space');
-  await expect.poll(async () => (await telemetry(page)).speed).toBeLessThan(0.3);
+  await expect.poll(async () => (await telemetry(page)).speed, { timeout: 12000 }).toBeLessThan(0.3);
   await page.keyboard.up('Space');
   await page.keyboard.press('Escape');
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(false);

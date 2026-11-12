@@ -83,6 +83,9 @@ export default function App() {
           cameraPosition: rendering?.camera.position.toArray(),
           cameraFov: rendering?.camera.fov,
           vehiclePosition: rendering?.scene.getObjectByName('mars-expedition-car')?.position.toArray(),
+          frontWheelAngles: ['left', 'right'].map((side) => rendering?.scene.getObjectByName(`rover-steering-${side}`)?.rotation.y),
+          wheelDustCount: rendering?.scene.getObjectByName('rover-wheel-dust')?.userData.activeParticles ?? 0,
+          wheelTrackCount: rendering?.scene.getObjectByName('rover-wheel-tracks')?.userData.activeSegments ?? 0,
         };
       },
       reset: (spawn) => playerRef.current?.reset(spawn),

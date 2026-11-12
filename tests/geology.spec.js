@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 test('mapped sand changes rover handling, wheel settling and live geology information', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
   await page.getByRole('button', { name: 'Geologic regions', exact: true }).click();
@@ -22,10 +23,21 @@ test('mapped sand changes rover handling, wheel settling and live geology inform
   await page.keyboard.down('KeyW');
   await expect.poll(async () => (await read()).wheelSlip, { timeout: 10000 }).toBeGreaterThan(0.3);
   await expect.poll(async () => (await read()).sinkDepth).toBeGreaterThan(0.1);
+  await expect.poll(async () => (await read()).speed).toBeGreaterThan(1);
+  await expect.poll(async () => (await read()).speed, { timeout: 10000 }).toBeGreaterThan(1);
   const moving = await read();
   expect(moving.speed).toBeGreaterThan(1);
   expect(moving.speed).toBeLessThan(7);
   expect(moving.surface.speedFactor).toBeLessThan(0.5);
+  const traction = page.getByRole('region', { name: 'Rover traction' });
+  await expect(traction.getByRole('heading')).toHaveText('Wheels slipping');
+  expect(parseFloat(await traction.getByRole('meter', { name: 'Wheel slip' }).getAttribute('value'))).toBeGreaterThan(0.3);
+  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getRenderDiagnostics().wheelDustCount)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getRenderDiagnostics().wheelTrackCount)).toBeGreaterThan(4);
+  await page.keyboard.down('KeyD');
+  await expect.poll(async () => (await read()).steeringAngle).toBeGreaterThan(0.12);
+  await expect.poll(() => page.evaluate(() => Math.abs(window.__MARS_SIM__.getRenderDiagnostics().frontWheelAngles[0]))).toBeGreaterThan(0.1);
+  await page.keyboard.up('KeyD');
   const ground = page.getByRole('button', { name: 'Current surface condition' });
   await expect(ground).toContainText('Wind-blown sand');
   await ground.click();
@@ -33,7 +45,7 @@ test('mapped sand changes rover handling, wheel settling and live geology inform
   // Clicking a HUD control with the mouse must not steal the rover's brake.
   await page.keyboard.up('KeyW');
   await page.keyboard.down('Space');
-  await expect.poll(async () => (await read()).speed).toBeLessThan(0.2);
+  await expect.poll(async () => (await read()).speed, { timeout: 12000 }).toBeLessThan(0.2);
   await page.keyboard.up('Space');
   await expect.poll(async () => {
     return page.evaluate(() => {
