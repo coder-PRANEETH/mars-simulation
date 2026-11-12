@@ -19,3 +19,11 @@ export function materialAtCell(grid, index) {
   if (flags & 2) return SURFACE_MODELS.mantle
   return SURFACE_MODELS[grid.units?.[grid.unitIds?.[index]]?.material] ?? SURFACE_MODELS.unknown
 }
+
+export function landTypeAtCell(grid, index) {
+  const flags = grid.surface?.[index] ?? 0
+  if (flags & 1) return { name: 'Wind-blown sand', color: '#d3a849' }
+  if (flags & 2) return { name: 'Wind-blown cover', color: '#b39ac5' }
+  const unit = grid.units?.[grid.unitIds?.[index]]
+  return unit ? { name: unit.label, color: unit.color } : { name: 'Geology not mapped here', color: '#64717a' }
+}

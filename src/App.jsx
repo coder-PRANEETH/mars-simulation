@@ -24,6 +24,7 @@ export default function App() {
   const [driving, setDriving] = useState(false);
   const [carActive, setCarActive] = useState(false);
   const [showHazards, setShowHazards] = useState(true);
+  const [showLandTypes, setShowLandTypes] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null);
   const [waypointIndex, setWaypointIndex] = useState(0);
   const [region, setRegion] = useState('terrain');
@@ -128,7 +129,7 @@ export default function App() {
     setRegion(region === 'terrain' ? 'jezero' : 'terrain');
   };
   const drivingHazards = carActive && !mapOpen && showHazards && terrain
-    ? { telemetry, route: activeRoute } : null;
+    ? { telemetry, route: activeRoute, showLandTypes, onToggleLandTypes: () => setShowLandTypes((value) => !value) } : null;
   const enter = () => driving ? setCarActive(true) : playerRef.current?.enter();
   const toggleDriving = () => {
     setCarActive(false);

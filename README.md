@@ -129,7 +129,11 @@ driving and return to the entry panel. Use **W/S** to drive or reverse, **A/D** 
 to brake. Drag the terrain to orbit the chase camera. The cursor stays
 free for map and dashboard controls. The **Hazards** switch shows a local map
 centered on the car. In Jezero, it uses the planner’s slope limit, mapped
-surface cautions, and marked avoid zones. Switch back to foot mode
+surface cautions, and marked avoid zones. Its **Land types** toggle colors the
+same minimap by mapped geology and surface cover. Hazard boundaries and a local
+caution/avoid label remain visible above the land overlay. The selected mode
+persists when hiding and reopening the minimap. Unmapped regions are labeled
+as such. Switch back to foot mode
 at your current position. The car works in both regions and can follow a
 selected Jezero route. Route time estimates describe walking.
 

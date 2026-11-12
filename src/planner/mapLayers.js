@@ -1,4 +1,5 @@
 import { terrainClass } from './terrainGrid.js'
+import { landTypeAtCell } from '../terrain/materials.js'
 
 const elevationColor = (value) => [
   35 + 214 * value, 75 + 115 * value, 112 - 48 * value, 255,
@@ -26,6 +27,17 @@ export function mapLayer(grid, metadata, mode, maxSlope, avoid) {
     let color = hazardColors[kind]
     if (kind !== 'unknown' && mode === 'Elevation') color = elevationColor((grid.elevation[i] - min) / range)
     if (kind !== 'unknown' && mode === 'Slope') color = slopeColor(Math.min(grid.slope[i] / 35, 1))
+    if (mode === 'Land types') {
+      const hex = landTypeAtCell(grid, i).color.slice(1)
+      color = [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16), 205]
+    }
+    if (mode === 'Hazard boundaries' && kind !== 'unknown') {
+      const neighbors = [i % grid.width ? i - 1 : i, (i + 1) % grid.width ? i + 1 : i,
+        i >= grid.width ? i - grid.width : i, i + grid.width < grid.slope.length ? i + grid.width : i]
+      const boundary = neighbors.some((neighbor) => terrainClass(grid, neighbor, maxSlope, avoid) !== kind)
+      color = kind === 'blocked' ? [255, 71, 76, boundary ? 255 : 90]
+        : kind === 'caution' && boundary ? [255, 211, 115, 245] : [0, 0, 0, 0]
+    }
     image.data.set(color, i * 4)
   }
   context.putImageData(image, 0, 0)

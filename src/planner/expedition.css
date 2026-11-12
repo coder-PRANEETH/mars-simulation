@@ -207,3 +207,14 @@
 .expedition-readings dd { overflow-wrap: anywhere; }
 .drive-hazards { bottom: 190px; }
 @media (max-width: 700px) { .drive-hazards { bottom: 183px; } }
+.drive-land-toggle { pointer-events: auto; width: 100%; min-height: 44px; padding: 5px 0; margin: -3px 0 7px; display: flex; justify-content: space-between; align-items: center; color: #e7e0d4; background: #09131bcc; border: 0; border-bottom: 1px solid #a8bdcc50; font: 10px 'Segoe UI', sans-serif; cursor: pointer; }
+.drive-land-toggle span { color: #96a9b6; font-size: 8px; }
+.drive-land-toggle[aria-pressed="true"] { color: #f0bc8d; border-bottom-color: #dba47b; }
+.drive-land-toggle[aria-pressed="true"] span { color: #f0bc8d; }
+.drive-land-toggle:focus-visible { outline: 2px solid #efbf94; outline-offset: 3px; }
+.drive-local-hazard { margin-top: 8px; text-align: center; color: #aebec9; font-size: 9px; }
+.drive-local-hazard.is-blocked { color: #ff9a91; }
+.drive-local-hazard.is-caution { color: #f3cc8c; }
+.drive-land-name { display: flex; justify-content: center; gap: 6px; align-items: center; font-size: 10px; color: #eee5d8; margin-top: 7px; text-align: center; }
+.drive-land-name i { flex-shrink: 0; width: 6px; height: 13px; }
+@media (max-width: 700px) { .drive-land-name, .drive-local-hazard { font-size: 8px; } }

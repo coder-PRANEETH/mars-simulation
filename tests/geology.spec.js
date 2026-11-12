@@ -46,3 +46,32 @@ test('mapped sand changes rover handling, wheel settling and live geology inform
   await expect(page.getByRole('region', { name: 'Live telemetry' }).locator('dt')).toHaveText(['Wind', 'Temperature', 'Coordinates', 'Speed']);
   expect(errors).toEqual([]);
 });
+
+test('the driving minimap overlays land types while preserving hazard information', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await page.getByRole('button', { name: 'Try a route' }).click();
+  await page.getByRole('button', { name: 'Drive route', exact: true }).click();
+  await page.evaluate(() => window.__MARS_SIM__.reset({ x: -2136.2345575531235, z: -304, yaw: 0 }));
+  const map = page.getByRole('complementary', { name: 'Driving hazard map' });
+  const toggle = map.getByRole('button', { name: 'Land types' });
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(map.locator('[data-layer="land-types"]')).toHaveCount(1);
+  await expect(map.locator('[data-layer="hazards"]')).toHaveCount(1);
+  await expect(map.getByLabel('Land type at rover')).toHaveText('Wind-blown sand');
+  await expect(map.getByLabel('Local hazard level')).toHaveText('Use caution');
+  const hazards = page.getByRole('button', { name: 'Hazards', exact: true });
+  await hazards.click();
+  await expect(map).toHaveCount(0);
+  await hazards.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(toggle).toBeInViewport();
+  expect((await toggle.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  await toggle.click();
+  await expect(map.locator('[data-layer="land-types"]')).toHaveCount(0);
+  await expect(map.locator('[data-layer="hazards"]')).toHaveCount(1);
+  expect(await page.evaluate(() => document.pointerLockElement)).toBeNull();
+});
