@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { buildGrid, cellAt, cellPoint, cellsInZones, terrainClass } from './terrainGrid.js'
+import { buildGrid, cellAt, cellPoint, cellsInZones } from './terrainGrid.js'
 import { mapLayer } from './mapLayers.js'
 import { scienceSites } from './scienceSites.js'
 import { useRoutes } from './useRoutes.js'
 import RouteControls from './RouteControls.jsx'
 import DrivingHazards from './DrivingHazards.jsx'
 import Icon from '../ui/Icon.jsx'
-import WeatherObservations from './WeatherObservations.jsx'
-import { GeologyLayer, GeologyExplorer } from './GeologyLayer.jsx'
+import { GeologyLayer } from './GeologyLayer.jsx'
 import { geologicUnitAt } from '../terrain/geology.js'
 import { createSurfaceSampler } from '../simulation/surface.js'
-import GroundResponse from '../ui/GroundResponse.jsx'
 import sampleData from './data/samples.json'
-import ScienceNotebook, { SiteFieldNotes, SampleMarkers, SamplePanel } from './ScienceNotebook.jsx'
+import { SampleMarkers } from './ScienceNotebook.jsx'
+import { DiscoverWorkspace, PlaceDetails } from './DiscoverWorkspace.jsx'
+import MapLayersMenu from './MapLayersMenu.jsx'
+import RouteLaunch from './RouteLaunch.jsx'
 import { EVA_DEFAULTS, forecastEVA } from '../simulation/eva.js'
 import EVAPlanner, { EVAReturnLayer } from './EVAPlanner.jsx'
 import MapViewport, { useMapScale } from './MapViewport.jsx'
@@ -22,10 +23,6 @@ const origin = (point, metadata) => ({
   x: point.x + metadata.widthMeters / 2,
   y: point.z + metadata.depthMeters / 2,
 })
-
-function Tool({ children, onClick, active, ...props }) {
-  return <button type="button" onClick={onClick} aria-pressed={active} {...props}>{children}</button>
-}
 
 export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, onLaunch, onClearRoute }) {
   const metadata = terrain.metadata
@@ -37,7 +34,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const [layer, setLayer] = useState('Imagery')
   const [hazards, setHazards] = useState(false)
   const [maxSlope, setMaxSlope] = useState(20)
-  const [mode, setMode] = useState('Set start')
+  const [mode, setMode] = useState('Inspect')
   const [start, setStart] = useState(-1)
   const [end, setEnd] = useState(-1)
   const [zones, setZones] = useState([])
@@ -54,24 +51,90 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     .filter((site) => site.cell >= 0), [grid, terrain])
   const [inspection, setInspection] = useState(null)
   const [sitesVisible, setSitesVisible] = useState(true)
-  const mapInformation = useRef(null)
+  const [workspace, setWorkspace] = useState('route')
+  const [detail, setDetail] = useState(null)
+  const [discoverTopic, setDiscoverTopic] = useState('sites')
+  const [sheetExpanded, setSheetExpanded] = useState(true)
+  const panelBody = useRef(null)
+  const detailHeading = useRef(null)
+  const detailOrigin = useRef(null)
+  const workspaceScroll = useRef({})
+  const workspaceNav = useRef(null)
   const [selectedSite, setSelectedSite] = useState(null)
   const [showGeology, setShowGeology] = useState(false)
   const geology = terrain.geology
   const [selectedUnit, setSelectedUnit] = useState(null)
-  const [notebook, setNotebook] = useState(false)
   const [samplesVisible, setSamplesVisible] = useState(false)
   const [selectedSample, setSelectedSample] = useState(null)
   const [evaEnabled, setEvaEnabled] = useState(false)
   const [evaSettings, setEvaSettings] = useState(EVA_DEFAULTS)
-  const eva = useMemo(() => evaEnabled ? forecastEVA(routes?.[selected] ?? routes?.terrain, { ...evaSettings, pace }) : null, [evaEnabled, routes, selected, evaSettings, pace])
+  const evaPreview = useMemo(() => forecastEVA(routes?.[selected] ?? routes?.terrain, { ...evaSettings, pace }), [routes, selected, evaSettings, pace])
+  const eva = evaEnabled ? evaPreview : null
+  const selectedRoute = routes?.[selected] ?? routes?.terrain
   const [thermal, setThermal] = useState(false)
   const [context, setContext] = useState(false)
   const [crater, setCrater] = useState(null)
   const [contextError, setContextError] = useState(false)
   const raster = useMemo(() => layer === 'Imagery' ? null : mapLayer(grid, metadata, layer, maxSlope), [grid, metadata, layer, maxSlope])
-  const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, 'Hazards', maxSlope, avoid) : null, [grid, metadata, hazards, maxSlope, avoid])
+  const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, showGeology ? 'Hazard boundaries' : 'Hazards', maxSlope, avoid) : null, [grid, metadata, hazards, maxSlope, avoid, showGeology])
   const scaleBar = widthMeters >= 3000 ? 500 : 200
+
+  function switchWorkspace(next) {
+    if (!detail && panelBody.current) workspaceScroll.current[workspace] = panelBody.current.scrollTop
+    setWorkspace(next)
+    setDetail(null)
+    setSheetExpanded(true)
+    setMode('Inspect')
+  }
+
+  function openDetails(kind) {
+    if (!detail) {
+      detailOrigin.current = document.activeElement
+      workspaceScroll.current[workspace] = panelBody.current?.scrollTop ?? 0
+    }
+    setDetail(kind)
+    setSheetExpanded(true)
+  }
+
+  function backToWorkspace() {
+    setDetail(null)
+    requestAnimationFrame(() => {
+      if (detailOrigin.current?.isConnected && detailOrigin.current.getClientRects().length) detailOrigin.current.focus({ preventScroll: true })
+      else workspaceNav.current?.querySelector('[aria-selected="true"]')?.focus()
+    })
+  }
+
+  useEffect(() => {
+    if (panelBody.current) panelBody.current.scrollTop = detail ? 0 : workspaceScroll.current[workspace] ?? 0
+    if (detail) detailHeading.current?.focus({ preventScroll: true })
+  }, [detail, workspace])
+
+  function beginPick(action) {
+    switchWorkspace('route')
+    setContext(false)
+    setMode(action)
+  }
+
+  function tabKey(event) {
+    const ids = ['route', 'marswalk', 'discover']
+    const index = ids.findIndex((id) => event.target.closest('[role="tab"]')?.id === `workspace-${id}`)
+    if (index < 0) return
+    const next = event.key === 'ArrowRight' ? (index + 1) % 3 : event.key === 'ArrowLeft' ? (index + 2) % 3 : event.key === 'Home' ? 0 : event.key === 'End' ? 2 : -1
+    if (next < 0) return
+    event.preventDefault()
+    switchWorkspace(ids[next])
+    workspaceNav.current?.querySelector(`#workspace-${ids[next]}`)?.focus()
+  }
+
+  const overlays = [
+    { name: 'Hazards', active: hazards, onChange: () => setHazards(!hazards), disabled: context },
+    { name: 'Geologic regions', active: showGeology, onChange: () => setShowGeology(!showGeology) },
+    { name: 'Science sites', active: sitesVisible, onChange: () => setSitesVisible(!sitesVisible) },
+    { name: 'Collected samples', active: samplesVisible, onChange: () => setSamplesVisible(!samplesVisible) },
+    { name: 'Thermal IR', active: thermal, onChange: toggleThermal },
+  ]
+  const layerNames = overlays.filter(({ active, disabled }) => active && !disabled).map(({ name }) => name)
+  const launch = (route, asCar) => { if (route) onLaunch(asCar || !eva ? route : { ...route, eva }, asCar) }
 
   function endpointLabel(cell) {
     if (cell < 0) return 'Choose on the map'
@@ -134,10 +197,6 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     fetchCrater()
   }
 
-  function toggleGeology() {
-    setShowGeology(!showGeology)
-  }
-
   function toggleThermal() {
     if (!thermal) fetchCrater()
     setThermal(!thermal)
@@ -145,13 +204,16 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
 
   function selectSite(site) {
     setSelectedSite(site)
-    if (mapInformation.current) mapInformation.current.open = true
+    setSitesVisible(true)
+    openDetails('site')
     if (terrain.contains(...sitePosition(terrain, site))) setContext(false)
     else showCrater()
   }
 
   function selectSample(site) {
     setSelectedSample(site)
+    setSamplesVisible(true)
+    openDetails('sample')
     if (terrain.contains(...sitePosition(terrain, site))) setContext(false)
     else showCrater()
   }
@@ -176,50 +238,27 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
       setHazards(true)
     } else {
       setInspection({ x, z })
+      openDetails('terrain')
       setSelectedUnit(geologicUnitAt(terrain, { x, z })?.id ?? null)
     }
   }
 
   if (!open) return drivingHazards ? <DrivingHazards terrain={terrain} grid={grid} avoid={avoid} maxSlope={maxSlope} {...drivingHazards} /> : null
 
-  return <section className="expedition" aria-label="Jezero expedition map">
+  return <section className="expedition mission-workspaces" aria-label="Jezero expedition map">
     <header className="expedition-heading">
-      <div className="expedition-title">
-        <span className="expedition-eyebrow">MARS EXPLORER / MISSION MAP</span>
-        <h1 aria-label="Jezero Expedition Planner">Jezero crater</h1>
-      </div>
+      <div className="expedition-title"><span className="expedition-eyebrow">MARS EXPLORER / MISSION MAP</span><h1 aria-label="Jezero Expedition Planner">Jezero crater</h1></div>
+      <label className="mission-extent"><span className="sr-only">Map extent</span><select aria-label="Map extent" value={context ? 'crater' : 'local'} onChange={(event) => {
+        setMode('Inspect')
+        if (event.target.value === 'crater') showCrater()
+        else setContext(false)
+      }}><option value="local">Western Delta</option><option value="crater">Whole crater</option></select></label>
       <button type="button" className="expedition-back" onClick={onClose} aria-label="Return to surface">Back to exploring<Icon name="arrow" size={18} /></button>
     </header>
-    <div className="expedition-tools">
-      <div role="group" aria-label="Map extent">
-        <Tool active={!context} onClick={() => setContext(false)}>Exploration area</Tool>
-        <Tool active={context} onClick={showCrater}>Crater overview</Tool>
-      </div>
-      <div className="expedition-map-tools" role="group" aria-label="Map tools">
-        {!context && <>
-          <Tool active={mode === 'Inspect'} onClick={() => setMode('Inspect')}>Inspect</Tool>
-          <Tool active={mode === 'Mark avoid zone'} onClick={() => setMode('Mark avoid zone')}>Mark avoid zone</Tool>
-          {!!zones.length && <Tool onClick={() => update(setZones, zones.slice(0, -1))}>Undo last avoid zone</Tool>}
-          <Tool active={hazards} onClick={() => setHazards(!hazards)}><Icon name="hazard" size={16} />Hazards</Tool>
-        </>}
-        <Tool active={showGeology} onClick={toggleGeology} aria-label="Geologic regions"><Icon name="layers" size={16} />Regions</Tool>
-        <Tool active={evaEnabled} onClick={() => setEvaEnabled(!evaEnabled)}>Marswalk</Tool>
-        <Tool active={notebook} onClick={() => setNotebook(!notebook)}>Life & science</Tool>
-        <details className="expedition-layer-menu">
-          <summary><Icon name="layers" size={17} />Layers</summary>
-          <div role="group" aria-label="Terrain layers">
-            {!context && ['Imagery', 'Elevation', 'Slope'].map((name) => <Tool key={name} active={layer === name} onClick={() => setLayer(name)}>{name}</Tool>)}
-            <Tool active={thermal} onClick={toggleThermal}>Thermal IR</Tool>
-            <Tool active={samplesVisible} onClick={() => setSamplesVisible(!samplesVisible)}>Collected samples</Tool>
-            <Tool active={sitesVisible} onClick={() => setSitesVisible(!sitesVisible)}>Science sites</Tool>
-          </div>
-        </details>
-      </div>
-    </div>
     <div className="expedition-content">
       <div className="expedition-map">
         {context ? (
-          crater ? <CraterMap crater={crater} terrain={terrain} samplesVisible={samplesVisible} selectedSample={selectedSample} onSample={selectSample} geology={showGeology ? geology : null} selectedUnit={selectedUnit} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
+          crater ? <CraterMap crater={crater} terrain={terrain} samplesVisible={samplesVisible} selectedSample={detail === 'sample' ? selectedSample : null} onSample={selectSample} geology={showGeology ? geology : null} selectedUnit={selectedUnit} thermal={thermal} sitesVisible={sitesVisible} selectedSite={detail === 'site' ? selectedSite : null} onSelect={selectSite} onDetail={() => setContext(false)} />
             : <p role="status">{contextError ? 'Crater overview could not be loaded. Select Crater overview to retry.' : 'Loading crater overview…'}</p>
         ) : <MapViewport width={widthMeters} height={depthMeters} onClick={inspect} aria-label="Detailed traverse map" role="img">
           <clipPath id="expedition-detail"><rect width={widthMeters} height={depthMeters} /></clipPath>
@@ -233,63 +272,71 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
             <text y={-widthMeters * .012} fontSize={widthMeters * .028}>{scaleBar} m</text>
           </g>
           {sitesVisible && <SiteMarkers size={widthMeters} sites={scienceSites.filter((site) => terrain.contains(...sitePosition(terrain, site)))}
-            locate={(site) => origin(terrain.location(site.latitude, site.longitude), metadata)} selected={selectedSite} onSelect={(site) => {
+            locate={(site) => origin(terrain.location(site.latitude, site.longitude), metadata)} selected={detail === 'site' ? selectedSite : null} onSelect={(site) => {
               if (mode === 'Inspect') selectSite(site)
               else pickPoint(terrain.location(site.latitude, site.longitude))
             }} />}
           {samplesVisible && <SampleMarkers sites={sampleData.sites.filter((site) => terrain.contains(...sitePosition(terrain, site)))} size={widthMeters}
-            locate={(site) => origin(terrain.location(site.latitude, site.longitude), metadata)} selected={selectedSample} onSelect={selectSample} />}
+            locate={(site) => origin(terrain.location(site.latitude, site.longitude), metadata)} selected={detail === 'sample' ? selectedSample : null} onSelect={(site) => {
+              if (mode === 'Inspect') selectSample(site)
+              else pickPoint(terrain.location(site.latitude, site.longitude))
+            }} />}
           {eva && <EVAReturnLayer plan={eva} metadata={metadata} />}
           <RouteOverlay routes={routes} selected={selected} grid={grid} start={start} end={end} zones={zones} metadata={metadata} />
-          {inspection && mode === 'Inspect' && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
+          {inspection && detail === 'terrain' && mode === 'Inspect' && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
         </MapViewport>}
-        {!context && mode !== 'Inspect' && <div className="expedition-map-hint" role="status">
-          {mode === 'Set start' ? 'Click the map to set your start' : mode === 'Set destination' ? 'Click the map to set your destination' : 'Click to mark a 40 m avoid zone'}
+        <div className="mission-map-controls"><MapLayersMenu openMap={open} context={context} layer={layer} onLayer={setLayer} overlays={overlays} /></div>
+        {!context && mode !== 'Inspect' && <div className="mission-map-task" role="status">
+          <span>{mode === 'Set start' ? 'Choose your start on the map' : mode === 'Set destination' ? 'Choose your destination on the map' : 'Click to mark a 40 m avoid zone'}</span>
+          {mode === 'Mark avoid zone' && zones.length > 0 && <button type="button" onClick={() => update(setZones, zones.slice(0, -1))}>Undo last avoid zone</button>}
+          <button type="button" onClick={() => setMode('Inspect')}>{mode === 'Mark avoid zone' ? 'Done' : 'Cancel'}</button>
         </div>}
         <div className="expedition-north" aria-hidden="true">↑<span>N</span></div>
+        {(layerNames.length > 0 || layer !== 'Imagery') && <details className="mission-map-key">
+          <summary>Map key · {layerNames.length ? layerNames.join(' + ') : layer}</summary>
+          {hazards && !context && <ul className="expedition-legend"><li><i className="hazard-blocked" />Above the slope limit or marked avoid zone</li><li><i className="hazard-caution" />Steep or locally uneven, or mapped surface caution</li><li><i className="hazard-unknown" />No elevation data</li></ul>}
+          {showGeology && <p>Published USGS geologic units · 1:75,000. Explore each region in Discover.</p>}
+          {layer === 'Elevation' && !context && <p>Elevation: {Math.round(metadata.minimumElevation)} to {Math.round(metadata.maximumElevation)} m · USGS datum</p>}
+          {layer === 'Slope' && !context && <p>Slope: 0° teal to 35° or more red.</p>}
+          {thermal && <p>Mars Odyssey THEMIS nighttime infrared · relative brightness at 100 m resolution.</p>}
+          {samplesVisible && <p>Diamonds: sample collection sites, not cached tube locations. Gold: sedimentary; blue: other materials.</p>}
+          {sitesVisible && <p>Numbered circles: science sites. Select a marker for its field notes.</p>}
+        </details>}
       </div>
-      <aside className="expedition-panel">
-        {notebook && <ScienceNotebook />}
-        {samplesVisible && <SamplePanel data={sampleData} selected={selectedSample} onSelect={selectSample} />}
-        {showGeology && <GeologyExplorer data={geology} selectedId={selectedUnit} onSelect={setSelectedUnit} context={context} />}
-        {!context && <RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={setMode}
-          maxSlope={maxSlope} setMaxSlope={(value) => update(setMaxSlope, value)} pace={pace} setPace={(value) => update(setPace, value)}
-          dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
-          objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
-          sites={localSites} onDemo={demo} planning={planning} loadingSurface={surface === undefined} error={error} routes={routes}
-          evaPlanner={evaEnabled ? <EVAPlanner settings={evaSettings} onChange={setEvaSettings} plan={eva} /> : null}
-          selected={selected} onSelect={setSelected} eva={eva} onLaunch={(route, asCar) => onLaunch(asCar || !eva ? route : { ...route, eva }, asCar)} />}
-        {context && <p>Select the outlined area to plan a route.</p>}
-        <details className="expedition-disclosure" ref={mapInformation}>
-          <summary>Map information</summary>
-          <p>{context ? 'Jezero Crater · CTX elevation mosaic' : `Western Delta · HiRISE imagery and elevation · ${metadata.areaKm2.toFixed(1)} km²`}</p>
-          {thermal && <p>{contextError ? 'Thermal layer unavailable.' : 'Mars Odyssey THEMIS nighttime infrared · relative brightness at 100 m resolution.'}</p>}
-          <WeatherObservations assetBase={terrain.assetBase} />
-          {sitesVisible && <SciencePanel selected={selectedSite} onSelect={selectSite} />}
-        </details>
-        {!context && <>
-          {hazards && <ul className="expedition-legend">
-            <li><i className="hazard-blocked" />Above the slope limit or marked avoid zone</li>
-            <li><i className="hazard-caution" />Steep or locally uneven, or mapped surface caution</li>
-            <li><i className="hazard-unknown" />No elevation data</li>
-          </ul>}
-          {hazards && surface === null && <p>Mapped surface data unavailable.</p>}
-          {layer === 'Elevation' && <p>Elevation ramp: {Math.round(metadata.minimumElevation)} to {Math.round(metadata.maximumElevation)} m · USGS elevation datum</p>}
-          {layer === 'Slope' && <p>Slope ramp: 0° teal to 35° or more red. Color shows the steeper triangle in each cell.</p>}
-          {inspection && mode === 'Inspect' && <div>
-            <h2>Location inspector</h2>
-            <dl className="expedition-readings">
-              <dt>Coordinates</dt><dd>{terrain.coordinates(inspection.x, inspection.z).latitude.toFixed(5)}° N, {terrain.coordinates(inspection.x, inspection.z).longitude.toFixed(5)}° E</dd>
-              <dt>Geologic region</dt><dd>{geologicUnitAt(terrain, inspection)?.label ?? 'Outside mapped coverage'}</dd>
-              <dt>Elevation</dt><dd>{terrain.getElevation(inspection.x, inspection.z).toFixed(1)} m</dd>
-              <dt>Slope</dt><dd>{terrain.sampleSlope(inspection.x, inspection.z).toFixed(1)}°</dd>
-              <dt>Terrain class</dt><dd>{terrainClass(grid, cellAt(grid, inspection), maxSlope, avoid)}</dd>
-            </dl>
-            <GroundResponse surface={sampleSurface(inspection)} />
-          </div>}
-        </>}
+      <aside className={`expedition-panel ${sheetExpanded ? '' : 'is-collapsed'}`} aria-label="Mission workspace">
+        <div className="mission-workspace-heading">
+          <nav ref={workspaceNav} className="mission-workspace-tabs" role="tablist" aria-label="Mission workspaces" onKeyDown={tabKey}>
+            {[['route', 'Route'], ['marswalk', 'Marswalk'], ['discover', 'Discover']].map(([id, name]) => <button key={id} id={`workspace-${id}`} type="button" role="tab" tabIndex={workspace === id ? 0 : -1} aria-controls="mission-workspace-body" aria-selected={workspace === id} onClick={() => switchWorkspace(id)}>{name}</button>)}
+          </nav>
+          <button type="button" className="mission-sheet-toggle" aria-label={sheetExpanded ? 'Collapse workspace' : 'Expand workspace'} aria-expanded={sheetExpanded} aria-controls="mission-workspace-body" onClick={() => setSheetExpanded(!sheetExpanded)}>{sheetExpanded ? '⌄' : '⌃'}</button>
+        </div>
+        <div id="mission-workspace-body" ref={panelBody} className="mission-workspace-body" role="tabpanel" aria-labelledby={`workspace-${workspace}`}>
+          <div hidden={!!detail || workspace !== 'route'} data-workspace="route">
+            {context && <p>Routes use the measured Western Delta terrain. Choosing a pin opens that area.</p>}
+            <RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={beginPick}
+              maxSlope={maxSlope} setMaxSlope={(value) => update(setMaxSlope, value)} pace={pace} setPace={(value) => update(setPace, value)}
+              dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
+              objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
+              sites={localSites} onDemo={demo} planning={planning} loadingSurface={surface === undefined} error={error} routes={routes}
+              selected={selected} onSelect={setSelected} zones={zones} onUndo={() => update(setZones, zones.slice(0, -1))} />
+          </div>
+          <div hidden={!!detail || workspace !== 'marswalk'} data-workspace="marswalk">
+            <label className="mission-suit-toggle"><input type="checkbox" checked={evaEnabled} onChange={(event) => setEvaEnabled(event.target.checked)} />Apply suit budget to Walk route</label>
+            <EVAPlanner settings={evaSettings} onChange={setEvaSettings} plan={evaPreview} />
+            {!selectedRoute && <button type="button" className="mission-text-action" onClick={() => switchWorkspace('route')}>Choose a route<Icon name="arrow" size={14} /></button>}
+          </div>
+          <div hidden={!!detail || workspace !== 'discover'} data-workspace="discover">
+            <DiscoverWorkspace category={discoverTopic} onCategory={(value) => { setDiscoverTopic(value); if (panelBody.current) panelBody.current.scrollTop = 0 }} terrain={terrain} context={context} selectedUnit={selectedUnit} selectedSite={selectedSite} selectedSample={selectedSample}
+              onUnit={(value) => { setSelectedUnit(value); if (value) setShowGeology(true) }} onSite={selectSite} onSample={selectSample} />
+          </div>
+          {detail && <section className="mission-place-details" aria-label="Place details">
+            <div ref={detailHeading} tabIndex="-1" className="mission-place-back"><button type="button" onClick={backToWorkspace} aria-label="Back to workspace">← Back to {workspace === 'route' ? 'Route' : workspace === 'marswalk' ? 'Marswalk' : 'Discover'}</button></div>
+            <PlaceDetails detail={detail} terrain={terrain} grid={grid} maxSlope={maxSlope} avoid={avoid} sampleSurface={sampleSurface} selectedSite={selectedSite} selectedSample={selectedSample} inspection={inspection} onSite={selectSite} onSample={selectSample} />
+          </section>}
+        </div>
       </aside>
     </div>
+    <RouteLaunch route={selectedRoute} planning={planning} eva={eva} onLaunch={launch} onRoute={() => switchWorkspace('route')} onBudget={() => switchWorkspace('marswalk')} />
   </section>
 }
 
@@ -344,26 +391,6 @@ function SiteMarkers({ size, sites, locate, selected, onSelect }) {
       <text y={radius * 0.37} textAnchor="middle" fontSize={radius * 1.1}>{scienceSites.indexOf(site) + 1}</text>
     </g>
   })
-}
-
-function SciencePanel({ selected, onSelect }) {
-  return <div className="expedition-science">
-    <h2>Science sites</h2>
-    <select aria-label="Inspect science site" value={selected?.id ?? ''} onChange={(event) => {
-      const site = scienceSites.find(({ id }) => id === event.target.value)
-      if (site) onSelect(site)
-    }}>
-      <option value="" disabled>Select a science site</option>
-      {scienceSites.map((site, index) => <option key={site.id} value={site.id}>{index + 1}. {site.name}</option>)}
-    </select>
-    {selected && <div>
-      <strong>{selected.category}</strong>
-      <p>{selected.description}</p>
-      <p>{selected.locationNote}</p>
-      <SiteFieldNotes site={selected} />
-      <a href={selected.source} target="_blank" rel="noreferrer">Science source ↗</a>
-    </div>}
-  </div>
 }
 
 function RouteOverlay({ routes, selected, grid, start, end, zones, metadata }) {

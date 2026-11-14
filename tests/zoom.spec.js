@@ -3,12 +3,11 @@ import { test, expect } from '@playwright/test';
 test('scroll zooms maps without changing picked coordinates, and pans without placing pins', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
-  await page.getByRole('button', { name: 'Inspect', exact: true }).click();
   const map = page.getByRole('img', { name: 'Detailed traverse map' });
   const box = await map.boundingBox();
   const x = box.x + box.width / 2, y = box.y + box.height / 2;
   await page.mouse.click(x, y);
-  const coords = page.locator('.expedition-readings dd').first();
+  const coords = page.getByLabel('Location inspector', { exact: true }).locator('dd').first();
   const before = await coords.textContent();
   const full = await map.getAttribute('viewBox');
   await page.mouse.move(x, y);
@@ -16,6 +15,7 @@ test('scroll zooms maps without changing picked coordinates, and pans without pl
   await expect(map).not.toHaveAttribute('viewBox', full);
   await page.mouse.click(x, y);
   await expect(coords).toHaveText(before);
+  await page.getByRole('button', { name: 'Back to workspace', exact: true }).click();
   await page.getByRole('button', { name: 'Set start', exact: true }).click();
   await page.mouse.move(x, y);
   await page.mouse.down();
@@ -24,7 +24,7 @@ test('scroll zooms maps without changing picked coordinates, and pans without pl
   await expect(page.getByRole('button', { name: 'Set start', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Reset map zoom' }).click();
   await expect(map).toHaveAttribute('viewBox', full);
-  await page.getByRole('button', { name: 'Crater overview', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Map extent', exact: true }).selectOption('crater');
   const overview = page.getByRole('img', { name: 'Jezero crater elevation overview' });
   const initial = await overview.getAttribute('viewBox');
   await overview.hover();

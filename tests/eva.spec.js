@@ -5,10 +5,13 @@ test('Marswalk plan checks oxygen, cooling, science and return reserve before la
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
-  await page.getByRole('button', { name: 'Marswalk', exact: true }).click();
+  await page.getByRole('tab', { name: 'Marswalk', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Apply suit budget to Walk route' }).check();
   const plan = page.getByLabel('Marswalk life support planner');
   await expect(plan).toContainText('Choose a start and destination');
+  await page.getByRole('tab', { name: 'Route', exact: true }).click();
   await page.getByRole('button', { name: 'Try a route' }).click();
+  await page.getByRole('tab', { name: 'Marswalk', exact: true }).click();
   await expect(plan.getByLabel('Oxygen budget including reserve')).toBeVisible();
   await plan.getByText('Suit & science plan', { exact: true }).click();
   await plan.getByLabel('Cooling capacity (W)').fill('700');
@@ -54,11 +57,14 @@ test('Marswalk plan checks oxygen, cooling, science and return reserve before la
 test('science work at a nearby destination charges the suit budget once', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
-  await page.getByRole('button', { name: 'Marswalk', exact: true }).click();
+  await page.getByRole('tab', { name: 'Marswalk', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Apply suit budget to Walk route' }).check();
+  await page.getByRole('tab', { name: 'Route', exact: true }).click();
+  await page.getByRole('button', { name: 'Set start', exact: true }).click();
   await page.getByRole('button', { name: 'Octavia E. Butler Landing Site', exact: true }).click();
-  await page.getByText('Layers', { exact: true }).click();
-  await page.getByRole('button', { name: 'Science sites', exact: true }).click();
-  await page.getByText('Layers', { exact: true }).click();
+  await page.getByRole('button', { name: 'Map layers', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Science sites', exact: true }).uncheck();
+  await page.getByRole('button', { name: 'Map layers', exact: true }).click();
   const map = page.getByRole('img', { name: 'Detailed traverse map' });
   const target = await map.evaluate(svg => {
     const t = window.__MARS_SIM__.getTerrain();

@@ -4,7 +4,7 @@ import Icon from '../ui/Icon.jsx'
 export default function RouteControls({
   start, end, startLabel, endLabel, mode, setMode, maxSlope, setMaxSlope, pace, setPace, dust, setDust, temperature, setTemperature,
   objective, setObjective, scienceStop, setScienceStop, sites, onDemo,
-  planning, loadingSurface, error, routes, eva, evaPlanner, selected, onSelect, onLaunch,
+  planning, loadingSurface, error, routes, selected, onSelect, zones, onUndo,
 }) {
   return <div className="expedition-routing">
     <div className="expedition-route-heading">
@@ -14,17 +14,20 @@ export default function RouteControls({
     <div className="expedition-endpoints">
       {[['Set start', 'Start', startLabel, 'S'], ['Set destination', 'Destination', endLabel, 'D']].map(([action, label, place, badge]) =>
         <button key={action} type="button" aria-label={action} aria-pressed={mode === action} onClick={() => setMode(action)}>
-          <b>{badge}</b><span><small>{label}</small><strong>{place}</strong></span><small>{mode === action ? 'Click map' : 'Change'}</small>
+          <b>{badge}</b><span><small>{label}</small><strong>{place}</strong></span><small>{mode === action ? 'Click map' : (action === 'Set start' ? start : end) < 0 ? 'Choose' : 'Change'}</small>
         </button>
       )}
     </div>
-    {evaPlanner}
     {(planning || (loadingSurface && start >= 0 && end >= 0)) && <p role="status">Calculating route…</p>}
     {start >= 0 && start === end && <p role="status">Choose a different destination.</p>}
     {error && <p role="alert">{error}</p>}
-    {routes && <RouteResults routes={routes} selected={selected} onSelect={onSelect} onLaunch={onLaunch} eva={eva} />}
+    {routes && <RouteResults routes={routes} selected={selected} onSelect={onSelect} />}
     <details className="expedition-disclosure">
       <summary>Route settings</summary>
+      <div className="mission-avoid-tools">
+        <button type="button" aria-pressed={mode === 'Mark avoid zone'} onClick={() => setMode('Mark avoid zone')}>Mark avoid zone</button>
+        {zones.length > 0 && <button type="button" onClick={onUndo}>Remove last avoid zone</button>}
+      </div>
       <label className="expedition-field">Maximum slope <output>{maxSlope}°</output>
         <input type="range" min="10" max="35" value={maxSlope} onChange={(event) => setMaxSlope(+event.target.value)} />
       </label>

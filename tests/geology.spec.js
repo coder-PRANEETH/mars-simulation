@@ -6,7 +6,8 @@ test('mapped sand changes rover handling, wheel settling and live geology inform
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
   await page.getByRole('button', { name: 'Explore Jezero' }).click();
-  await page.getByRole('button', { name: 'Geologic regions', exact: true }).click();
+  await page.getByRole('tab', { name: 'Discover', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('regions');
   const regions = page.getByLabel('Geologic region explorer');
   await expect(regions.getByRole('button')).toHaveCount(6);
   await regions.getByRole('combobox').selectOption('8');

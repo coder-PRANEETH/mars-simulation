@@ -53,14 +53,14 @@ export function SampleMarkers({ sites, size, locate, selected, onSelect }) {
   })}</g>
 }
 
-export function SamplePanel({ data, selected, onSelect }) {
+export function SamplePanel({ data, selected, onSelect, showDetails = true }) {
   return <section className="science-sample-panel" aria-label="Perseverance sample collection sites">
     <h2>Rocks worth bringing home</h2>
     <select aria-label="Inspect collected sample" value={selected?.id ?? ''} onChange={(event) => onSelect(data.sites.find((site) => site.id === event.target.value))}>
       <option disabled value="">Choose a collection site</option>
       {data.sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}
     </select>
-    {selected && <div aria-label="Selected sample"><h3>{selected.name}</h3><dl className="expedition-readings">
+    {selected && showDetails && <div aria-label="Selected sample"><h3>{selected.name}</h3><dl className="expedition-readings">
       <dt>Material</dt><dd>{selected.rock}</dd><dt>Sample type</dt><dd>{selected.type}</dd><dt>Collection sol</dt><dd>{selected.sol}</dd>
       <dt>Region</dt><dd>{selected.region}</dd><dt>Location</dt><dd>{selected.latitude.toFixed(5)}° N · {selected.longitude.toFixed(5)}° E</dd>
     </dl></div>}

@@ -28,18 +28,8 @@
 .expedition-back { display: inline-flex; align-items: center; gap: 15px; font-size: 11px !important; }
 .expedition-back svg { border: 0; border-left: 1px solid var(--atlas-line); border-radius: 0; box-sizing: content-box; padding: 11px; }
 .expedition-back:hover svg { background: var(--atlas-raised); }
-.expedition-tools { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 0 1px; flex-shrink: 0; }
-.expedition-tools > div { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.expedition-tools > div[aria-label="Map extent"] { gap: 16px; }
-.expedition-tools button { padding: 5px 9px; font-size: 11px; border-radius: 0; display: inline-flex; align-items: center; gap: 6px; }
-.expedition-tools button[aria-pressed="true"] { color: var(--atlas-on-accent); background: var(--atlas-accent); }
-.expedition-tools > div[aria-label="Map extent"] button { padding: 5px 0; border-radius: 0; color: var(--atlas-muted); background: none; border-bottom: 1px solid transparent; }
-.expedition-tools > div[aria-label="Map extent"] button[aria-pressed="true"] { color: var(--atlas-accent); border-bottom-color: var(--atlas-accent); }
-.expedition-tools button:hover { color: var(--atlas-ink); background: var(--atlas-raised); }
-.expedition-tools button[aria-pressed="true"]:hover { color: var(--atlas-on-accent); background: #c58e65; }
 .expedition-content { display: grid; grid-template-columns: 292px minmax(0, 1fr); grid-template-areas: "panel map"; flex: 1; min-height: 0; gap: 25px; }
 .expedition-map { grid-area: map; position: relative; display: grid; place-items: center; min-width: 0; overflow: hidden; border-radius: 0; background: var(--atlas-panel); }
-.expedition-map > svg { display: block; width: 100%; height: 100%; min-height: 0; cursor: crosshair; }
 .expedition-map .expedition-pixels { image-rendering: pixelated; }
 .expedition-panel { grid-area: panel; min-height: 0; overflow: auto; padding: 14px 8px 18px 0; scrollbar-width: thin; scrollbar-color: var(--atlas-dim) transparent; }
 .expedition-panel p, .expedition-panel li { font-size: 11px; line-height: 1.65; color: var(--muted); }
@@ -99,7 +89,6 @@
 .expedition-scale rect { fill: #101719e6; }
 .expedition-scale line { stroke: #f8f0df; }
 .expedition-scale text { fill: #f8f0df; }
-.expedition-map-hint { position: absolute; top: 21px; left: 50%; transform: translateX(-50%); padding: 11px 19px; border-radius: 0; color: #fbf5e8; background: #131a1de6; backdrop-filter: blur(9px); font-size: 11px; pointer-events: none; max-width: 83%; text-align: center; white-space: nowrap; }
 .expedition-site { cursor: pointer; outline: none; }
 .expedition-site circle { fill: #12191c; stroke: var(--atlas-accent); }
 .expedition-site text { fill: var(--atlas-accent); font-weight: 600; pointer-events: none; }
@@ -121,15 +110,6 @@
 .expedition-weather { margin-top: 14px; }
 .expedition-weather > :not(summary) { margin-top: 9px; }
 .expedition-weather a { display: inline-block; }
-.expedition-layer-menu { position: relative; }
-.expedition-layer-menu > summary { display: flex; align-items: center; gap: 7px; list-style: none; padding: 6px 12px; min-height: 38px; cursor: pointer; font-size: 11px; border: 1px solid var(--atlas-line); border-radius: 0; }
-.expedition-layer-menu > summary::-webkit-details-marker { display: none; }
-.expedition-layer-menu[open] > summary { background: var(--atlas-raised); }
-.expedition-layer-menu > div { position: absolute; z-index: 4; top: calc(100% + 8px); right: 0; width: 185px; border-radius: 0; background: #12191ceF; padding: 10px; box-shadow: 0 10px 35px #00000066; display: grid; gap: 2px; backdrop-filter: blur(18px); }
-.expedition-layer-menu button { border-radius: 0; justify-content: flex-start; text-align: left; padding: 8px 12px; }
-.expedition-layer-menu button::before { content: ''; width: 5px; height: 5px; background: var(--atlas-dim); border-radius: 50%; margin-right: 5px; }
-.expedition-layer-menu button[aria-pressed="true"], .expedition-layer-menu button[aria-pressed="true"]:hover { background: #dba47b12; color: var(--atlas-accent); }
-.expedition-layer-menu button[aria-pressed="true"]::before { background: var(--atlas-accent); }
 .expedition-guide { position: absolute; left: 50%; top: 112px; transform: translateX(-50%); z-index: 5; display: flex; flex-direction: column; gap: 4px; text-align: center; color: #fff2d8; pointer-events: none; text-shadow: 0 1px 8px #11221adb; }
 .expedition-guide strong { font-size: 12px; font-weight: 500; }
 .expedition-guide > span { font-size: 10px; color: #e3d3b9; }
@@ -158,13 +138,6 @@
   .expedition-content { grid-template-columns: 1fr; grid-template-areas: "map" "panel"; gap: 15px; min-height: auto; flex: none; }
   .expedition-map { height: 43vh; min-height: 250px; border-radius: 0; }
   .expedition-panel { overflow: visible; padding: 0 6px 28px; }
-  .expedition-tools { flex-wrap: wrap; gap: 4px; }
-  .expedition-tools > .expedition-map-tools { gap: 3px; justify-content: flex-start; }
-  .expedition-tools button { font-size: 10px; padding: 4px 8px; }
-  .expedition-tools > div[aria-label="Map extent"] { gap: 15px; }
-  .expedition-tools button svg { display: none; }
-  .expedition-layer-menu > summary { font-size: 10px; padding: 5px 10px; }
-  .expedition-map-hint { font-size: 9px; padding: 9px 12px; max-width: 88%; }
   .expedition-route-heading { margin-bottom: 0; }
   .expedition-endpoints { margin: 0; }
   .expedition-routing, .expedition-route-results { gap: 13px; }
@@ -185,10 +158,6 @@
 .expedition-map { clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
 .expedition .expedition-primary { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
 .expedition .expedition-primary:focus-visible { clip-path: none; }
-.expedition-tools button[aria-pressed="true"] { color: var(--atlas-accent); background: transparent; box-shadow: inset 0 -1px var(--atlas-accent); }
-.expedition-tools button[aria-pressed="true"]:hover { color: var(--atlas-accent); background: var(--atlas-raised); }
-.expedition-layer-menu > summary { border: 0; border-left: 1px solid var(--atlas-line); }
-.expedition-map-hint { border-left: 2px solid var(--atlas-accent); }
 
 .expedition-region-explorer { margin-bottom: 26px; padding-bottom: 20px; border-bottom: 1px solid var(--atlas-line); }
 .expedition-region-select { display: grid; gap: 6px; font-size: 11px; color: var(--atlas-muted); margin-top: 15px; }
@@ -255,3 +224,112 @@
 .eva-setting input, .eva-setting select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; background: var(--atlas-bg); color: var(--atlas-ink); border: 1px solid var(--atlas-line); border-radius: 0; padding: 6px; font: 12px 'Segoe UI', sans-serif; }
 .eva-planner meter { display: block; width: 100%; height: 7px; accent-color: #98cbb5; }
 .eva-planner a { font-size: 10px; color: var(--atlas-accent); line-height: 1.7; }
+
+/* A single reading workspace, independent map overlays, and a permanent launch bar. */
+.mission-workspaces { padding: 22px 28px 0; gap: 18px; }
+.mission-workspaces .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.mission-workspaces .expedition-heading { gap: 24px; }
+.mission-extent { margin-left: auto; }
+.mission-extent select { width: 175px; min-height: 44px; border: 0; padding: 8px 10px; font-size: 12px; color: var(--atlas-muted); }
+.mission-workspaces .expedition-content { grid-template-columns: 300px minmax(0, 1fr); gap: 24px; }
+.mission-workspaces .expedition-map { overflow: visible; clip-path: none; z-index: 1; }
+.mission-workspaces .expedition-viewport { clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px); }
+.mission-workspaces .expedition-panel { display: flex; flex-direction: column; overflow: hidden; padding: 0; border-right: 1px solid var(--atlas-line); }
+.mission-workspace-heading { display: flex; flex-shrink: 0; margin-right: 18px; border-bottom: 1px solid var(--atlas-line); }
+.mission-workspace-tabs { display: flex; gap: 22px; flex: 1; }
+.mission-workspace-tabs button { min-height: 52px; border: 0; border-bottom: 2px solid transparent; font-size: 12px; padding: 0; color: var(--atlas-muted); }
+.mission-workspace-tabs button[aria-selected="true"] { color: var(--atlas-accent); border-bottom-color: var(--atlas-accent); }
+.mission-workspace-body { min-height: 0; flex: 1; overflow: auto; padding: 22px 18px 24px 0; scrollbar-width: thin; scrollbar-color: var(--atlas-dim) transparent; }
+.mission-workspace-body [hidden] { display: none !important; }
+.mission-workspace-body > [data-workspace] > p { margin: 0 0 20px; }
+.mission-workspace-body .expedition-readings { font-size: 11px; line-height: 1.5; }
+.mission-workspace-body select { min-height: 44px; font-size: 12px; }
+.mission-workspace-body .expedition-endpoints button { min-height: 76px; }
+.mission-workspace-body .expedition-endpoints span strong { font-size: 12px; }
+.mission-workspace-body .expedition-endpoints span small { font-size: 10px; }
+.mission-workspace-body .expedition-routing { gap: 22px; }
+.mission-workspace-body .eva-planner { margin-bottom: 0; }
+.mission-sheet-toggle { display: none; }
+.discover-workspace { display: grid; gap: 22px; }
+.discover-workspace > div > h2, .mission-place-details h2, .mission-workspace-body .eva-planner h2 { font: 600 24px/1.2 'Trebuchet MS', sans-serif; letter-spacing: -.025em; }
+.discover-topic { display: grid; gap: 6px; font-size: 11px; color: var(--atlas-muted); }
+.discover-workspace .expedition-science, .mission-place-details .expedition-science { margin-top: 0; }
+.discover-workspace .science-notebook, .discover-workspace .science-sample-panel { margin-bottom: 0; border-bottom: 0; padding-bottom: 0; }
+.mission-place-details { display: grid; gap: 20px; }
+.mission-place-back { margin-bottom: 2px; }
+.mission-place-back button, .mission-text-action { display: inline-flex; align-items: center; gap: 8px; padding: 0; color: var(--atlas-accent) !important; font-size: 12px !important; min-height: 44px !important; }
+.mission-place-back:focus { outline: none; }
+.mission-place-back:focus-visible { outline: 2px solid var(--atlas-accent); outline-offset: 3px; }
+.mission-suit-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-bottom: 22px; font-size: 12px; }
+.mission-suit-toggle input, .mission-layer-options input { accent-color: var(--atlas-accent); width: 16px; height: 16px; flex-shrink: 0; }
+.mission-avoid-tools { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.mission-avoid-tools button { padding: 0; min-height: 44px; font-size: 11px; color: var(--atlas-accent); }
+.mission-avoid-tools button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: 5px; }
+.mission-map-controls { position: absolute; top: 14px; right: 14px; z-index: 6; }
+.mission-layers { position: relative; }
+.mission-layers-trigger { display: inline-flex; align-items: center; gap: 8px; min-height: 44px !important; padding: 8px 14px; background: var(--atlas-bg) !important; border: 1px solid var(--atlas-line) !important; font-size: 12px !important; }
+.mission-layers-trigger span { color: var(--atlas-accent); font-size: 11px; }
+.mission-layer-options { position: absolute; top: 53px; right: 0; width: 255px; max-height: min(440px, calc(100dvh - 230px)); overflow: auto; padding: 17px; background: var(--atlas-panel); border: 1px solid var(--atlas-line); box-shadow: 0 14px 40px #0005; scrollbar-width: thin; }
+.mission-layer-options > label { display: grid; gap: 6px; font-size: 11px; color: var(--atlas-muted); }
+.mission-layer-options > div { display: grid; margin-top: 13px; padding-top: 6px; border-top: 1px solid var(--atlas-line); }
+.mission-layer-options > div label { display: flex; align-items: center; gap: 11px; min-height: 44px; font-size: 12px; }
+.mission-layer-options > p { font-size: 11px; line-height: 1.6; color: var(--atlas-muted); margin: 12px 0 0; }
+.mission-layer-options select { min-height: 44px; font-size: 12px; }
+.mission-workspaces .expedition-north { right: auto; left: 18px; }
+.mission-map-task { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 220px); z-index: 4; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--atlas-bg); border-left: 2px solid var(--atlas-accent); font-size: 11px; }
+.mission-map-task button { padding: 0 8px; color: var(--atlas-accent); font-size: 11px; min-height: 44px; }
+.mission-map-key { position: absolute; left: 16px; bottom: 16px; z-index: 3; max-width: min(350px, calc(100% - 190px)); background: #101719ed; padding: 8px 12px; color: var(--atlas-ink); }
+.mission-map-key summary { font-size: 11px; cursor: pointer; }
+.mission-map-key p, .mission-map-key li { font-size: 11px; line-height: 1.6; color: var(--atlas-muted); }
+.mission-map-key .expedition-legend { margin: 12px 0; }
+.mission-route-bar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 16px; min-height: 88px; margin: 0 -28px; padding: 15px 28px; border-top: 1px solid var(--atlas-line); background: var(--atlas-bg); position: relative; z-index: 7; }
+.mission-route-summary { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.mission-route-summary strong { font-size: 13px; font-weight: 500; }
+.mission-route-summary > span { color: var(--atlas-muted); font-size: 11px; }
+.mission-route-summary button { display: inline-flex; align-items: center; gap: 7px; min-height: 24px; padding: 0; color: var(--atlas-accent); font-size: 11px; text-align: left; }
+.mission-route-summary .mission-budget-warning { color: #f4af95; }
+.mission-route-bar .expedition-launch { min-width: 260px; max-width: 330px; flex: 0 0 auto; padding: 0; }
+.mission-route-bar .expedition-launch > button + button { min-height: 44px; padding: 8px 4px; font-size: 12px; }
+@media (max-width: 1000px) {
+  .mission-workspaces { padding: 18px 22px 0; gap: 15px; }
+  .mission-workspaces .expedition-content { grid-template-columns: 275px minmax(0, 1fr); gap: 18px; }
+  .mission-route-bar { margin: 0 -22px; padding: 14px 22px; }
+  .mission-map-task { left: 12px; top: 66px; max-width: calc(100% - 24px); transform: none; flex-wrap: wrap; gap: 0 8px; }
+}
+@media (max-width: 700px) {
+  .mission-workspaces { padding: 14px 16px 0; gap: 10px; overflow: hidden; }
+  .mission-workspaces .expedition-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; }
+  .mission-workspaces .expedition-title { grid-column: 1; grid-row: 1; }
+  .mission-workspaces h1 { font-size: 27px; }
+  .mission-workspaces .expedition-back { grid-column: 2; grid-row: 1; min-height: 44px; font-size: 0 !important; gap: 0; }
+  .mission-workspaces .expedition-back svg { width: 20px; height: 20px; padding: 10px; }
+  .mission-extent { grid-column: 1 / -1; grid-row: 2; margin: 0; }
+  .mission-extent select { width: 100%; min-height: 38px; font-size: 12px; padding: 4px 0; }
+  .mission-workspaces .expedition-content { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(165px, 1fr) auto; gap: 10px; min-height: 0; flex: 1; }
+  .mission-workspaces .expedition-map { height: auto; min-height: 0; }
+  .mission-workspaces .expedition-panel { border: 0; border-top: 1px solid var(--atlas-line); padding: 0; min-height: 0; }
+  .mission-workspace-heading { margin-right: 0; }
+  .mission-workspace-tabs { gap: 20px; }
+  .mission-workspace-tabs button { min-height: 46px; font-size: 12px; }
+  .mission-workspace-body { flex: 0 1 auto; height: min(30dvh, 260px); padding: 16px 5px 18px 0; }
+  .mission-sheet-toggle { display: block; min-height: 44px !important; min-width: 44px; font-size: 20px !important; padding: 0; color: var(--atlas-muted) !important; }
+  .expedition-panel.is-collapsed .mission-workspace-body { display: none; }
+  .mission-map-controls { top: 10px; right: 10px; }
+  .mission-layer-options { width: 245px; }
+  .mission-map-task { top: 60px; left: 10px; max-width: calc(100% - 20px); padding: 3px 10px; font-size: 10px; }
+  .mission-map-task button { min-height: 36px; }
+  .mission-map-key { left: 10px; bottom: 12px; max-width: calc(100% - 170px); padding: 7px 9px; }
+  .mission-map-key summary { font-size: 10px; }
+  .mission-route-bar { margin: 0 -16px; padding: 11px 16px; gap: 8px; min-height: 86px; flex-wrap: wrap; }
+  .mission-route-summary { flex: 1 1 100%; gap: 3px; }
+  .mission-route-summary strong { font-size: 12px; }
+  .mission-route-summary > span { display: none; }
+  .mission-route-bar .expedition-launch { min-width: 0; max-width: none; width: 100%; gap: 16px; }
+  .mission-route-bar .expedition-primary { min-height: 44px; padding: 9px 16px; }
+  .mission-route-bar .expedition-launch > button + button { min-width: 100px; font-size: 12px; }
+  .mission-route-summary button { min-height: 30px; }
+}
+/* Keep fixed map controls off the selectable terrain, including edge markers. */
+.mission-workspaces .expedition-viewport > svg { height: calc(100% - 82px); }
+.mission-workspaces .expedition-zoom { bottom: 26px; }
+.mission-workspaces .expedition-zoom-hint { bottom: 7px; }
