@@ -141,8 +141,11 @@ function describeRoute(grid, path, profile, stop) {
         + profile.dustPenalty + (profile.thermalPenalty ?? 0)
       distance += length
       gain += Math.max(0, rise)
-      time += length / profile.pace * (penalty + Math.max(0, rise) / run * 3 + Math.max(0, -rise) / run)
-      returnTime += length / profile.pace * (penalty + Math.max(0, -rise) / run * 3 + Math.max(0, rise) / run)
+      b.seconds = length / profile.pace * (penalty + Math.max(0, rise) / run * 3 + Math.max(0, -rise) / run)
+      b.returnSeconds = length / profile.pace * (penalty + Math.max(0, -rise) / run * 3 + Math.max(0, rise) / run)
+      b.effortTerrain = 1 + Math.max(roughness[from], roughness[to]) + surfacePenalty(grid, from, to)
+      time += b.seconds
+      returnTime += b.returnSeconds
     }
     const isStop = stop?.cell === to
     const isEnd = i === path.length - 1

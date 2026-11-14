@@ -13,7 +13,9 @@ import { createSurfaceSampler } from '../simulation/surface.js'
 import GroundResponse from '../ui/GroundResponse.jsx'
 import sampleData from './data/samples.json'
 import ScienceNotebook, { SiteFieldNotes, SampleMarkers, SamplePanel } from './ScienceNotebook.jsx'
-import MapViewport from './MapViewport.jsx'
+import { EVA_DEFAULTS, forecastEVA } from '../simulation/eva.js'
+import EVAPlanner, { EVAReturnLayer } from './EVAPlanner.jsx'
+import MapViewport, { useMapScale } from './MapViewport.jsx'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -60,6 +62,9 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const [notebook, setNotebook] = useState(false)
   const [samplesVisible, setSamplesVisible] = useState(false)
   const [selectedSample, setSelectedSample] = useState(null)
+  const [evaEnabled, setEvaEnabled] = useState(false)
+  const [evaSettings, setEvaSettings] = useState(EVA_DEFAULTS)
+  const eva = useMemo(() => evaEnabled ? forecastEVA(routes?.[selected] ?? routes?.terrain, { ...evaSettings, pace }) : null, [evaEnabled, routes, selected, evaSettings, pace])
   const [thermal, setThermal] = useState(false)
   const [context, setContext] = useState(false)
   const [crater, setCrater] = useState(null)
@@ -198,6 +203,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
           <Tool active={hazards} onClick={() => setHazards(!hazards)}><Icon name="hazard" size={16} />Hazards</Tool>
         </>}
         <Tool active={showGeology} onClick={toggleGeology} aria-label="Geologic regions"><Icon name="layers" size={16} />Regions</Tool>
+        <Tool active={evaEnabled} onClick={() => setEvaEnabled(!evaEnabled)}>Marswalk</Tool>
         <Tool active={notebook} onClick={() => setNotebook(!notebook)}>Life & science</Tool>
         <details className="expedition-layer-menu">
           <summary><Icon name="layers" size={17} />Layers</summary>
@@ -233,6 +239,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
             }} />}
           {samplesVisible && <SampleMarkers sites={sampleData.sites.filter((site) => terrain.contains(...sitePosition(terrain, site)))} size={widthMeters}
             locate={(site) => origin(terrain.location(site.latitude, site.longitude), metadata)} selected={selectedSample} onSelect={selectSample} />}
+          {eva && <EVAReturnLayer plan={eva} metadata={metadata} />}
           <RouteOverlay routes={routes} selected={selected} grid={grid} start={start} end={end} zones={zones} metadata={metadata} />
           {inspection && mode === 'Inspect' && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
         </MapViewport>}
@@ -250,7 +257,8 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
           dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
           objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
           sites={localSites} onDemo={demo} planning={planning} loadingSurface={surface === undefined} error={error} routes={routes}
-          selected={selected} onSelect={setSelected} onLaunch={onLaunch} />}
+          evaPlanner={evaEnabled ? <EVAPlanner settings={evaSettings} onChange={setEvaSettings} plan={eva} /> : null}
+          selected={selected} onSelect={setSelected} eva={eva} onLaunch={(route, asCar) => onLaunch(asCar || !eva ? route : { ...route, eva }, asCar)} />}
         {context && <p>Select the outlined area to plan a route.</p>}
         <details className="expedition-disclosure" ref={mapInformation}>
           <summary>Map information</summary>
@@ -322,7 +330,7 @@ function LocalThermal({ terrain, crater }) {
 }
 
 function SiteMarkers({ size, sites, locate, selected, onSelect }) {
-  const radius = size * 0.012
+  const radius = size * 0.012 * useMapScale()
   return sites.map((site) => {
     const { x, y } = locate(site)
     function activate(event) {
@@ -360,7 +368,7 @@ function SciencePanel({ selected, onSelect }) {
 
 function RouteOverlay({ routes, selected, grid, start, end, zones, metadata }) {
   const toMap = (point) => origin(point, metadata)
-  const labelSize = metadata.widthMeters * 0.012
+  const labelSize = metadata.widthMeters * 0.012 * useMapScale()
   const selectedRoute = routes?.[selected]
   return <g className="expedition-route-overlay" aria-hidden="true">
     {zones.map((zone, index) => {

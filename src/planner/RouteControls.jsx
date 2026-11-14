@@ -4,7 +4,7 @@ import Icon from '../ui/Icon.jsx'
 export default function RouteControls({
   start, end, startLabel, endLabel, mode, setMode, maxSlope, setMaxSlope, pace, setPace, dust, setDust, temperature, setTemperature,
   objective, setObjective, scienceStop, setScienceStop, sites, onDemo,
-  planning, loadingSurface, error, routes, selected, onSelect, onLaunch,
+  planning, loadingSurface, error, routes, eva, evaPlanner, selected, onSelect, onLaunch,
 }) {
   return <div className="expedition-routing">
     <div className="expedition-route-heading">
@@ -18,10 +18,11 @@ export default function RouteControls({
         </button>
       )}
     </div>
+    {evaPlanner}
     {(planning || (loadingSurface && start >= 0 && end >= 0)) && <p role="status">Calculating route…</p>}
     {start >= 0 && start === end && <p role="status">Choose a different destination.</p>}
     {error && <p role="alert">{error}</p>}
-    {routes && <RouteResults routes={routes} selected={selected} onSelect={onSelect} onLaunch={onLaunch} />}
+    {routes && <RouteResults routes={routes} selected={selected} onSelect={onSelect} onLaunch={onLaunch} eva={eva} />}
     <details className="expedition-disclosure">
       <summary>Route settings</summary>
       <label className="expedition-field">Maximum slope <output>{maxSlope}°</output>

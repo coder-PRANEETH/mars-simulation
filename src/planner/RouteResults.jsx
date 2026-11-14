@@ -3,7 +3,7 @@ import Icon from '../ui/Icon.jsx'
 export const distanceText = (distance) => distance >= 1000 ? `${(distance / 1000).toFixed(2)} km` : `${Math.round(distance)} m`
 const timeRange = (seconds) => `${Math.max(1, Math.round(seconds * 0.8 / 60))}–${Math.max(1, Math.ceil(seconds * 1.2 / 60))} min`
 
-export default function RouteResults({ routes, selected, onSelect, onLaunch }) {
+export default function RouteResults({ routes, selected, onSelect, onLaunch, eva }) {
   if (!routes.terrain) return <p role="status">No route found. Move a pin or check the route settings.</p>
   const route = routes[selected] ?? routes.terrain
 
@@ -20,8 +20,9 @@ export default function RouteResults({ routes, selected, onSelect, onLaunch }) {
     {route.stop && <p>Via {route.stop.name}</p>}
     <div className="expedition-launch">
       <button className="expedition-primary" type="button" onClick={() => onLaunch(route, true)}>Drive route<Icon name="arrow" size={18} /></button>
-      <button type="button" onClick={() => onLaunch(route, false)}><Icon name="walking" size={17} />Walk route</button>
+      <button type="button" disabled={!!eva && !eva.feasible} onClick={() => onLaunch(route, false)}><Icon name="walking" size={17} />Walk route</button>
     </div>
+    {eva && !eva.feasible && <p role="status">Adjust the Marswalk budget above before walking. Rover travel uses a separate mode.</p>}
     <details className="expedition-disclosure">
       <summary>Route details · {route.waypoints.length} waypoints</summary>
       <dl className="expedition-readings">

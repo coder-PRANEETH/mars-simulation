@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
+import { useMapScale } from './MapViewport.jsx'
 import GroundResponse from '../ui/GroundResponse.jsx'
 import { SURFACE_MODELS } from '../terrain/materials.js'
 
 export function GeologyLayer({ data, locate, clipPath, selectedId, labels = false }) {
+  const scale = useMapScale()
   const paths = useMemo(() => data.units.map((unit) => ({
     ...unit,
     path: unit.polygons.map((polygon) => polygon.map((ring) =>
@@ -21,7 +23,7 @@ export function GeologyLayer({ data, locate, clipPath, selectedId, labels = fals
       fillRule="evenodd" fillOpacity={selectedId && selectedId !== unit.id ? 0.1 : 0.35} />)}
     {labels && paths.filter((unit) => unit.anchor && (!selectedId || selectedId === unit.id)).map((unit) =>
       <text key={unit.id} x={unit.anchor.x} y={unit.anchor.y} className="expedition-unit-label"
-        fontSize="72" textAnchor="middle" fill={unit.color} stroke="#071118" strokeWidth="10" paintOrder="stroke">
+        fontSize={72 * scale} textAnchor="middle" fill={unit.color} stroke="#071118" strokeWidth={10 * scale} paintOrder="stroke">
         {unit.symbol}
       </text>,
     )}

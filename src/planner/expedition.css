@@ -245,3 +245,13 @@
 .science-sample-panel select { width: 100%; padding: 10px 6px; margin: 12px 0 2px; background: var(--atlas-bg); border: 1px solid var(--atlas-line); }
 .science-samples > g { cursor: pointer; }
 .science-samples > g[aria-pressed="true"] path, .science-samples > g:focus-visible path { stroke: #fff; }
+
+.eva-planner { border-left: 2px solid #93cbb7; padding: 0 0 20px 14px; margin-bottom: 24px; border-bottom: 1px solid var(--atlas-line); }
+.eva-planner h2 { font-size: 25px; letter-spacing: -.04em; }
+.eva-status { display: block; color: #a8dbc5; font-size: 12px; margin: 20px 0 14px; }
+.eva-status.is-warning, .expedition-panel .eva-warning { color: #f4af95; }
+.eva-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 10px; padding: 10px 0; }
+.eva-setting { display: flex; flex-direction: column; justify-content: space-between; gap: 7px; font-size: 10px; color: var(--atlas-muted); }
+.eva-setting input, .eva-setting select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; background: var(--atlas-bg); color: var(--atlas-ink); border: 1px solid var(--atlas-line); border-radius: 0; padding: 6px; font: 12px 'Segoe UI', sans-serif; }
+.eva-planner meter { display: block; width: 100%; height: 7px; accent-color: #98cbb5; }
+.eva-planner a { font-size: 10px; color: var(--atlas-accent); line-height: 1.7; }

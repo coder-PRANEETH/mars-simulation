@@ -256,3 +256,25 @@
   .rover-traction dd { min-height: 47px; position: relative; padding-bottom: 12px; }
   .rover-traction dd meter { position: absolute; bottom: 0; left: 0; margin-top: 0; }
 }
+
+.eva-mission { position: absolute; z-index: 22; pointer-events: auto; left: 44px; bottom: 155px; width: 330px; box-sizing: border-box; padding: 0 14px 12px; background: #111923f2; border-left: 2px solid #9ec8b6; color: #e5ede9; font: 11px 'Segoe UI', sans-serif; }
+.eva-mission.has-warning { border-left-color: #f0a47c; }
+.eva-mission.is-paused { left: auto; right: 44px; }
+.eva-mission button { color: inherit; background: transparent; border: 0; cursor: pointer; min-height: 44px; }
+.eva-mission button:focus-visible { outline: 2px solid #e8b38d; outline-offset: 2px; }
+.eva-mission-heading { width: 100%; display: flex; justify-content: space-between; align-items: center; font: 8px var(--sim-mono); letter-spacing: .08em; color: #b4c6cb !important; padding: 0; }
+.eva-mission > strong { display: block; font-size: 15px; margin-bottom: 13px; }
+.eva-mission-summary { display: flex; justify-content: space-between; gap: 8px; color: #b5c7cc; font-size: 10px; }
+.eva-mission-summary b { color: #ecf0e8; font-weight: 500; }
+.eva-mission-details { max-height: min(330px, 45vh); overflow: auto; scrollbar-width: thin; margin-top: 16px; }
+.eva-mission-details dl { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin: 0 0 12px; }
+.eva-mission-details dt { color: #b9cbd1; }
+.eva-mission-details dd { margin: 0; font: 11px var(--sim-mono); }
+.eva-mission-details button { display: block; width: 100%; text-align: left; color: #f0c39d; border-top: 1px solid #bbc9d528; }
+.eva-mission button:disabled { opacity: .45; cursor: default; }
+.eva-mission-details p { font-size: 10px; line-height: 1.6; color: #b7c9cf; }
+@media(max-width: 700px) {
+  .eva-mission, .eva-mission.is-paused { left: 25px; right: 25px; bottom: 184px; width: auto; }
+  .eva-mission > strong { font-size: 13px; }
+  .eva-mission-details { max-height: 28vh; }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMapScale } from './MapViewport.jsx'
 
 const lessons = [
   { title: 'Life clues', heading: 'A clue is not a discovery of life.',
@@ -40,7 +41,7 @@ export function SiteFieldNotes({ site }) {
 }
 
 export function SampleMarkers({ sites, size, locate, selected, onSelect }) {
-  const r = size * .008
+  const r = size * .008 * useMapScale()
   return <g className="science-samples">{sites.map((site) => {
     const point = locate(site)
     const activate = (event) => { event.stopPropagation(); onSelect(site) }

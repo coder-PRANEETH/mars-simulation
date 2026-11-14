@@ -63,12 +63,16 @@ function DataPanel({ metadata, onClose }) {
   );
 }
 
-export default function Hud({ driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, inspection, onClearInspection }) {
+export default function Hud({ evaActive, driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, inspection, onClearInspection }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
   const [learnOpen, setLearnOpen] = useState(true);
   const [groundOpen, setGroundOpen] = useState(false);
+
+  useEffect(() => {
+    if (evaActive) { setHasEntered(true); setLearnOpen(false); }
+  }, [evaActive]);
 
   const active = locked || (driving && carActive);
   useEffect(() => {

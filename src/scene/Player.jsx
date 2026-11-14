@@ -11,7 +11,7 @@ const LOOK_SENSITIVITY = 0.002
 const MAX_PITCH = Math.PI / 2 - 0.035
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
-export default function Player({ driving, carActive, onPauseCar, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
+export default function Player({ evaPace, driving, carActive, onPauseCar, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
   const { camera, gl, scene } = useThree()
   const physics = useMemo(() => new PlayerPhysics(terrain, environment), [terrain, environment])
   const callbacks = useRef({ carActive, onPauseCar, onTelemetry, onLockChange, onInspect })
@@ -59,6 +59,10 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     look.current.yaw = look.current.targetYaw = driving ? 0 : yaw
     look.current.pitch = look.current.targetPitch = driving ? 0.08 : -0.035
   }, [driving, physics])
+
+  useEffect(() => {
+    if (!driving) physics.config = evaPace ? { ...PLAYER_CONFIG, walkSpeed: evaPace, sprintSpeed: Math.max(1.8, evaPace * 1.5) } : PLAYER_CONFIG
+  }, [driving, physics, evaPace])
 
   useEffect(() => {
     if (carActive) {

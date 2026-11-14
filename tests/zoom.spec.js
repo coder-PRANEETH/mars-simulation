@@ -48,4 +48,10 @@ test('scroll moves the rover camera while keeping the cursor free', async ({ pag
   await page.mouse.wheel(0, -1000);
   await expect.poll(distance).toBeLessThan(before + .5);
   expect(await page.evaluate(() => document.pointerLockElement)).toBeNull();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Switch to foot mode' }).click();
+  await page.getByRole('button', { name: 'Resume simulation', exact: true }).click();
+  const fov = await page.evaluate(() => window.__MARS_SIM__.getRenderDiagnostics().cameraFov);
+  await page.mouse.wheel(0, -300);
+  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getRenderDiagnostics().cameraFov)).toBeLessThan(fov - 3);
 });

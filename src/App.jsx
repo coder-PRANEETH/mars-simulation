@@ -8,6 +8,8 @@ import World from './scene/World.jsx';
 import Hud from './ui/Hud.jsx';
 import ExpeditionMap from './planner/ExpeditionMap.jsx';
 import DrivingHazards from './planner/DrivingHazards.jsx';
+import { useEVAMission } from './simulation/useEVAMission.js';
+import EVAMission from './ui/EVAMission.jsx';
 
 class SceneErrorBoundary extends Component {
   state = { error: null };
@@ -36,6 +38,9 @@ export default function App() {
   const [debug, setDebug] = useState(false);
   const [telemetry, setTelemetry] = useState({});
   const [inspection, setInspection] = useState(null);
+  const evaMission = useEVAMission(terrain, telemetry, locked && !mapOpen && !driving, simulation.gravity);
+  const evaLatest = useRef(null);
+  evaLatest.current = evaMission.display;
   const playerRef = useRef(null);
   const sceneRef = useRef(null);
   const latestTelemetry = useRef(telemetry);
@@ -70,6 +75,7 @@ export default function App() {
     // Browser acceptance checks use the same simulation state as the scene.
     window.__MARS_SIM__ = {
       getTelemetry: () => latestTelemetry.current,
+      getEVA: () => evaLatest.current,
       getSimulation: simulationStore.getState,
       setParameter: simulationStore.setParameter,
       applyPreset: simulationStore.applyPreset,
@@ -114,12 +120,14 @@ export default function App() {
     setInspection(null);
     setWaypointIndex(1);
     setActiveRoute(route);
+    evaMission.begin(route);
     setDriving(asCar);
     setCarActive(asCar);
     setMapOpen(false);
   };
 
   const changeRegion = () => {
+    evaMission.end();
     setActiveRoute(null);
     setCarActive(false);
     setTerrain(null);
@@ -135,10 +143,11 @@ export default function App() {
     ? { telemetry, route: activeRoute, showLandTypes, onToggleLandTypes: () => setShowLandTypes((value) => !value) } : null;
   const enter = () => driving ? setCarActive(true) : playerRef.current?.enter();
   const toggleDriving = () => {
+    evaMission.end();
     setCarActive(false);
     setDriving((mode) => !mode);
   };
-  const reset = () => { playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
+  const reset = () => { evaMission.end(); playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
 
   return <main className="simulation-viewport">
     <SceneErrorBoundary key={region}>
@@ -152,12 +161,16 @@ export default function App() {
         fallback={<div className="webgl-error"><h2>WebGL is unavailable</h2><p>Enable hardware acceleration in your browser to walk on Mars.</p></div>}
       >
         <Suspense fallback={null}>
-          {terrain && environment && <World driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
+          {terrain && environment && <World evaPace={evaMission.display?.settings.pace} driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
     <div inert={mapOpen && !loading && !loadError}>
-    <Hud driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    <Hud evaActive={!!evaMission.display} driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    {evaMission.display && <EVAMission model={evaMission.display} paused={!locked || mapOpen} onWork={evaMission.work} onStorm={evaMission.storm} onEnd={evaMission.end} onReturn={() => {
+      const home = evaMission.headHome();
+      if (home) { setActiveRoute(home); setWaypointIndex(1); }
+    }} />}
     </div>
     {activeRoute && !mapOpen && <aside className="expedition-guide" aria-label="Traverse guidance">
       <strong>{guide ? `Next stop ${guide.number} of ${guide.count} · ${guide.waypoint.label === 'Traverse' ? 'Follow your route' : guide.waypoint.label}` : 'You reached your destination!'}</strong>
@@ -165,6 +178,6 @@ export default function App() {
     </aside>}
     {region === 'terrain' && drivingHazards && <DrivingHazards terrain={terrain} {...drivingHazards} />}
     {region === 'jezero' && !loading && !loadError && terrain &&
-      <ExpeditionMap terrain={terrain} drivingHazards={drivingHazards} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => setActiveRoute(null)} />}
+      <ExpeditionMap terrain={terrain} drivingHazards={drivingHazards} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => { setActiveRoute(null); evaMission.end(); }} />}
   </main>;
 }

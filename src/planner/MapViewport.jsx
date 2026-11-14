@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { boundView, zoomView } from './mapViewport.js'
+
+const MapScale = createContext(1)
+export const useMapScale = () => useContext(MapScale)
 
 export default function MapViewport({ width, height, children, onClick, ...props }) {
   const full = { x: 0, y: 0, width, height }
@@ -41,7 +44,7 @@ export default function MapViewport({ width, height, children, onClick, ...props
       }}
       onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}
       onClickCapture={(event) => { if (dragged.current) { event.stopPropagation(); dragged.current = false } }} onClick={onClick}>
-      {children}
+      <MapScale.Provider value={view.width / width}>{children}</MapScale.Provider>
     </svg>
     <div className="expedition-zoom" role="group" aria-label="Map zoom">
       <button type="button" aria-label="Zoom in" disabled={view.width <= width / 12 + .01} onClick={() => zoom(.7)}>+</button>

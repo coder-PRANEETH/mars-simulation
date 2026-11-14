@@ -320,6 +320,7 @@ export class PlayerPhysics {
     return {
       ...(this.terrain.coordinates?.(position.x, position.z) || {}),
       position: { ...position },
+      elapsedSeconds: this.elapsed,
       velocity: { ...this.velocity },
       speed: Math.hypot(this.velocity.x, this.velocity.z),
       sinkDepth: this.sinkDepth,
