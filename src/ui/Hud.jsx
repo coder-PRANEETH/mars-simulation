@@ -165,6 +165,7 @@ export default function Hud({ driving, carActive, showHazards, onToggleHazards, 
           <div><kbd>{driving ? 'W / S' : 'W A S D'}</kbd><span>{driving ? 'Drive / reverse' : 'Move'}</span></div>
           {driving && <div><kbd>A / D</kbd><span>Steer</span></div>}
           <div><kbd>{driving ? 'DRAG' : 'MOUSE'}</kbd><span>Look around</span></div>
+          <div><kbd>SCROLL</kbd><span>Zoom in / out</span></div>
           <div><kbd>SPACE</kbd><span>{driving ? 'Brake' : 'Jump'}</span></div>
           <div><kbd>ESC</kbd><span>{driving ? 'Pause' : 'Release cursor'}</span></div>
           <div><kbd>E</kbd><span>Scan the ground</span></div>

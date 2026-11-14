@@ -221,3 +221,12 @@
 .drive-hazards footer { gap: 10px; }
 .drive-hazards .drive-motion-line { background: #90e8ff; border-radius: 0; height: 2px; width: 8px; }
 @media (max-width: 700px) { .drive-hazards footer { gap: 5px; font-size: 7px; } }
+
+.expedition-viewport { position: absolute; inset: 0; overflow: hidden; }
+.expedition-viewport > svg { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; user-select: none; }
+.expedition-zoom { position: absolute; right: 16px; bottom: 36px; display: flex; background: #161b23ee; border: 1px solid var(--atlas-line); }
+.expedition-zoom button { min-width: 44px; min-height: 44px; padding: 0 10px; border-left: 1px solid var(--atlas-line); font-size: 17px; }
+.expedition-zoom button:first-child { border: 0; }
+.expedition-zoom button:last-child { font-size: 11px; color: var(--atlas-accent); }
+.expedition-zoom button:hover { background: var(--atlas-raised); }
+.expedition-zoom-hint { position: absolute; right: 16px; bottom: 14px; font-size: 10px; color: #d0d5dc; text-shadow: 0 1px 3px #000; pointer-events: none; }

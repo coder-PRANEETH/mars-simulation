@@ -41,6 +41,8 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
   const state = useRef({ accumulator: 0, telemetryTime: 0, bob: 0, landing: 0, landingVelocity: 0, fps: 60, cameraReady: false, pitch: 0, roll: 0 })
   const raycaster = useMemo(() => new Raycaster(), [])
   const center = useMemo(() => new Vector2(0, 0), [])
+  const cameraDistance = useRef(6.9)
+  const zoomFov = useRef(0)
   const defaultFov = useRef(camera.fov || 70)
 
   useEffect(() => {
@@ -100,6 +102,14 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     }
     const dragOrbit = (event) => {
       if (event.pointerId === orbitPointer.current && callbacks.current.carActive) orbit(event)
+    }
+    const zoom = (event) => {
+      if (!(driving ? callbacks.current.carActive : locked.current)) return
+      event.preventDefault()
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 600 : 1)
+      const step = clamp(delta, -300, 300)
+      if (driving) cameraDistance.current = clamp(cameraDistance.current * Math.exp(step * .0015), 3.8, 30)
+      else zoomFov.current = clamp(zoomFov.current + step * .035, -37, 10)
     }
     const endOrbit = () => { orbitPointer.current = null }
     const moveMouse = (event) => {
@@ -178,6 +188,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       })
     }
     if (resetRef) resetRef.current = { enter, reset, exit: () => document.exitPointerLock() }
+    canvas.addEventListener('wheel', zoom, { passive: false })
     canvas.addEventListener('click', enter)
     canvas.addEventListener('pointerdown', startOrbit)
     canvas.addEventListener('pointermove', dragOrbit)
@@ -191,6 +202,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
     window.addEventListener('blur', blur)
     return () => {
       if (document.pointerLockElement === canvas) document.exitPointerLock()
+      canvas.removeEventListener('wheel', zoom)
       canvas.removeEventListener('click', enter)
       canvas.removeEventListener('pointerdown', startOrbit)
       canvas.removeEventListener('pointermove', dragOrbit)
@@ -251,10 +263,10 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       const bodyY = y - physics.sinkDepth
       const yaw = driverYaw.current
       const orbit = yaw + view.yaw
-      const back = 6.9 * Math.cos(view.pitch)
+      const back = cameraDistance.current * Math.cos(view.pitch)
       const cameraX = x + Math.sin(orbit) * back
       const cameraZ = z + Math.cos(orbit) * back
-      const cameraY = Math.max(bodyY + 3.2 + Math.sin(view.pitch) * 4, terrain.sampleHeight(cameraX, cameraZ) + 0.8)
+      const cameraY = Math.max(bodyY + .8 + cameraDistance.current * .35 + Math.sin(view.pitch) * cameraDistance.current * .58, terrain.sampleHeight(cameraX, cameraZ) + 0.8)
       cameraDestination.set(cameraX, cameraY, cameraZ)
       const targetX = x - Math.sin(yaw) * 4.6, targetZ = z - Math.cos(yaw) * 4.6
       if (!frame.cameraReady) {
@@ -287,7 +299,7 @@ export default function Player({ driving, carActive, onPauseCar, terrain, enviro
       camera.rotation.set(view.pitch, view.yaw, Math.sin(frame.bob * 0.5) * 0.002 * bobStrength)
     }
     if (camera.isPerspectiveCamera) {
-      const targetFov = defaultFov.current + (input.sprint && speed > 2 && locked.current ? 7 : 0)
+      const targetFov = defaultFov.current + (driving ? 0 : zoomFov.current) + (input.sprint && speed > 2 && locked.current ? 7 : 0)
       camera.fov += (targetFov - camera.fov) * (1 - Math.exp(-dt * 10))
       camera.updateProjectionMatrix()
     }

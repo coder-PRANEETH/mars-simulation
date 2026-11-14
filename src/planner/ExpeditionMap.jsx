@@ -11,6 +11,7 @@ import { GeologyLayer, GeologyExplorer } from './GeologyLayer.jsx'
 import { geologicUnitAt } from '../terrain/geology.js'
 import { createSurfaceSampler } from '../simulation/surface.js'
 import GroundResponse from '../ui/GroundResponse.jsx'
+import MapViewport from './MapViewport.jsx'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -201,7 +202,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         {context ? (
           crater ? <CraterMap crater={crater} terrain={terrain} geology={showGeology ? geology : null} selectedUnit={selectedUnit} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
             : <p role="status">{contextError ? 'Crater overview could not be loaded. Select Crater overview to retry.' : 'Loading crater overview…'}</p>
-        ) : <svg viewBox={`0 0 ${widthMeters} ${depthMeters}`} onClick={inspect} aria-label="Detailed traverse map" role="img">
+        ) : <MapViewport width={widthMeters} height={depthMeters} onClick={inspect} aria-label="Detailed traverse map" role="img">
           <clipPath id="expedition-detail"><rect width={widthMeters} height={depthMeters} /></clipPath>
           <image href={raster ?? `${terrain.assetBase}/texture.jpg`} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />
           {thermal && crater && <LocalThermal terrain={terrain} crater={crater} />}
@@ -219,7 +220,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
             }} />}
           <RouteOverlay routes={routes} selected={selected} grid={grid} start={start} end={end} zones={zones} metadata={metadata} />
           {inspection && mode === 'Inspect' && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
-        </svg>}
+        </MapViewport>}
         {!context && mode !== 'Inspect' && <div className="expedition-map-hint" role="status">
           {mode === 'Set start' ? 'Click the map to set your start' : mode === 'Set destination' ? 'Click the map to set your destination' : 'Click to mark a 40 m avoid zone'}
         </div>}
@@ -276,7 +277,7 @@ function CraterMap({ crater, terrain, geology, selectedUnit, thermal, sitesVisib
   }), [east, height, north, south, west, width])
   const top = locate(metadata.longitudeWest, metadata.latitudeNorth)
   const bottom = locate(metadata.longitudeEast, metadata.latitudeSouth)
-  return <svg viewBox={`0 0 ${width} ${height}`} aria-label="Jezero crater elevation overview" role="img">
+  return <MapViewport width={width} height={height} aria-label="Jezero crater elevation overview" role="img">
     <image href={`${terrain.assetBase}/crater.jpg`} width={width} height={height} />
     {thermal && <image href={`${terrain.assetBase}/thermal.png`} width={width} height={height} preserveAspectRatio="none" className="expedition-pixels" />}
     {geology && <GeologyLayer data={geology} locate={locate} selectedId={selectedUnit} />}
@@ -285,7 +286,7 @@ function CraterMap({ crater, terrain, geology, selectedUnit, thermal, sitesVisib
       onClick={onDetail} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onDetail() } }} />
     {sitesVisible && <SiteMarkers size={width} sites={scienceSites.filter((site) => !terrain.contains(...sitePosition(terrain, site)))}
       locate={(site) => locate(site.longitude, site.latitude)} selected={selectedSite} onSelect={onSelect} />}
-  </svg>
+  </MapViewport>
 }
 
 const sitePosition = (terrain, site) => {

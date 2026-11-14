@@ -308,3 +308,7 @@ To add a rover, pass the **same environment object and terrain** to its controll
 - Software WebGL can be slow. Use hardware acceleration for normal play. Long rendering stalls cap catch-up time to keep input and collision stable; simulation time may lag wall time on severely underpowered devices. FPS is displayed only in F3 mode.
 - The intended acceptance target is a modern laptop. Headless acceptance checks verify behavior using software WebGL; they do not certify a hardware frame-rate benchmark.
 # mars-simulation
+
+### Scroll zoom
+
+Scroll over either mission map to zoom toward the cursor (up to 12×); drag to pan. The +/− and reset controls also work with keyboard/touch. Map picks remain in the original georeferenced coordinates. Scroll over the rover view to change chase-camera distance, or while walking to change the field of view. UI panels keep their normal scrolling.
