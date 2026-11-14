@@ -1,0 +1,249 @@
+{
+  "source": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_SAMPLE_v3.json",
+  "retrieved": "2026-11-14",
+  "note": "Archived NASA map snapshot. Some markers combine multiple samples; this is not a complete or live inventory. Collection locations, not the present location of cached tubes.",
+  "sites": [
+    {
+      "id": "1",
+      "name": "Roubion",
+      "sol": "164",
+      "date": "Aug. 6, 2021",
+      "type": "Atmospheric",
+      "rock": "n/a",
+      "region": "Polygon Valley",
+      "longitude": 77.45167282,
+      "latitude": 18.4276677
+    },
+    {
+      "id": "2 & 3",
+      "name": "Montdenier + Montagnac",
+      "sol": "194 & 196",
+      "date": "Sept. 6&8, 2021",
+      "type": "Rock Core",
+      "rock": "Igneous",
+      "region": "Artuby Ridge",
+      "longitude": 77.44432638,
+      "latitude": 18.43073498
+    },
+    {
+      "id": "4 & 5",
+      "name": "Salette + Coulettes",
+      "sol": "262 & 271",
+      "date": "Nov. 15&24. 2021",
+      "type": "Rock Core",
+      "rock": "Igneous",
+      "region": "South S\u00e9\u00edtah",
+      "longitude": 77.44305448,
+      "latitude": 18.43398032
+    },
+    {
+      "id": "6 & 7",
+      "name": "Robine + Malay",
+      "sol": "298 & 337",
+      "date": "Dec. 22, 2021 & Jan. 31, 2022",
+      "type": "Rock Core",
+      "rock": "Igneous",
+      "region": "South S\u00e9\u00edtah",
+      "longitude": 77.44134387,
+      "latitude": 18.4326357
+    },
+    {
+      "id": "8 & 9",
+      "name": "Ha'ah\u00f3ni + Ats\u00e1",
+      "sol": "371 & 377",
+      "date": "Mar. 7&13, 2022",
+      "type": "Rock Core",
+      "rock": "Igneous",
+      "region": "Octavia E. Butler Landing/Ch\u2019a\u0142 outcrop",
+      "longitude": 77.45242176,
+      "latitude": 18.44386406
+    },
+    {
+      "id": "10 & 11",
+      "name": "Swift Run + Skyland",
+      "sol": "490 & 495",
+      "date": "Jul. 7&12, 2022",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Fan Front",
+      "longitude": 77.40617493,
+      "latitude": 18.45893136
+    },
+    {
+      "id": "12 & 13",
+      "name": "Hazeltop + Bearwallow",
+      "sol": "509 & 516",
+      "date": "Jul. 27&Aug. 3, 2022",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Fan Front",
+      "longitude": 77.40588851,
+      "latitude": 18.45863707
+    },
+    {
+      "id": "14 & 15",
+      "name": "Shuyak + Mageik",
+      "sol": "575 & 579",
+      "date": "Oct. 2&6, 2022",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Fan Front",
+      "longitude": 77.40144029,
+      "latitude": 18.45072631
+    },
+    {
+      "id": "16",
+      "name": "Kukaklek",
+      "sol": "631",
+      "date": "Nov. 29, 2022",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Fan Front",
+      "longitude": 77.39911421,
+      "latitude": 18.45363597
+    },
+    {
+      "id": "17 & 18",
+      "name": "Atmo Mountain + Crosswind Lake",
+      "sol": "634 & 639",
+      "date": "Dec. 2&7, 2022",
+      "type": "Regolith",
+      "rock": "Likely mixed sedimentary and igneous grains",
+      "region": "Fan Front",
+      "longitude": 77.40121811,
+      "latitude": 18.45131442
+    },
+    {
+      "id": "19",
+      "name": "Melyn",
+      "sol": "749",
+      "date": "March 30, 2023",
+      "type": "Rock Core",
+      "rock": "Likely mixed sedimentary and igneous grains",
+      "region": "Upper Fan",
+      "longitude": 77.38394465,
+      "latitude": 18.47021736
+    },
+    {
+      "id": "20",
+      "name": "Otis Peak",
+      "sol": "822",
+      "date": "June 23, 2023",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Upper Fan",
+      "longitude": 77.36815348,
+      "latitude": 18.4829798
+    },
+    {
+      "id": "21",
+      "name": "Pilot Mountain",
+      "sol": "913",
+      "date": "Sept. 15, 2023",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Upper Fan",
+      "longitude": 77.3604692,
+      "latitude": 18.48380149
+    },
+    {
+      "id": "22",
+      "name": "Pelican Point",
+      "sol": "923",
+      "date": "Sept. 24, 2023",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Margin",
+      "longitude": 77.35065098,
+      "latitude": 18.48344692
+    },
+    {
+      "id": "23",
+      "name": "Lefroy Bay",
+      "sol": "942",
+      "date": "Oct. 13, 2023",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Margin",
+      "longitude": 77.35065098,
+      "latitude": 18.48344692
+    },
+    {
+      "id": "24",
+      "name": "Comet Geyser",
+      "sol": "1088",
+      "date": "March 12, 2024",
+      "type": "Rock Core",
+      "rock": "Silica-cemented Carbonate",
+      "region": "Margin",
+      "longitude": 77.3272192,
+      "latitude": 18.49186664
+    },
+    {
+      "id": "25",
+      "name": "Sapphire Canyon",
+      "sol": "1215",
+      "date": "July 21, 2024",
+      "type": "Rock Core",
+      "rock": "Sedimentary",
+      "region": "Neretva Vallis",
+      "longitude": 77.30514915,
+      "latitude": 18.49747434
+    },
+    {
+      "id": "26",
+      "name": "Silver Mountain",
+      "sol": "1401",
+      "date": "Jan. 28, 2025",
+      "type": "Rock Core",
+      "rock": "Igneous/impactite",
+      "region": "Crater Rim (Witch Hazel Hill)",
+      "longitude": 77.26474449,
+      "latitude": 18.46059241
+    },
+    {
+      "id": "27",
+      "name": "Green Gardens",
+      "sol": "1433",
+      "date": "March 2, 2025",
+      "type": "Rock Core",
+      "rock": "Serpentinite",
+      "region": "Crater Rim (Witch Hazel Hill)",
+      "longitude": 77.26465918,
+      "latitude": 18.46059266
+    },
+    {
+      "id": "28",
+      "name": "Main River",
+      "sol": "1441",
+      "date": "March 10, 2025",
+      "type": "Rock Core",
+      "rock": "Igneous/impactite",
+      "region": "Crater Rim (Witch Hazel Hill)",
+      "longitude": 77.25846404,
+      "latitude": 18.46172288
+    },
+    {
+      "id": "29",
+      "name": "Bell Island",
+      "sol": "1483",
+      "date": "April 21, 2025",
+      "type": "Rock Core",
+      "rock": "Igneous/impactite",
+      "region": "Crater Rim (Witch Hazel Hill)",
+      "longitude": 77.25789879,
+      "latitude": 18.46225085
+    },
+    {
+      "id": "30",
+      "name": "Gallants",
+      "sol": "TBD",
+      "date": "TBD",
+      "type": "Rock Core",
+      "rock": "Igneous or Sedimentary",
+      "region": "Crater Rim (Krokodillen)",
+      "longitude": 77.25723123,
+      "latitude": 18.46088429
+    }
+  ]
+}

@@ -18,6 +18,12 @@ test('children can reveal Mars facts, switch questions and reach the exploration
   await lesson.getByRole('button', { name: 'Next question' }).click();
   await expect(lesson.getByRole('heading')).toHaveText('Did Jezero crater have a lake?');
   await lesson.getByRole('button', { name: 'Next question' }).click();
+  await expect(lesson.getByRole('heading')).toHaveText('Have we found life on Mars?');
+  await lesson.getByRole('button', { name: 'Reveal answer' }).click();
+  await expect(lesson.getByText(/Not yet. Perseverance/)).toBeVisible();
+  await lesson.getByRole('button', { name: 'Next question' }).click();
+  await expect(lesson.getByRole('heading')).toHaveText('Can a spacesuit get hot on cold Mars?');
+  await lesson.getByRole('button', { name: 'Next question' }).click();
   await expect(lesson.getByRole('heading')).toHaveText('Could you jump higher on Mars?');
   await page.getByRole('button', { name: 'Discover Mars' }).click();
   await expect(lesson).toHaveCount(0);

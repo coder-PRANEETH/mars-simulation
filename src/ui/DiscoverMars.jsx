@@ -21,6 +21,18 @@ const discoveries = [
     activity: 'Try it: open the Jezero map and find the Western Delta front science site.',
     source: 'https://science.nasa.gov/mission/mars-2020-perseverance/science-highlights/',
   },
+  {
+    question: 'Have we found life on Mars?',
+    fact: 'Not yet. Perseverance found a rock with possible clues called potential biosignatures. Scientists still need to test how those clues formed.',
+    activity: 'Try it: open the Jezero map, then Life & science. Find Cheyava Falls in the science sites.',
+    source: 'https://www.jpl.nasa.gov/news/nasa-says-mars-rover-discovered-potential-biosignature-last-year/',
+  },
+  {
+    question: 'Can a spacesuit get hot on cold Mars?',
+    fact: 'Yes! Your body makes heat when you work. A spacesuit needs cooling as well as oxygen, even when the air outside is very cold.',
+    activity: 'Try it: plan a Marswalk and compare oxygen use with cooling limits.',
+    source: 'https://www.nasa.gov/reference/11-0-spacesuits-vol-2/',
+  },
 ];
 
 export default function DiscoverMars({ compact = false }) {
@@ -44,7 +56,7 @@ export default function DiscoverMars({ compact = false }) {
       <circle cx="242" cy="40" r="3" fill="currentColor" />
       <text x="27" y="157" fill="currentColor" fontSize="8" letterSpacing="2">MARS / PLANET 04</text>
     </svg>
-    <div className="sim-discovery-heading"><span>DISCOVER MARS</span><span>{String(index + 1).padStart(2, '0')} / 03</span></div>
+    <div className="sim-discovery-heading"><span>DISCOVER MARS</span><span>{String(index + 1).padStart(2, '0')} / {String(discoveries.length).padStart(2, '0')}</span></div>
     <h3>{discovery.question}</h3>
     <button className="sim-answer-button" aria-expanded={revealed} aria-controls={`${id}-answer`} onClick={() => setRevealed(!revealed)}>{revealed ? 'Hide answer' : 'Reveal answer'}<span aria-hidden="true">{revealed ? '−' : '+'}</span></button>
     <div id={`${id}-answer`} className="sim-discovery-answer" hidden={!revealed}>

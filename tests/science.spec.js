@@ -1,0 +1,32 @@
+import { test, expect } from '@playwright/test';
+
+test('connects biology field notes, NASA sample locations and credited rover images', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await page.getByRole('button', { name: 'Life & science', exact: true }).click();
+  const notes = page.getByLabel('Life and science field notes');
+  await expect(notes).toContainText('A clue is not a discovery of life.');
+  await notes.getByRole('button', { name: 'Dust & suits', exact: true }).click();
+  await expect(notes).toContainText('total chlorine is not the same as a perchlorate concentration');
+  await notes.getByRole('button', { name: 'Protect samples', exact: true }).click();
+  await expect(notes).toContainText('not an official NASA exclusion rule');
+  await page.getByText('Layers', { exact: true }).click();
+  await page.getByRole('button', { name: 'Collected samples', exact: true }).click();
+  await page.getByText('Layers', { exact: true }).click();
+  await page.getByRole('combobox', { name: 'Inspect collected sample' }).selectOption({ label: 'Sapphire Canyon' });
+  await expect(page.getByLabel('Selected sample')).toContainText('1215');
+  await expect(page.getByRole('img', { name: 'Jezero crater elevation overview' })).toBeVisible();
+  await page.getByRole('button', { name: 'Life & science', exact: true }).click();
+  await page.getByText('Map information', { exact: true }).click();
+  await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('cheyava');
+  await expect(page.getByText(/life has not been confirmed/)).toBeVisible();
+  const image = page.getByAltText('WATSON close-up of Cheyava Falls showing pale veins and small spots');
+  await expect(image).toBeVisible();
+  await expect.poll(() => image.evaluate(el => el.naturalWidth)).toBeGreaterThan(0);
+  await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('delta');
+  await expect(page.getByRole('img', { name: 'Detailed traverse map' })).toBeVisible();
+  await expect(page.getByText('Your science question')).toBeVisible();
+  expect(errors).toEqual([]);
+});

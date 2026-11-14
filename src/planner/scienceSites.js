@@ -2,6 +2,10 @@
 // Rover positions use NASA MMGIS end-of-drive localization for the listed sols.
 export const scienceSites = [
   {
+    fieldQuestion: 'Could these lake sediments have preserved clues to ancient life?',
+    observe: 'Compare fine layers with coarser river deposits. Photograph textures before proposing a sample.',
+    evidence: 'Ancient water and suitable preservation are evidence of habitability, not proof of life.',
+    image: { path: '/jezero/science/delta.jpg', alt: 'Perseverance panorama of the layered Western Delta', caption: 'Mastcam-Z panorama · sol 406 · April 2022', credit: 'NASA/JPL-Caltech/ASU/MSSS', source: 'https://www.jpl.nasa.gov/news/nasas-perseverance-rover-arrives-at-delta-for-new-science-campaign/' },
     id: 'delta', name: 'Western Delta front', latitude: 18.45056632, longitude: 77.40142219,
     category: 'Sedimentary geology', habitability: 5, geology: 4,
     description: 'Compare exposed sedimentary layers near the fan front. Finer deposits are candidates for investigating past habitability and preservation of biosignatures.',
@@ -9,6 +13,9 @@ export const scienceSites = [
     source: 'https://www.jpl.nasa.gov/news/nasas-perseverance-rover-arrives-at-delta-for-new-science-campaign/',
   },
   {
+    fieldQuestion: 'Can rock layers tell us how a lake changed?',
+    observe: 'Look across the butte for beds with different angles. Observe from a viewpoint instead of climbing a scarp.',
+    evidence: 'Bedding geometry records deposition. The viewpoint is approximate, not a mapped safe observation station.',
     id: 'kodiak', name: 'Kodiak viewpoint', latitude: 18.4390, longitude: 77.4130,
     category: 'Delta stratigraphy', habitability: 4, geology: 4,
     description: 'Observe the layered delta remnant from the floor east of the butte. The bedding provides evidence of sediment accumulating in a standing body of water.',
@@ -16,6 +23,9 @@ export const scienceSites = [
     source: 'https://www.jpl.nasa.gov/images/pia24814-jezero-craters-kodiak-and-scarps/',
   },
   {
+    fieldQuestion: 'How did water change these once-igneous rocks?',
+    observe: 'Compare olivine-bearing rock with alteration features. Use the ground layer to plan around loose sand.',
+    evidence: 'Water alteration helps reconstruct an ancient environment; it does not identify organisms.',
     id: 'seitah', name: 'Séítah formation', latitude: 18.43266059, longitude: 77.44137302,
     category: 'Igneous crater floor', habitability: 3, geology: 5,
     description: 'Investigate the olivine-rich crater-floor rocks and how water later altered them. This is a contrasting setting to the sedimentary delta.',
@@ -30,6 +40,9 @@ export const scienceSites = [
     source: 'https://science.nasa.gov/photojournal/perseverances-trip-to-broom-point/',
   },
   {
+    fieldQuestion: 'Why protect a sealed rock sample?',
+    observe: 'Document the depot setting without touching sample tubes or introducing Earth material.',
+    evidence: 'This marker is the depot area. It is not the surveyed position of each cached tube.',
     id: 'depot', name: 'Three Forks area', latitude: 18.45272753, longitude: 77.40833585,
     category: 'Mission context', habitability: 2, geology: 2,
     description: 'Review the setting of the Perseverance sample depot near the fan front. The marker represents the depot area. Keep hypothetical sampling separate from the cached hardware.',
@@ -42,5 +55,16 @@ export const scienceSites = [
     description: 'Use the historic landing site as a reference for the crater-floor traverse and compare the local terrain with Perseverance’s first observations.',
     locationNote: 'Perseverance landing position in the NASA traverse archive.',
     source: 'https://science.nasa.gov/mission/mars-2020-perseverance/location-map/',
+  },
+  {
+    id: 'cheyava', name: 'Cheyava Falls / Sapphire Canyon', latitude: 18.49747434, longitude: 77.30514915,
+    category: 'Potential biosignature', habitability: 5, geology: 5,
+    description: 'Perseverance collected Sapphire Canyon in the Bright Angel formation. Organic matter and iron-mineral patterns make it a potential biosignature; life has not been confirmed.',
+    locationNote: 'Representative sample-collection coordinate from the NASA MMGIS archive, sol 1215. Outside the playable DEM; crater overview only.',
+    fieldQuestion: 'Which explanations could produce these mineral patterns?',
+    observe: 'Compare the organic-bearing rock and mineral reaction fronts. Test biological and nonbiological explanations.',
+    evidence: 'A potential biosignature is a clue that needs more investigation. No confirmed Martian life is shown here.',
+    image: { path: '/jezero/science/cheyava.jpg', alt: 'WATSON close-up of Cheyava Falls showing pale veins and small spots', caption: 'WATSON close-up · sol 1212 · July 2024', credit: 'NASA/JPL-Caltech/MSSS', source: 'https://www.jpl.nasa.gov/images/pia26368-perseverance-finds-a-rock-with-leopard-spots/' },
+    source: 'https://www.jpl.nasa.gov/news/nasa-says-mars-rover-discovered-potential-biosignature-last-year/',
   },
 ]

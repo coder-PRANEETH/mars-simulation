@@ -11,6 +11,8 @@ import { GeologyLayer, GeologyExplorer } from './GeologyLayer.jsx'
 import { geologicUnitAt } from '../terrain/geology.js'
 import { createSurfaceSampler } from '../simulation/surface.js'
 import GroundResponse from '../ui/GroundResponse.jsx'
+import sampleData from './data/samples.json'
+import ScienceNotebook, { SiteFieldNotes, SampleMarkers, SamplePanel } from './ScienceNotebook.jsx'
 import MapViewport from './MapViewport.jsx'
 import './expedition.css'
 
@@ -55,6 +57,9 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const [showGeology, setShowGeology] = useState(false)
   const geology = terrain.geology
   const [selectedUnit, setSelectedUnit] = useState(null)
+  const [notebook, setNotebook] = useState(false)
+  const [samplesVisible, setSamplesVisible] = useState(false)
+  const [selectedSample, setSelectedSample] = useState(null)
   const [thermal, setThermal] = useState(false)
   const [context, setContext] = useState(false)
   const [crater, setCrater] = useState(null)
@@ -140,6 +145,12 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     else showCrater()
   }
 
+  function selectSample(site) {
+    setSelectedSample(site)
+    if (terrain.contains(...sitePosition(terrain, site))) setContext(false)
+    else showCrater()
+  }
+
   function inspect(event) {
     const svg = event.currentTarget
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(svg.getScreenCTM().inverse())
@@ -187,11 +198,13 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
           <Tool active={hazards} onClick={() => setHazards(!hazards)}><Icon name="hazard" size={16} />Hazards</Tool>
         </>}
         <Tool active={showGeology} onClick={toggleGeology} aria-label="Geologic regions"><Icon name="layers" size={16} />Regions</Tool>
+        <Tool active={notebook} onClick={() => setNotebook(!notebook)}>Life & science</Tool>
         <details className="expedition-layer-menu">
           <summary><Icon name="layers" size={17} />Layers</summary>
           <div role="group" aria-label="Terrain layers">
             {!context && ['Imagery', 'Elevation', 'Slope'].map((name) => <Tool key={name} active={layer === name} onClick={() => setLayer(name)}>{name}</Tool>)}
             <Tool active={thermal} onClick={toggleThermal}>Thermal IR</Tool>
+            <Tool active={samplesVisible} onClick={() => setSamplesVisible(!samplesVisible)}>Collected samples</Tool>
             <Tool active={sitesVisible} onClick={() => setSitesVisible(!sitesVisible)}>Science sites</Tool>
           </div>
         </details>
@@ -200,7 +213,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     <div className="expedition-content">
       <div className="expedition-map">
         {context ? (
-          crater ? <CraterMap crater={crater} terrain={terrain} geology={showGeology ? geology : null} selectedUnit={selectedUnit} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
+          crater ? <CraterMap crater={crater} terrain={terrain} samplesVisible={samplesVisible} selectedSample={selectedSample} onSample={selectSample} geology={showGeology ? geology : null} selectedUnit={selectedUnit} thermal={thermal} sitesVisible={sitesVisible} selectedSite={selectedSite} onSelect={selectSite} onDetail={() => setContext(false)} />
             : <p role="status">{contextError ? 'Crater overview could not be loaded. Select Crater overview to retry.' : 'Loading crater overview…'}</p>
         ) : <MapViewport width={widthMeters} height={depthMeters} onClick={inspect} aria-label="Detailed traverse map" role="img">
           <clipPath id="expedition-detail"><rect width={widthMeters} height={depthMeters} /></clipPath>
@@ -218,6 +231,8 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
               if (mode === 'Inspect') selectSite(site)
               else pickPoint(terrain.location(site.latitude, site.longitude))
             }} />}
+          {samplesVisible && <SampleMarkers sites={sampleData.sites.filter((site) => terrain.contains(...sitePosition(terrain, site)))} size={widthMeters}
+            locate={(site) => origin(terrain.location(site.latitude, site.longitude), metadata)} selected={selectedSample} onSelect={selectSample} />}
           <RouteOverlay routes={routes} selected={selected} grid={grid} start={start} end={end} zones={zones} metadata={metadata} />
           {inspection && mode === 'Inspect' && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
         </MapViewport>}
@@ -227,6 +242,8 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         <div className="expedition-north" aria-hidden="true">↑<span>N</span></div>
       </div>
       <aside className="expedition-panel">
+        {notebook && <ScienceNotebook />}
+        {samplesVisible && <SamplePanel data={sampleData} selected={selectedSample} onSelect={selectSample} />}
         {showGeology && <GeologyExplorer data={geology} selectedId={selectedUnit} onSelect={setSelectedUnit} context={context} />}
         {!context && <RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={setMode}
           maxSlope={maxSlope} setMaxSlope={(value) => update(setMaxSlope, value)} pace={pace} setPace={(value) => update(setPace, value)}
@@ -268,7 +285,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   </section>
 }
 
-function CraterMap({ crater, terrain, geology, selectedUnit, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
+function CraterMap({ crater, terrain, samplesVisible, selectedSample, onSample, geology, selectedUnit, thermal, sitesVisible, selectedSite, onSelect, onDetail }) {
   const { width, height, bounds: [west, south, east, north] } = crater
   const metadata = terrain.metadata
   const locate = useMemo(() => (longitude, latitude) => ({
@@ -284,6 +301,8 @@ function CraterMap({ crater, terrain, geology, selectedUnit, thermal, sitesVisib
     <rect x={top.x} y={top.y} width={bottom.x - top.x} height={bottom.y - top.y}
       className="expedition-footprint" role="button" tabIndex="0" aria-label="Open detailed traverse area"
       onClick={onDetail} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onDetail() } }} />
+    {samplesVisible && <SampleMarkers sites={sampleData.sites.filter((site) => site.longitude >= west && site.longitude <= east && site.latitude >= south && site.latitude <= north)} size={width}
+      locate={(site) => locate(site.longitude, site.latitude)} selected={selectedSample} onSelect={onSample} />}
     {sitesVisible && <SiteMarkers size={width} sites={scienceSites.filter((site) => !terrain.contains(...sitePosition(terrain, site)))}
       locate={(site) => locate(site.longitude, site.latitude)} selected={selectedSite} onSelect={onSelect} />}
   </MapViewport>
@@ -333,6 +352,7 @@ function SciencePanel({ selected, onSelect }) {
       <strong>{selected.category}</strong>
       <p>{selected.description}</p>
       <p>{selected.locationNote}</p>
+      <SiteFieldNotes site={selected} />
       <a href={selected.source} target="_blank" rel="noreferrer">Science source ↗</a>
     </div>}
   </div>
