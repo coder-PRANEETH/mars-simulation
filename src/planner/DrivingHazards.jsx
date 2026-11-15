@@ -1,21 +1,23 @@
 import { useMemo } from 'react'
 import { mapLayer } from './mapLayers.js'
-import { buildGrid, cellAt, terrainClass } from './terrainGrid.js'
+import { buildGrid, cellAt, cellsInZones, terrainClass } from './terrainGrid.js'
 import { landTypeAtCell } from '../terrain/materials.js'
 
+const EMPTY_ZONES = []
 const SIZE = 320
 
 export default function DrivingHazards({ terrain, grid, avoid, maxSlope = 20, telemetry, route, showLandTypes, onToggleLandTypes }) {
   const { widthMeters, depthMeters } = terrain.metadata
   const localGrid = useMemo(() => grid ?? buildGrid(terrain), [terrain, grid])
-  const raster = useMemo(() => mapLayer(localGrid, terrain.metadata, showLandTypes ? 'Hazard boundaries' : 'Hazards', maxSlope, avoid),
-    [terrain, localGrid, avoid, maxSlope, showLandTypes])
+  const closed = useMemo(() => avoid ?? cellsInZones(localGrid, route?.avoidZones ?? EMPTY_ZONES), [avoid, localGrid, route?.avoidZones])
+  const raster = useMemo(() => mapLayer(localGrid, terrain.metadata, showLandTypes ? 'Hazard boundaries' : 'Hazards', maxSlope, closed),
+    [terrain, localGrid, closed, maxSlope, showLandTypes])
   const land = useMemo(() => showLandTypes ? mapLayer(localGrid, terrain.metadata, 'Land types', maxSlope) : null,
     [terrain, localGrid, maxSlope, showLandTypes])
   const routeLine = useMemo(() => route?.points.map(({ x, z }) => `${x},${z}`).join(' '), [route])
   const { x, z } = telemetry.position ?? terrain.metadata.spawn ?? { x: 0, z: 0 }
   const cell = cellAt(localGrid, { x, z })
-  const hazard = cell < 0 ? 'unknown' : terrainClass(localGrid, cell, maxSlope, avoid)
+  const hazard = cell < 0 ? 'unknown' : terrainClass(localGrid, cell, maxSlope, closed)
   const landType = landTypeAtCell(localGrid, cell)
 
   return <aside className="drive-hazards" aria-label="Driving hazard map">

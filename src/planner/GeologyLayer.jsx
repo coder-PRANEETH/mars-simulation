@@ -16,7 +16,7 @@ export function GeologyLayer({ data, locate, clipPath, selectedId, labels = fals
     anchor: unit.labelPoint ? locate(...unit.labelPoint) : null,
   })), [data, locate])
 
-  return <g aria-label="USGS geologic units" role="img" clipPath={clipPath} className="expedition-geology">
+  return <g aria-label={data.scale === 5000 ? "Science Team photogeologic units" : "USGS geologic units"} role="img" clipPath={clipPath} className="expedition-geology">
     {paths.map((unit) => <path key={unit.id} d={unit.path} fill={unit.color}
       stroke={selectedId === unit.id ? '#fff2d8' : unit.color}
       vectorEffect="non-scaling-stroke" strokeWidth={selectedId === unit.id ? 2.2 : 1}
@@ -51,9 +51,11 @@ export function GeologyExplorer({ data, selectedId, onSelect, context = false })
     {selected ? <div className="expedition-region-description" aria-label="Selected geologic region">
       <h3 style={{ color: selected.color }}>{selected.label}</h3>
       <p>{selected.description}</p><small>{selected.symbol} · {selected.name}</small>
+      {selected.observations && <p><strong>Seen from orbit:</strong> {selected.observations}</p>}
+      {selected.interpretation && <p><strong>2020 hypothesis:</strong> {selected.interpretation}</p>}
       <GroundResponse surface={SURFACE_MODELS[selected.material]} />
     </div> : <p>Colors mark different rock and sediment regions. Select one, or use Inspect and click the map.</p>}
-    <p className="expedition-region-source">{data.authors} · 1:{data.scale.toLocaleString('en-US')} scale. Boundaries are regional interpretations.</p>
-    <a href={data.source} target="_blank" rel="noreferrer">Read the USGS geologic map ↗</a>
+    <p className="expedition-region-source">{data.authors} · 1:{data.scale.toLocaleString('en-US')} scale. Boundaries are map interpretations. {data.epochNote}</p>
+    <a href={data.source} target="_blank" rel="noreferrer">Read the published geologic map ↗</a>
   </section>
 }

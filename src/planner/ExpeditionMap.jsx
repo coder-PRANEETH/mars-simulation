@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { loadTerrain } from '../terrain/terrain.js'
+import { fieldGeologyAt } from '../terrain/photogeology.js'
 import { buildGrid, cellAt, cellPoint, cellsInZones } from './terrainGrid.js'
 import { mapLayer } from './mapLayers.js'
 import { scienceSites } from './scienceSites.js'
@@ -24,7 +26,11 @@ const origin = (point, metadata) => ({
   y: point.z + metadata.depthMeters / 2,
 })
 
-export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, onLaunch, onClearRoute }) {
+export default function ExpeditionMap({ terrain: worldTerrain, drivingHazards, open, onClose, onLaunch, onClearRoute }) {
+  const [terrain, setTerrain] = useState(worldTerrain)
+  const [coverageLoading, setCoverageLoading] = useState(false)
+  const [coverageError, setCoverageError] = useState(null)
+  const initialized = useRef(false)
   const metadata = terrain.metadata
   const { widthMeters, depthMeters } = metadata
   const surface = terrain.surfaceFlags
@@ -38,6 +44,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const [start, setStart] = useState(-1)
   const [end, setEnd] = useState(-1)
   const [zones, setZones] = useState([])
+  const pinCoordinates = useRef({ start: null, end: null })
   const [pace, setPace] = useState(1)
   const [dust, setDust] = useState('clear')
   const [temperature, setTemperature] = useState('nominal')
@@ -62,7 +69,10 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const workspaceNav = useRef(null)
   const [selectedSite, setSelectedSite] = useState(null)
   const [showGeology, setShowGeology] = useState(false)
-  const geology = terrain.geology
+  const [showCover, setShowCover] = useState(false)
+  const coverRaster = useMemo(() => showCover ? mapLayer(grid, metadata, 'Surface cover', maxSlope) : null, [showCover, grid, metadata, maxSlope])
+  const [geologySource, setGeologySource] = useState('field')
+  const geology = geologySource === 'field' ? terrain.photogeology : terrain.geology
   const [selectedUnit, setSelectedUnit] = useState(null)
   const [samplesVisible, setSamplesVisible] = useState(false)
   const [selectedSample, setSelectedSample] = useState(null)
@@ -78,6 +88,51 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const raster = useMemo(() => layer === 'Imagery' ? null : mapLayer(grid, metadata, layer, maxSlope), [grid, metadata, layer, maxSlope])
   const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, showGeology ? 'Hazard boundaries' : 'Hazards', maxSlope, avoid) : null, [grid, metadata, hazards, maxSlope, avoid, showGeology])
   const scaleBar = widthMeters >= 3000 ? 500 : 200
+
+  async function changeCoverage(directory) {
+    if (coverageLoading) return
+    setCoverageLoading(true)
+    setCoverageError(null)
+    clear()
+    onClearRoute()
+    try {
+      const next = await loadTerrain(directory)
+      const nextGrid = buildGrid(next)
+      const convert = (index, key) => {
+        if (index < 0 && !pinCoordinates.current[key]) return -1
+        const point = index >= 0 ? cellPoint(grid, index) : null
+        const coords = pinCoordinates.current[key] ?? terrain.coordinates(point.x, point.z)
+        pinCoordinates.current[key] = coords
+        return cellAt(nextGrid, next.location(coords.latitude, coords.longitude))
+      }
+      setStart(convert(start, 'start'))
+      setEnd(convert(end, 'end'))
+      setZones(zones.map((zone) => {
+        const c = terrain.coordinates(zone.x, zone.z)
+        return { ...next.location(c.latitude, c.longitude), radius: zone.radius }
+      }))
+      setTerrain(next)
+      setContext(false)
+      setInspection(null)
+      setDetail(null)
+      setSelectedUnit(null)
+      setMode('Inspect')
+    } catch (error) { setCoverageError(error.message) }
+    finally { setCoverageLoading(false) }
+  }
+
+  useEffect(() => {
+    if (open && !initialized.current) {
+      initialized.current = true
+      changeCoverage('jezero-regional')
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    window.__MARS_PLANNER__ = { getTerrain: () => terrain }
+    return () => { delete window.__MARS_PLANNER__ }
+  }, [terrain])
 
   function switchWorkspace(next) {
     if (!detail && panelBody.current) workspaceScroll.current[workspace] = panelBody.current.scrollTop
@@ -129,12 +184,13 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   const overlays = [
     { name: 'Hazards', active: hazards, onChange: () => setHazards(!hazards), disabled: context },
     { name: 'Geologic regions', active: showGeology, onChange: () => setShowGeology(!showGeology) },
+    { name: 'Surface cover', active: showCover, onChange: () => setShowCover(!showCover), disabled: context },
     { name: 'Science sites', active: sitesVisible, onChange: () => setSitesVisible(!sitesVisible) },
     { name: 'Collected samples', active: samplesVisible, onChange: () => setSamplesVisible(!samplesVisible) },
     { name: 'Thermal IR', active: thermal, onChange: toggleThermal },
   ]
   const layerNames = overlays.filter(({ active, disabled }) => active && !disabled).map(({ name }) => name)
-  const launch = (route, asCar) => { if (route) onLaunch(asCar || !eva ? route : { ...route, eva }, asCar) }
+  const launch = (route, asCar) => { if (route && !coverageLoading) onLaunch({ ...route, avoidZones: zones, assetDirectory: terrain.assetBase.split('/').at(-1), ...(asCar || !eva ? {} : { eva }) }, asCar) }
 
   function endpointLabel(cell) {
     if (cell < 0) return 'Choose on the map'
@@ -156,6 +212,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     const exampleStart = localSites.find((site) => site.id === 'landing').cell
     const exampleEnd = localSites.find((site) => site.id === 'depot').cell
     if (start === exampleStart && end === exampleEnd && scienceStop === 'auto') return
+    pinCoordinates.current = { start: localSites.find((s) => s.id === 'landing'), end: localSites.find((s) => s.id === 'depot') }
     setStart(exampleStart)
     setEnd(exampleEnd)
     setScienceStop('auto')
@@ -172,13 +229,13 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
       ? [...localSites].sort((a, b) => b[objective] - a[objective])
       : localSites.filter((site) => site.id === scienceStop)
     const profile = {
-      maxSlope, pace,
+      maxSlope, pace, eva: evaSettings, requireBudget: evaEnabled, objective, scienceStop,
       dustPenalty: { clear: 0, haze: 0.12, heavy: 0.32 }[dust],
       thermalPenalty: { nominal: 0, cold: 0.16, warm: 0.20 }[temperature],
     }
     const timer = setTimeout(() => calculate({ start, end, profile, avoid: [...avoid], sites: candidates }), 120)
     return () => clearTimeout(timer)
-  }, [surface, start, end, scienceStop, localSites, objective, maxSlope, pace, dust, temperature, avoid, calculate])
+  }, [surface, start, end, scienceStop, localSites, objective, maxSlope, pace, dust, temperature, avoid, calculate, evaSettings, evaEnabled])
 
   function fetchCrater() {
     if (crater) return
@@ -225,12 +282,15 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
   }
 
   function pickPoint({ x, z }) {
+    if (coverageLoading) return
     const cell = cellAt(grid, { x, z })
     if (cell < 0) return
     if (mode === 'Set start') {
+      pinCoordinates.current.start = terrain.coordinates(x, z)
       if (cell !== start) update(setStart, cell)
       setMode(end < 0 ? 'Set destination' : 'Inspect')
     } else if (mode === 'Set destination') {
+      pinCoordinates.current.end = terrain.coordinates(x, z)
       if (cell !== end) update(setEnd, cell)
       setMode('Inspect')
     } else if (mode === 'Mark avoid zone') {
@@ -239,20 +299,20 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
     } else {
       setInspection({ x, z })
       openDetails('terrain')
-      setSelectedUnit(geologicUnitAt(terrain, { x, z })?.id ?? null)
+      setSelectedUnit((geologySource === 'field' ? fieldGeologyAt(terrain, { x, z }).bedrock : geologicUnitAt(terrain, { x, z }))?.id ?? null)
     }
   }
 
-  if (!open) return drivingHazards ? <DrivingHazards terrain={terrain} grid={grid} avoid={avoid} maxSlope={maxSlope} {...drivingHazards} /> : null
+  if (!open) return drivingHazards ? <DrivingHazards terrain={worldTerrain} maxSlope={maxSlope} {...drivingHazards} /> : null
 
   return <section className="expedition mission-workspaces mission-full-map" aria-label="Jezero expedition map">
     <header className="expedition-heading">
       <div className="expedition-title"><span className="expedition-eyebrow">MARS EXPLORER / MISSION MAP</span><h1 aria-label="Jezero Expedition Planner">Jezero crater</h1></div>
-      <label className="mission-extent"><span className="sr-only">Map extent</span><select aria-label="Map extent" value={context ? 'crater' : 'local'} onChange={(event) => {
+      <label className="mission-extent"><span className="sr-only">Map extent</span><select aria-label="Map extent" value={context ? 'crater' : terrain.assetBase.endsWith('jezero-regional') ? 'regional' : 'local'} disabled={coverageLoading} onChange={(event) => {
         setMode('Inspect')
         if (event.target.value === 'crater') showCrater()
-        else setContext(false)
-      }}><option value="local">Western Delta</option><option value="crater">Whole crater</option></select></label>
+        else changeCoverage(event.target.value === 'regional' ? 'jezero-regional' : 'jezero')
+      }}><option value="regional">Western Delta + surroundings</option><option value="local">HiRISE landing area</option><option value="crater">Whole crater</option></select></label>
       <button type="button" className="expedition-back" onClick={onClose} aria-label="Return to surface">Back to exploring<Icon name="arrow" size={18} /></button>
     </header>
     <div className="expedition-content">
@@ -260,11 +320,12 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         {context ? (
           crater ? <CraterMap crater={crater} terrain={terrain} samplesVisible={samplesVisible} selectedSample={detail === 'sample' ? selectedSample : null} onSample={selectSample} geology={showGeology ? geology : null} selectedUnit={selectedUnit} thermal={thermal} sitesVisible={sitesVisible} selectedSite={detail === 'site' ? selectedSite : null} onSelect={selectSite} onDetail={() => setContext(false)} />
             : <p role="status">{contextError ? 'Crater overview could not be loaded. Select Crater overview to retry.' : 'Loading crater overview…'}</p>
-        ) : <MapViewport width={widthMeters} height={depthMeters} onClick={inspect} aria-label="Detailed traverse map" role="img">
+        ) : <MapViewport key={terrain.assetBase} width={widthMeters} height={depthMeters} onClick={inspect} aria-label="Detailed traverse map" role="img">
           <clipPath id="expedition-detail"><rect width={widthMeters} height={depthMeters} /></clipPath>
-          <image href={raster ?? `${terrain.assetBase}/texture.jpg`} width={widthMeters} height={depthMeters} preserveAspectRatio="none" />
+          <RegionalImagery terrain={terrain} raster={raster} />
           {thermal && crater && <LocalThermal terrain={terrain} crater={crater} />}
           {showGeology && geology && <GeologyLayer data={geology} locate={locate} clipPath="url(#expedition-detail)" selectedId={selectedUnit} labels />}
+          {coverRaster && <image data-layer="surface-cover" href={coverRaster} width={widthMeters} height={depthMeters} preserveAspectRatio="none" className="expedition-pixels" />}
           {hazard && <image href={hazard} width={widthMeters} height={depthMeters} preserveAspectRatio="none" className="expedition-pixels" />}
           <g transform={`translate(${widthMeters * 0.03} ${depthMeters * 0.94})`} className="expedition-scale">
             <rect x={-widthMeters * .012} y={-widthMeters * .047} width={scaleBar + widthMeters * .025} height={widthMeters * .067} rx={widthMeters * .007} />
@@ -285,6 +346,8 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
           <RouteOverlay routes={routes} selected={selected} grid={grid} start={start} end={end} zones={zones} metadata={metadata} />
           {inspection && detail === 'terrain' && mode === 'Inspect' && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
         </MapViewport>}
+        {(coverageLoading || coverageError) && <p className="mission-map-task" role={coverageError ? 'alert' : 'status'}>{coverageError ?? 'Loading regional terrain…'}</p>}
+        <div className="mission-coverage-note">{terrain.metadata.coverageTier ?? 'HiRISE detailed'} · {Math.round(terrain.metadata.meshResolutionMeters ?? terrain.metadata.gridMeters ?? 8)} m terrain grid · {metadata.areaKm2.toFixed(1)} km²</div>
         <div className="mission-map-controls"><MapLayersMenu openMap={open} context={context} layer={layer} onLayer={setLayer} overlays={overlays} /></div>
         {!context && mode !== 'Inspect' && <div className="mission-map-task" role="status">
           <span>{mode === 'Set start' ? 'Choose your start on the map' : mode === 'Set destination' ? 'Choose your destination on the map' : 'Click to mark a 40 m avoid zone'}</span>
@@ -295,7 +358,8 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         {(layerNames.length > 0 || layer !== 'Imagery') && <details className="mission-map-key">
           <summary>Map key · {layerNames.length ? layerNames.join(' + ') : layer}</summary>
           {hazards && !context && <ul className="expedition-legend"><li><i className="hazard-blocked" />Above the slope limit or marked avoid zone</li><li><i className="hazard-caution" />Steep or locally uneven, or mapped surface caution</li><li><i className="hazard-unknown" />No elevation data</li></ul>}
-          {showGeology && <p>Published USGS geologic units · 1:75,000. Explore each region in Discover.</p>}
+          {showCover && <p>Separate mapped cover: sand, smooth deposits, talus and mantles. Major cover can conceal bedrock contacts.</p>}
+          {showGeology && <p>{geologySource === 'field' ? 'Science Team photogeology · 1:5,000 · pre-landing interpretation' : 'USGS geologic units · 1:75,000'}. Explore each region in Discover.</p>}
           {layer === 'Elevation' && !context && <p>Elevation: {Math.round(metadata.minimumElevation)} to {Math.round(metadata.maximumElevation)} m · USGS datum</p>}
           {layer === 'Slope' && !context && <p>Slope: 0° teal to 35° or more red.</p>}
           {thermal && <p>Mars Odyssey THEMIS nighttime infrared · relative brightness at 100 m resolution.</p>}
@@ -313,12 +377,12 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         <div id="mission-workspace-body" ref={panelBody} className="mission-workspace-body" role="tabpanel" aria-labelledby={`workspace-${workspace}`}>
           <div hidden={!!detail || workspace !== 'route'} data-workspace="route">
             {context && <p>Routes use the measured Western Delta terrain. Choosing a pin opens that area.</p>}
-            <RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={beginPick}
+            <fieldset disabled={coverageLoading} className="mission-coverage-fields"><RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={beginPick}
               maxSlope={maxSlope} setMaxSlope={(value) => update(setMaxSlope, value)} pace={pace} setPace={(value) => update(setPace, value)}
               dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
               objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
               sites={localSites} onDemo={demo} planning={planning} loadingSurface={surface === undefined} error={error} routes={routes}
-              selected={selected} onSelect={setSelected} zones={zones} onUndo={() => update(setZones, zones.slice(0, -1))} />
+              selected={selected} onSelect={setSelected} zones={zones} onUndo={() => update(setZones, zones.slice(0, -1))} /></fieldset>
           </div>
           <div hidden={!!detail || workspace !== 'marswalk'} data-workspace="marswalk">
             <label className="mission-suit-toggle"><input type="checkbox" checked={evaEnabled} onChange={(event) => setEvaEnabled(event.target.checked)} />Apply suit budget to Walk route</label>
@@ -326,7 +390,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
             {!selectedRoute && <button type="button" className="mission-text-action" onClick={() => switchWorkspace('route')}>Choose a route<Icon name="arrow" size={14} /></button>}
           </div>
           <div hidden={!!detail || workspace !== 'discover'} data-workspace="discover">
-            <DiscoverWorkspace category={discoverTopic} onCategory={(value) => { setDiscoverTopic(value); if (panelBody.current) panelBody.current.scrollTop = 0 }} terrain={terrain} context={context} selectedUnit={selectedUnit} selectedSite={selectedSite} selectedSample={selectedSample}
+            <DiscoverWorkspace category={discoverTopic} onCategory={(value) => { setDiscoverTopic(value); if (panelBody.current) panelBody.current.scrollTop = 0 }} terrain={terrain} geology={geology} geologySource={geologySource} onGeologySource={(value) => { setGeologySource(value); setSelectedUnit(null); setShowGeology(true) }} context={context} selectedUnit={selectedUnit} selectedSite={selectedSite} selectedSample={selectedSample}
               onUnit={(value) => { setSelectedUnit(value); if (value) setShowGeology(true) }} onSite={selectSite} onSample={selectSample} />
           </div>
           {detail && <section className="mission-place-details" aria-label="Place details">
@@ -336,7 +400,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         </div>
       </aside>
     </div>
-    <RouteLaunch route={selectedRoute} planning={planning} eva={eva} forecast={evaPreview} onLaunch={launch} onRoute={() => switchWorkspace('route')} onBudget={() => switchWorkspace('marswalk')} />
+    <RouteLaunch route={coverageLoading ? null : selectedRoute} planning={planning} eva={eva} forecast={evaPreview} onLaunch={launch} onRoute={() => switchWorkspace('route')} onBudget={() => switchWorkspace('marswalk')} />
   </section>
 }
 
@@ -402,10 +466,10 @@ function RouteOverlay({ routes, selected, grid, start, end, zones, metadata }) {
       const point = toMap(zone)
       return <circle key={index} cx={point.x} cy={point.y} r={zone.radius} className="expedition-avoid" />
     })}
-    {['terrain', 'science'].map((id) => {
+    {['terrain', 'energy', 'science'].map((id) => {
       const route = routes?.[id]
       if (!route) return null
-      const color = id === 'science' ? '#ffbe75' : '#8ef0d8'
+      const color = id === 'science' ? '#ffbe75' : id === 'energy' ? '#bba5ee' : '#8ef0d8'
       return <polyline key={id} points={route.points.map((point) => {
         const { x, y } = toMap(point)
         return `${x.toFixed(1)},${y.toFixed(1)}`
@@ -428,5 +492,21 @@ function RouteOverlay({ routes, selected, grid, start, end, zones, metadata }) {
         <text textAnchor="middle" y={labelSize * 0.33} fontSize={labelSize}>{label}</text>
       </g>
     })}
+  </g>
+}
+
+/** Imagery detail changes independently from the explicitly labelled analysis grid. */
+function RegionalImagery({ terrain, raster }) {
+  const scale = useMapScale()
+  const { widthMeters: width, depthMeters: height, detailInset } = terrain.metadata
+  const overview = detailInset && scale > .7
+  const inset = detailInset && scale < .34 && !raster
+  const bounds = detailInset?.bounds
+  const top = bounds && origin(terrain.location(bounds[3], bounds[0]), terrain.metadata)
+  const bottom = bounds && origin(terrain.location(bounds[1], bounds[2]), terrain.metadata)
+  return <g aria-label={inset ? 'HiRISE imagery inset over CTX regional terrain' : 'Orbital imagery'}>
+    <image href={raster ?? `${terrain.assetBase}/${overview ? 'overview' : 'texture'}.jpg`} width={width} height={height} preserveAspectRatio="none" />
+    {inset && <image href={`${import.meta.env.BASE_URL}${detailInset.assetDirectory}/texture.jpg`} x={top.x} y={top.y} width={bottom.x - top.x} height={bottom.y - top.y} preserveAspectRatio="none" />}
+    {top && !raster && <rect x={top.x} y={top.y} width={bottom.x - top.x} height={bottom.y - top.y} fill="none" stroke="#e9ba88" strokeDasharray="5 5" vectorEffect="non-scaling-stroke" pointerEvents="none" />}
   </g>
 }

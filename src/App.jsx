@@ -42,6 +42,7 @@ export default function App() {
   const evaLatest = useRef(null);
   evaLatest.current = evaMission.display;
   const playerRef = useRef(null);
+  const pendingLaunch = useRef(null);
   const sceneRef = useRef(null);
   const latestTelemetry = useRef(telemetry);
   latestTelemetry.current = telemetry;
@@ -113,7 +114,7 @@ export default function App() {
     if (reached) setWaypointIndex((index) => index + 1);
   }, [reached, waypointIndex]);
 
-  const launchRoute = (route, asCar) => {
+  const finishLaunch = (route, asCar) => {
     const [start, next] = route.points;
     const yaw = -Math.atan2(next.x - start.x, start.z - next.z);
     playerRef.current?.reset({ ...start, yaw });
@@ -124,6 +125,29 @@ export default function App() {
     setDriving(asCar);
     setCarActive(asCar);
     setMapOpen(false);
+  };
+
+  const launchRoute = async (route, asCar) => {
+    const directory = route.assetDirectory ?? 'jezero';
+    if (terrain.assetBase.endsWith(`/${directory}`)) { finishLaunch(route, asCar); return; }
+    setLoading(true);
+    setCarActive(false);
+    document.exitPointerLock?.();
+    try {
+      const data = await loadTerrain(directory);
+      pendingLaunch.current = { route, asCar };
+      setTerrain(data);
+      setEnvironment(createEnvironment(data));
+      setTelemetry({});
+    } catch (error) { setLoadError(error.message); setLoading(false); }
+  };
+  const worldReady = () => {
+    setLoading(false);
+    if (pendingLaunch.current) {
+      const { route, asCar } = pendingLaunch.current;
+      pendingLaunch.current = null;
+      finishLaunch(route, asCar);
+    }
   };
 
   const changeRegion = () => {
@@ -155,13 +179,13 @@ export default function App() {
         frameloop={mapOpen && !loading ? 'never' : 'always'}
         shadows="soft"
         dpr={[1, 1.5]}
-        camera={{ fov: 72, near: 0.07, far: 7000, position: [0, 70, 0] }}
+        camera={{ fov: 72, near: 0.07, far: 32000, position: [0, 70, 0] }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         onCreated={(rendering) => { sceneRef.current = rendering; const { gl } = rendering; gl.toneMapping = ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.outputColorSpace = SRGBColorSpace; }}
         fallback={<div className="webgl-error"><h2>WebGL is unavailable</h2><p>Enable hardware acceleration in your browser to walk on Mars.</p></div>}
       >
         <Suspense fallback={null}>
-          {terrain && environment && <World evaPace={evaMission.display?.settings.pace} driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={() => setLoading(false)} />}
+          {terrain && environment && <World key={terrain.assetBase} evaPace={evaMission.display?.settings.pace} driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={worldReady} />}
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
@@ -177,7 +201,7 @@ export default function App() {
       {guide && <span>{Math.round(guide.distance)} m to go · direction {Math.round(guide.bearing) % 360}°</span>}
     </aside>}
     {region === 'terrain' && drivingHazards && <DrivingHazards terrain={terrain} {...drivingHazards} />}
-    {region === 'jezero' && !loading && !loadError && terrain &&
+    {region === 'jezero' && !loadError && terrain &&
       <ExpeditionMap terrain={terrain} drivingHazards={drivingHazards} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => { setActiveRoute(null); evaMission.end(); }} />}
   </main>;
 }

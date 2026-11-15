@@ -36,7 +36,7 @@ export const scienceSites = [
     id: 'neretva', name: 'Neretva Vallis', latitude: 18.4952063, longitude: 77.30391283,
     category: 'Ancient inlet', habitability: 5, geology: 5,
     description: 'Study the sediments of the former inlet channel and their relationship to the delta. Compare textures and mineral alteration along the river valley.',
-    locationNote: 'Perseverance observation area, sol 1175. Crater overview only.',
+    locationNote: 'Perseverance observation area, sol 1175. In the CTX regional planning area.',
     source: 'https://science.nasa.gov/photojournal/perseverances-trip-to-broom-point/',
   },
   {
@@ -60,7 +60,7 @@ export const scienceSites = [
     id: 'cheyava', name: 'Cheyava Falls / Sapphire Canyon', latitude: 18.49747434, longitude: 77.30514915,
     category: 'Potential biosignature', habitability: 5, geology: 5,
     description: 'Perseverance collected Sapphire Canyon in the Bright Angel formation. Organic matter and iron-mineral patterns make it a potential biosignature; life has not been confirmed.',
-    locationNote: 'Representative sample-collection coordinate from the NASA MMGIS archive, sol 1215. Outside the playable DEM; crater overview only.',
+    locationNote: 'Representative sample-collection coordinate from the NASA MMGIS archive, sol 1215. In the CTX regional planning area; outside the HiRISE landing-area inset.',
     fieldQuestion: 'Which explanations could produce these mineral patterns?',
     observe: 'Compare the organic-bearing rock and mineral reaction fronts. Test biological and nonbiological explanations.',
     evidence: 'A potential biosignature is a clue that needs more investigation. No confirmed Martian life is shown here.',

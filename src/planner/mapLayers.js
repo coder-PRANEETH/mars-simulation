@@ -27,6 +27,11 @@ export function mapLayer(grid, metadata, mode, maxSlope, avoid) {
     let color = hazardColors[kind]
     if (kind !== 'unknown' && mode === 'Elevation') color = elevationColor((grid.elevation[i] - min) / range)
     if (kind !== 'unknown' && mode === 'Slope') color = slopeColor(Math.min(grid.slope[i] / 35, 1))
+    if (mode === 'Surface cover') {
+      const cover = grid.covers?.[grid.coverIds?.[i]]
+      const hex = cover?.color.slice(1)
+      color = hex ? [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16), 150] : [0, 0, 0, 0]
+    }
     if (mode === 'Land types') {
       const hex = landTypeAtCell(grid, i).color.slice(1)
       color = [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16), 205]

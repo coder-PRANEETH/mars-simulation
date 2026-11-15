@@ -67,7 +67,7 @@ test('science work at a nearby destination charges the suit budget once', async 
   await page.getByRole('button', { name: 'Map layers', exact: true }).click();
   const map = page.getByRole('img', { name: 'Detailed traverse map' });
   const target = await map.evaluate(svg => {
-    const t = window.__MARS_SIM__.getTerrain();
+    const t = window.__MARS_PLANNER__.getTerrain();
     const p = t.location(18.44462715, 77.45088572);
     const q = new DOMPoint(p.x + t.metadata.widthMeters / 2 + 24, p.z + t.metadata.depthMeters / 2).matrixTransform(svg.getScreenCTM());
     return { x: q.x, y: q.y };

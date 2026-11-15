@@ -28,6 +28,8 @@ export function GroundInfo({ surface, sinkDepth, wheelSlip }) {
     </> : <p className="ground-region-description">{surface.surfaceMapped
       ? 'Mapped surface cover is available here, but the underlying geologic unit is unavailable.'
       : 'This spot is outside the regional geologic map. The model uses measured slope and unevenness, without assuming loose soil or wheel sinking.'}</p>}
+    {surface.bedrock && <p><strong>Field-map bedrock:</strong> {surface.bedrock.symbol} · {surface.bedrock.label}</p>}
+    {surface.cover && <p><strong>Surface cover:</strong> {surface.cover.label}</p>}
     <GroundResponse surface={surface} sinkDepth={sinkDepth} wheelSlip={wheelSlip} />
     {surface.unit && <a className="ground-source" href="https://pubs.usgs.gov/publication/sim3464" target="_blank" rel="noreferrer">Published USGS geology ↗</a>}
   </>

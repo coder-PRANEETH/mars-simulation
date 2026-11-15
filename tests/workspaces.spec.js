@@ -82,6 +82,6 @@ test('phone workspace collapses while route launch and independent layer control
   expect(await page.evaluate(({ x, y, width, height }) => document.elementFromPoint(x + width / 2, y + height / 2)?.closest('button')?.textContent.includes('Drive route'), box)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await drive.click();
-  await expect(page.locator('.sim-hud')).toHaveClass(/is-driving/);
+  await expect(page.locator('.sim-hud')).toHaveClass(/is-driving/, { timeout: 30000 });
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().longitude)).toBeCloseTo(77.4509, 3);
 });

@@ -1,0 +1,41 @@
+{
+  "source": "https://mars.nasa.gov/rss/api/?feed=weather&category=mars2020&feedtype=json",
+  "observations": [
+    {
+      "sol": 1130,
+      "date": "2024-04-24",
+      "lowC": -77.3,
+      "highC": -23.2,
+      "pressurePa": 777.1,
+      "sunrise": "06:15:41",
+      "sunset": "17:12:41"
+    },
+    {
+      "sol": 1131,
+      "date": "2024-04-25",
+      "lowC": -79.2,
+      "highC": -17.0,
+      "pressurePa": 774.9,
+      "sunrise": "06:16:29",
+      "sunset": "17:13:03"
+    },
+    {
+      "sol": 1132,
+      "date": "2024-04-26",
+      "lowC": -77.9,
+      "highC": -23.4,
+      "pressurePa": 774.1,
+      "sunrise": "06:17:18",
+      "sunset": "17:13:27"
+    },
+    {
+      "sol": 1133,
+      "date": "2024-04-27",
+      "lowC": -79.3,
+      "highC": -24.7,
+      "pressurePa": 778.9,
+      "sunrise": "06:18:07",
+      "sunset": "17:13:51"
+    }
+  ]
+}

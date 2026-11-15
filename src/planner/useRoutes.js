@@ -8,6 +8,10 @@ export function useRoutes(grid) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    requestId.current++
+    setRoutes(null)
+    setError(null)
+    setPlanning(false)
     const planner = new Worker(new URL('./route.worker.js', import.meta.url), { type: 'module' })
     worker.current = planner
     planner.onmessage = ({ data }) => {
@@ -34,7 +38,7 @@ export function useRoutes(grid) {
   const calculate = useCallback((request) => {
     clear()
     setPlanning(true)
-    worker.current.postMessage({ id: requestId.current, request })
+    worker.current?.postMessage({ id: requestId.current, request })
   }, [clear])
 
   return { planning, routes, error, clear, calculate }

@@ -4,10 +4,11 @@ import { GeologyExplorer } from './GeologyLayer.jsx'
 import ScienceNotebook, { SiteFieldNotes, SamplePanel } from './ScienceNotebook.jsx'
 import WeatherObservations from './WeatherObservations.jsx'
 import GroundResponse from '../ui/GroundResponse.jsx'
+import { fieldGeologyAt } from '../terrain/photogeology.js'
 import { geologicUnitAt } from '../terrain/geology.js'
 import { cellAt, terrainClass } from './terrainGrid.js'
 
-export function DiscoverWorkspace({ category, onCategory, terrain, context, selectedUnit, onUnit, selectedSite, selectedSample, onSite, onSample }) {
+export function DiscoverWorkspace({ category, onCategory, terrain, geology, geologySource, onGeologySource, context, selectedUnit, onUnit, selectedSite, selectedSample, onSite, onSample }) {
   return <div className="discover-workspace">
     <div><p className="expedition-eyebrow">FOLLOW YOUR CURIOSITY</p><h2>Discover Jezero</h2></div>
     <label className="discover-topic">Explore
@@ -18,12 +19,12 @@ export function DiscoverWorkspace({ category, onCategory, terrain, context, sele
       </select>
     </label>
     <div hidden={category !== 'sites'}><SciencePanel selected={selectedSite} onSelect={onSite} showDetails={false} /><p>Choose a place here or select a marker on the map.</p></div>
-    <div hidden={category !== 'regions'}><GeologyExplorer data={terrain.geology} selectedId={selectedUnit} onSelect={onUnit} context={context} /></div>
+    <div hidden={category !== 'regions'}><label className="expedition-region-select">Geologic map<select aria-label="Geologic map source" value={geologySource} onChange={(e) => onGeologySource(e.target.value)}><option value="field">Science Team · 1:5,000</option><option value="usgs">USGS · 1:75,000</option></select></label><GeologyExplorer data={geology} selectedId={selectedUnit} onSelect={onUnit} context={context} /></div>
     <div hidden={category !== 'samples'}><SamplePanel data={sampleData} selected={selectedSample} onSelect={onSample} showDetails={false} /></div>
     <div hidden={category !== 'notes'}><ScienceNotebook /></div>
     <div hidden={category !== 'data'} className="mission-data">
       <h2>Data behind this map</h2>
-      <p>{context ? 'Jezero Crater · CTX elevation mosaic' : `Western Delta · HiRISE imagery and elevation · ${terrain.metadata.areaKm2.toFixed(1)} km²`}</p>
+      <p>{context ? 'Jezero Crater · CTX elevation mosaic' : `${terrain.metadata.coverageTier ?? "HiRISE detailed terrain"} · ${terrain.metadata.areaKm2.toFixed(1)} km²`}</p>
       <p>Elevation, imagery and geology come from spacecraft observations and published maps. Surface handling and suit budgets are simulation models.</p>
       <WeatherObservations assetBase={terrain.assetBase} />
       <p>Mars Odyssey THEMIS nighttime infrared shows relative brightness at 100 m resolution, not a live temperature map.</p>
@@ -40,7 +41,9 @@ export function PlaceDetails({ detail, terrain, grid, maxSlope, avoid, sampleSur
     <p className="expedition-eyebrow">GROUND REPORT</p><h2>Location inspector</h2>
     <dl className="expedition-readings">
       <dt>Coordinates</dt><dd>{terrain.coordinates(inspection.x, inspection.z).latitude.toFixed(5)}° N, {terrain.coordinates(inspection.x, inspection.z).longitude.toFixed(5)}° E</dd>
-      <dt>Geologic region</dt><dd>{geologicUnitAt(terrain, inspection)?.label ?? 'Outside mapped coverage'}</dd>
+      <dt>Mapped bedrock</dt><dd>{fieldGeologyAt(terrain, inspection).bedrock?.label ?? "Outside field-map coverage"}</dd>
+      <dt>Surface cover</dt><dd>{fieldGeologyAt(terrain, inspection).cover?.label ?? "No separate cover mapped"}</dd>
+      <dt>USGS region</dt><dd>{geologicUnitAt(terrain, inspection)?.label ?? 'Outside mapped coverage'}</dd>
       <dt>Elevation</dt><dd>{terrain.getElevation(inspection.x, inspection.z).toFixed(1)} m</dd>
       <dt>Slope</dt><dd>{terrain.sampleSlope(inspection.x, inspection.z).toFixed(1)}°</dd>
       <dt>Terrain class</dt><dd>{terrainClass(grid, cellAt(grid, inspection), maxSlope, avoid)}</dd>

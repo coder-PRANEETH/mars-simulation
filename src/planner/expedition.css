@@ -389,3 +389,11 @@
  .mission-full-map .expedition-zoom-hint { display: none; }
  .mission-full-map .expedition-viewport > svg { height: calc(100% - 140px); }
 }
+.mission-coverage-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.mission-coverage-note { position: absolute; bottom: 8px; left: 16px; color: #eee3d6; font: 10px var(--font-mono, monospace); background: #101317dc; padding: 5px 8px; pointer-events: none; }
+@media (max-width: 700px) { .mission-coverage-note { bottom: 84px; left: 8px; max-width: 50%; font-size: 9px; } }
+.mission-route-profile { margin: 16px 0; }
+.mission-route-profile figcaption { font-size: 12px; }
+.mission-route-profile figcaption span { display: block; color: #a6a9aa; margin-top: 4px; }
+.mission-route-profile svg { width: 100%; height: auto; margin: 8px 0; border-bottom: 1px solid #667078; }
+.mission-route-profile small { font-size: 10px; color: #b9bdc0; }

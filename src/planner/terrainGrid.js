@@ -32,7 +32,9 @@ export function buildGrid(terrain, surface = terrain.surfaceFlags) {
   // Keep worker messages and telemetry small: geometry stays on terrain.geology.
   const units = Object.fromEntries(Object.values(terrain.geologicUnits ?? {}).map(({ polygons, ...unit }) => [unit.id, unit]))
   const grid = { width, height, dx, dz, slope, roughness, elevation, surface, heights: terrain.heights,
-    unitIds: terrain.geologyGrid, units, groundSpeed: new Float32Array(width * height) }
+    unitIds: terrain.geologyGrid, units,
+    photoUnitIds: terrain.photoGrid, photoUnits: terrain.photoUnits, coverIds: terrain.coverGrid, covers: terrain.photoCovers,
+    analysisQuality: terrain.metadata.analysisQuality ?? 1, groundSpeed: new Float32Array(width * height) }
   for (let i = 0; i < grid.groundSpeed.length; i++) grid.groundSpeed[i] = materialAtCell(grid, i).speedFactor
   return grid
 }

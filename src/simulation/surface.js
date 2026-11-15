@@ -38,10 +38,11 @@ export function createSurfaceSampler(terrain) {
       ? rough > 0.35 ? 'Rocky ground' : incline > 12 ? 'Steep ground' : material.name
       : material.name
     return {
-      name, unit, mapped: !!unit, surfaceMapped: !!grid.surface?.[cell], modeled: true,
+      name, unit, bedrock: grid.photoUnits?.[grid.photoUnitIds?.[cell]] ?? unit, cover: grid.covers?.[grid.coverIds?.[cell]] ?? null, mapped: !!unit, surfaceMapped: !!grid.surface?.[cell], modeled: true,
       speedFactor: Math.max(0.2, groundSpeed * (1 - rough * 0.38) / (1 + (incline / 26) ** 2)),
       gripFactor: Math.max(0.45, groundGrip * (1 - rough * 0.12)),
       sinkDepth, roughness: rough, slope: incline,
+      effortTerrain: 1 + uneven + Math.max(0, 1 / Math.max(.2, groundSpeed) - 1),
     }
   }
 }
