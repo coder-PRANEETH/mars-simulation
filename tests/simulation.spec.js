@@ -51,6 +51,7 @@ test('the actual Mars scene supports FPS movement, gravity changes, inspection a
   expect(data.vertices).toBe(401 * 401);
   expect(data.area).toBeGreaterThan(2);
   expect(data.area).toBeLessThan(10);
+  await page.getByRole('button', { name: 'Switch to first-person view', exact: true }).click();
   await enter(page);
   const before = await read(page);
   await page.keyboard.down('KeyW');

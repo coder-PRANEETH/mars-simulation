@@ -40,7 +40,7 @@ test('Marswalk plan checks oxygen, cooling, science and return reserve before la
   expect(await page.evaluate(() => window.__MARS_SIM__.getTelemetry().speed)).toBeLessThan(1.5);
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getEVA().watts), { timeout: 15000 }).toBeGreaterThan(155);
   await page.keyboard.up('KeyW');
-  await page.evaluate(() => document.exitPointerLock());
+  await page.keyboard.press('Escape');
   await expect.poll(() => page.evaluate(() => document.pointerLockElement === null)).toBe(true);
   const clock = await page.evaluate(() => window.__MARS_SIM__.getEVA().elapsed);
   await page.waitForTimeout(600);

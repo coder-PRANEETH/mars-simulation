@@ -63,7 +63,7 @@ function DataPanel({ metadata, onClose }) {
   );
 }
 
-export default function Hud({ evaActive, driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, inspection, onClearInspection }) {
+export default function Hud({ thirdPerson, onToggleView, evaActive, driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, inspection, onClearInspection }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
@@ -108,13 +108,14 @@ export default function Hud({ evaActive, driving, carActive, showHazards, onTogg
         </div>
       </header>
 
-      {!driving && active && <div className="sim-crosshair" aria-hidden="true"><i /><i /><i /><i /></div>}
+      {!driving && !thirdPerson && active && <div className="sim-crosshair" aria-hidden="true"><i /><i /><i /><i /></div>}
 
       <nav className="sim-top-actions sim-interactive" aria-label="Exploration">
         <button className={`sim-tool-button ${learnOpen ? 'is-active' : ''}`} onClick={() => { setLearnOpen(!learnOpen); setGroundOpen(false); }} aria-expanded={learnOpen} aria-label="Discover Mars"><Icon name="spark" size={16} />Discover</button>
         {driving && carActive && <button type="button" className={`sim-tool-button ${showHazards ? 'is-active' : ''}`} aria-pressed={showHazards} onClick={onToggleHazards}>
           <Icon name="hazard" size={16} /><span>Hazards</span>
         </button>}
+        {!driving && <button type="button" className="sim-tool-button" aria-label={thirdPerson ? 'Switch to first-person view' : 'Switch to third-person view'} aria-pressed={thirdPerson} onClick={onToggleView}><Icon name="walking" size={16} />{thirdPerson ? 'Third person' : 'First person'}</button>}
         {onOpenMap && <button className="sim-tool-button sim-map-link" onClick={onOpenMap} aria-label="Expedition map"><Icon name="route" size={17} />Mission map</button>}
         <button className="sim-tool-button" onClick={onChangeRegion}><Icon name="compass" size={17} />{regionId === 'jezero' ? 'Southeast hills' : 'Explore Jezero'}</button>
         <button className="sim-icon-button" onClick={() => setDataOpen((open) => !open)} aria-expanded={dataOpen} aria-label="Terrain & data"><Icon name="info" /></button>
@@ -129,14 +130,14 @@ export default function Hud({ evaActive, driving, carActive, showHazards, onTogg
         <p>{loading ? 'Building the landscape from spacecraft images.' : loadError ? 'We couldn’t load the landscape. Reload this page to try again.' : regionId === 'jezero' ? 'Explore an ancient lakebed. Pick a path and visit the places scientists study.' : 'Walk or drive across real Martian hills mapped by spacecraft. What will you discover?'}</p>
         {!loading && !loadError && <>
           <div className="sim-mode-choice" role="group" aria-label="Travel mode">
-            <button type="button" aria-pressed={!driving} aria-label={driving ? 'Switch to foot mode' : 'Foot mode selected'} onClick={() => { if (driving) onToggleDriving(); }}><Icon name="walking" size={23} /><span>Walk<small>Explore on foot</small></span></button>
+            <button type="button" aria-pressed={!driving} aria-label={driving ? 'Switch to foot mode' : 'Foot mode selected'} onClick={() => { if (driving) onToggleDriving(); }}><Icon name="walking" size={23} /><span>Walk<small>Third-person explorer</small></span></button>
             <button type="button" aria-pressed={driving} aria-label={driving ? 'Car mode selected' : 'Switch to car mode'} onClick={() => { if (!driving) onToggleDriving(); }}><Icon name="car" size={23} /><span>Drive a rover<small>Cover more ground</small></span></button>
           </div>
           <button className="sim-enter-button" onClick={enter} aria-label={hasEntered ? 'Resume simulation' : 'Enter simulation'}>
             {hasEntered ? 'Resume mission' : 'Start exploring'}<Icon name="arrow" size={23} />
           </button>
           {hasEntered && <button type="button" className="sim-reset" onClick={onReset}>Return to the start</button>}
-          <p className="sim-entry-tip">{driving ? 'W / S to drive · A / D to steer · Space to brake' : 'W A S D to move · Mouse to look · Space to jump'}</p>
+          <p className="sim-entry-tip">{driving ? 'W / S to drive · A / D to steer · Space to brake' : thirdPerson ? 'W A S D to move · Drag to look · Scroll to zoom · Space to jump' : 'W A S D to move · Mouse to look · Space to jump'}</p>
         </>}
         {loading && <div className="sim-load-line" aria-label="Loading" />}
       </div>
@@ -168,10 +169,10 @@ export default function Hud({ evaActive, driving, carActive, showHazards, onTogg
           <p>{driving ? 'ROVER CONTROLS' : 'EXPLORER CONTROLS'}</p>
           <div><kbd>{driving ? 'W / S' : 'W A S D'}</kbd><span>{driving ? 'Drive / reverse' : 'Move'}</span></div>
           {driving && <div><kbd>A / D</kbd><span>Steer</span></div>}
-          <div><kbd>{driving ? 'DRAG' : 'MOUSE'}</kbd><span>Look around</span></div>
+          <div><kbd>{driving || thirdPerson ? 'DRAG' : 'MOUSE'}</kbd><span>Look around</span></div>
           <div><kbd>SCROLL</kbd><span>Zoom in / out</span></div>
           <div><kbd>SPACE</kbd><span>{driving ? 'Brake' : 'Jump'}</span></div>
-          <div><kbd>ESC</kbd><span>{driving ? 'Pause' : 'Release cursor'}</span></div>
+          <div><kbd>ESC</kbd><span>{driving || thirdPerson ? 'Pause' : 'Release cursor'}</span></div>
           <div><kbd>E</kbd><span>Scan the ground</span></div>
         </div>}
       </div>
@@ -192,7 +193,7 @@ export default function Hud({ evaActive, driving, carActive, showHazards, onTogg
           <dt>Speed</dt><dd className="sim-travel-speed">{number(driving ? speed * 3.6 : speed, driving ? 1 : 2)} <span>{driving ? 'km/h' : 'm/s'}</span></dd>
         </dl>
       </section>
-      {locked && <div className="sim-lock-hint">Esc <span>to release the cursor</span></div>}
+      {locked && <div className="sim-lock-hint">Esc <span>{thirdPerson ? "to pause" : "to release the cursor"}</span></div>}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Euler, Quaternion, Raycaster, Vector2, Vector3 } from 'three'
 import { CAR_CONFIG, PlayerPhysics, PLAYER_CONFIG } from '../physics/PlayerPhysics.js'
 
 import Car from './Car.jsx'
+import Astronaut from './Astronaut.jsx'
 import RoverEffects from './RoverEffects.jsx'
 
 const UP = new Vector3(0, 1, 0)
@@ -11,7 +12,7 @@ const LOOK_SENSITIVITY = 0.002
 const MAX_PITCH = Math.PI / 2 - 0.035
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
-export default function Player({ evaPace, driving, carActive, onPauseCar, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
+export default function Player({ thirdPerson, paused, evaPace, driving, carActive, onPauseCar, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
   const { camera, gl, scene } = useThree()
   const physics = useMemo(() => new PlayerPhysics(terrain, environment), [terrain, environment])
   const callbacks = useRef({ carActive, onPauseCar, onTelemetry, onLockChange, onInspect })
@@ -19,6 +20,9 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
   const keys = useRef(new Set())
   const keyboardUi = useRef(false)
   const vehicle = useRef(null)
+  const astronaut = useRef(null)
+  const walkingActive = useRef(false)
+  const astronautYaw = useRef(terrain.metadata?.spawn?.yaw ?? 0)
   const wheels = useRef([])
   const steeringWheels = useRef([])
   const driverYaw = useRef(terrain.metadata?.spawn?.yaw ?? 0)
@@ -42,6 +46,7 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
   const raycaster = useMemo(() => new Raycaster(), [])
   const center = useMemo(() => new Vector2(0, 0), [])
   const cameraDistance = useRef(6.9)
+  const walkingDistance = useRef(4.5)
   const zoomFov = useRef(0)
   const defaultFov = useRef(camera.fov || 70)
 
@@ -53,12 +58,31 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
     physics.yaw = yaw
     physics.steeringAngle = physics.yawRate = 0
     state.current.cameraReady = false
+    walkingActive.current = false
+    callbacks.current.onLockChange?.(false)
     physics.velocity.x = physics.velocity.z = 0
     physics.jumpBufferedUntil = -1
     keys.current.clear()
     look.current.yaw = look.current.targetYaw = driving ? 0 : yaw
     look.current.pitch = look.current.targetPitch = driving ? 0.08 : -0.035
   }, [driving, physics])
+
+  useEffect(() => {
+    walkingActive.current = false
+    keys.current.clear()
+    document.exitPointerLock?.()
+    callbacks.current.onLockChange?.(false)
+    state.current.cameraReady = false
+  }, [thirdPerson])
+
+  useEffect(() => {
+    if (paused) {
+      walkingActive.current = false
+      keys.current.clear()
+      callbacks.current.onLockChange?.(false)
+      document.exitPointerLock?.()
+    }
+  }, [paused])
 
   useEffect(() => {
     if (!driving) physics.config = evaPace ? { ...PLAYER_CONFIG, budgetedWalk: true, walkSpeed: evaPace, sprintSpeed: Math.max(1.8, evaPace * 1.5) } : PLAYER_CONFIG
@@ -79,7 +103,15 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
   useEffect(() => {
     const canvas = gl.domElement
     const enter = () => {
-      if (driving || document.pointerLockElement === canvas) return
+      if (driving || paused || document.pointerLockElement === canvas) return
+      if (thirdPerson) {
+        walkingActive.current = true
+        canvas.tabIndex = -1
+        canvas.focus({ preventScroll: true })
+        keyboardUi.current = false
+        callbacks.current.onLockChange?.(true)
+        return
+      }
       const requested = canvas.requestPointerLock()
       // Browsers expose either a Promise or void for this API.
       requested?.catch?.(() => callbacks.current.onLockChange?.(false))
@@ -92,7 +124,10 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
       look.current.targetPitch = look.current.pitch
       skipMouseEvent.current = locked.current
       if (!locked.current) keys.current.clear()
-      callbacks.current.onLockChange?.(locked.current)
+      if (!thirdPerson) {
+        walkingActive.current = locked.current
+        callbacks.current.onLockChange?.(locked.current)
+      }
     }
     const orbit = (event) => {
       if (Math.abs(event.movementX) > 200 || Math.abs(event.movementY) > 200) return
@@ -100,19 +135,20 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
       look.current.targetPitch = clamp(look.current.targetPitch - event.movementY * LOOK_SENSITIVITY, -MAX_PITCH, MAX_PITCH)
     }
     const startOrbit = (event) => {
-      if (!driving || !callbacks.current.carActive || event.button !== 0) return
+      if (!(driving ? callbacks.current.carActive : thirdPerson && walkingActive.current) || event.button !== 0) return
       orbitPointer.current = event.pointerId
       canvas.setPointerCapture(event.pointerId)
     }
     const dragOrbit = (event) => {
-      if (event.pointerId === orbitPointer.current && callbacks.current.carActive) orbit(event)
+      if (event.pointerId === orbitPointer.current && (driving ? callbacks.current.carActive : walkingActive.current)) orbit(event)
     }
     const zoom = (event) => {
-      if (!(driving ? callbacks.current.carActive : locked.current)) return
+      if (!(driving ? callbacks.current.carActive : walkingActive.current)) return
       event.preventDefault()
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 600 : 1)
       const step = clamp(delta, -300, 300)
       if (driving) cameraDistance.current = clamp(cameraDistance.current * Math.exp(step * .0015), 3.8, 30)
+      else if (thirdPerson) walkingDistance.current = clamp(walkingDistance.current * Math.exp(step * .0015), 2.5, 12)
       else zoomFov.current = clamp(zoomFov.current + step * .035, -37, 10)
     }
     const endOrbit = () => { orbitPointer.current = null }
@@ -147,14 +183,15 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
       })
     }
     const down = (event) => {
-      if (!(driving ? callbacks.current.carActive : locked.current)) return
-      if (driving && event.code === 'Tab') { keyboardUi.current = true; return }
+      if (!(driving ? callbacks.current.carActive : walkingActive.current)) return
+      if ((driving || thirdPerson) && event.code === 'Tab') { keyboardUi.current = true; return }
       if (event.code === 'Escape') {
         if (driving) callbacks.current.onPauseCar()
+        else if (thirdPerson) { walkingActive.current = false; keys.current.clear(); callbacks.current.onLockChange?.(false) }
         else document.exitPointerLock()
         return
       }
-      if (driving && event.target instanceof Element) {
+      if ((driving || thirdPerson) && event.target instanceof Element) {
         if (event.target.closest('input, select, textarea, [contenteditable="true"]')) return
         // Movement resumes driving after using a lesson or another HUD button.
         if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code)) {
@@ -173,7 +210,7 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
     const pointerControl = () => { keyboardUi.current = false }
     const blur = () => { keys.current.clear(); endOrbit() }
     const focus = (event) => {
-      if (driving && event.target.matches('input, select, textarea, [contenteditable="true"]')) keys.current.clear()
+      if ((driving || thirdPerson) && event.target.matches('input, select, textarea, [contenteditable="true"]')) keys.current.clear()
     }
     const reset = (spawn) => {
       physics.reset(spawn)
@@ -182,6 +219,7 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
       state.current.landing = 0
       state.current.landingVelocity = 0
       state.current.cameraReady = false
+      astronautYaw.current = spawn?.yaw ?? terrain.metadata?.spawn?.yaw ?? 0
       driverYaw.current = spawn?.yaw ?? terrain.metadata?.spawn?.yaw ?? 0
       look.current.yaw = look.current.targetYaw = driving ? 0 : driverYaw.current
       look.current.pitch = look.current.targetPitch = driving ? 0.08 : -0.035
@@ -191,7 +229,7 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
         heading: ((-(driving ? driverYaw.current : look.current.yaw) * 180 / Math.PI) % 360 + 360) % 360,
       })
     }
-    if (resetRef) resetRef.current = { enter, reset, exit: () => document.exitPointerLock() }
+    if (resetRef) resetRef.current = { enter, reset, exit: () => { walkingActive.current = false; callbacks.current.onLockChange?.(false); document.exitPointerLock?.() } }
     canvas.addEventListener('wheel', zoom, { passive: false })
     canvas.addEventListener('click', enter)
     canvas.addEventListener('pointerdown', startOrbit)
@@ -220,7 +258,7 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
       window.removeEventListener('blur', blur)
       if (resetRef) resetRef.current = null
     }
-  }, [camera, center, driving, environment, gl, physics, raycaster, resetRef, scene, terrain])
+  }, [camera, center, driving, thirdPerson, paused, environment, gl, physics, raycaster, resetRef, scene, terrain])
 
   useFrame((_, realDelta) => {
     const frame = state.current
@@ -242,7 +280,7 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
       brake,
       sprint: !driving && (pressed.has('ShiftLeft') || pressed.has('ShiftRight')),
       yaw: view.yaw,
-      active: driving ? carActive : locked.current,
+      active: !paused && (driving ? carActive : walkingActive.current),
     }
     frame.accumulator += dt
     while (frame.accumulator >= PLAYER_CONFIG.fixedStep) {
@@ -297,13 +335,34 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
         for (const wheel of wheels.current) if (wheel) wheel.rotation.x -= wheelSpeed / 0.45 * dt
         for (const wheel of steeringWheels.current) if (wheel) wheel.rotation.y = -physics.steeringAngle
       }
+    } else if (thirdPerson) {
+      const distance = walkingDistance.current
+      const orbitPitch = clamp(view.pitch, -.3, 1.1)
+      const horizontal = distance * Math.cos(orbitPitch)
+      const cameraX = x + Math.sin(view.yaw) * horizontal
+      const cameraZ = z + Math.cos(view.yaw) * horizontal
+      const cameraY = Math.max(y + 1.6 + Math.sin(orbitPitch) * distance, terrain.sampleHeight(cameraX, cameraZ) + .55)
+      cameraDestination.set(cameraX, cameraY, cameraZ)
+      if (!frame.cameraReady) { camera.position.copy(cameraDestination); frame.cameraReady = true }
+      else camera.position.lerp(cameraDestination, 1 - Math.exp(-dt * 12))
+      camera.position.y = Math.max(camera.position.y, terrain.sampleHeight(camera.position.x, camera.position.z) + .55)
+      cameraTarget.set(x, y + 1.05, z)
+      camera.lookAt(cameraTarget)
+      if (astronaut.current) {
+        astronaut.current.position.set(x, y, z)
+        if (speed > .08) {
+          const desiredYaw = Math.atan2(-physics.velocity.x, -physics.velocity.z)
+          astronautYaw.current += Math.atan2(Math.sin(desiredYaw - astronautYaw.current), Math.cos(desiredYaw - astronautYaw.current)) * (1 - Math.exp(-dt * 13))
+        }
+        astronaut.current.rotation.y = astronautYaw.current
+      }
     } else {
       camera.position.set(x, y + PLAYER_CONFIG.eyeHeight + bobY + frame.landing, z)
       camera.rotation.order = 'YXZ'
       camera.rotation.set(view.pitch, view.yaw, Math.sin(frame.bob * 0.5) * 0.002 * bobStrength)
     }
     if (camera.isPerspectiveCamera) {
-      const targetFov = defaultFov.current + (driving ? 0 : zoomFov.current) + (input.sprint && speed > 2 && locked.current ? 7 : 0)
+      const targetFov = defaultFov.current + (driving || thirdPerson ? 0 : zoomFov.current) + (input.sprint && speed > 2 && walkingActive.current ? 7 : 0)
       camera.fov += (targetFov - camera.fov) * (1 - Math.exp(-dt * 10))
       camera.updateProjectionMatrix()
     }
@@ -321,5 +380,5 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
   return driving ? <>
     <Car bodyRef={vehicle} wheelRefs={wheels} steeringRefs={steeringWheels} />
     <RoverEffects physics={physics} terrain={terrain} active={carActive} />
-  </> : null
+  </> : <Astronaut bodyRef={astronaut} physics={physics} visible={thirdPerson} active={walkingActive.current && !paused} />
 }

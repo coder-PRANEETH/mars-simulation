@@ -1,0 +1,36 @@
+import { test, expect } from '@playwright/test'
+const diagnostics = (page) => page.evaluate(() => window.__MARS_SIM__.getRenderDiagnostics())
+
+test('imported astronaut walks, turns, jumps and zooms in third person with a free cursor', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Enter simulation', exact: true }).click()
+  await expect.poll(async () => (await diagnostics(page)).astronautMeshCount).toBeGreaterThan(0)
+  await expect.poll(async () => (await diagnostics(page)).astronautVisible).toBe(true)
+  expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+  const distance = async () => { const d = await diagnostics(page); return Math.hypot(...d.cameraPosition.map((v, i) => v - d.astronautPosition[i])) }
+  expect(await distance()).toBeGreaterThan(2.5)
+  await page.keyboard.down('KeyW')
+  await expect.poll(async () => (await diagnostics(page)).astronautAnimation, { timeout: 15000 }).toBe('Walk')
+  const before = await diagnostics(page)
+  await expect.poll(async () => (await diagnostics(page)).astronautLegQuaternion, { timeout: 10000 }).not.toEqual(before.astronautLegQuaternion)
+  await expect.poll(async () => Math.abs((await diagnostics(page)).astronautBootClearance)).toBeLessThan(.02)
+  await expect.poll(async () => Math.hypot(...(await diagnostics(page)).astronautPosition.map((v, i) => v - before.astronautPosition[i])), { timeout: 15000 }).toBeGreaterThan(1)
+  await page.keyboard.up('KeyW')
+  await expect.poll(async () => (await diagnostics(page)).astronautAnimation).toBe('Idle')
+  await page.keyboard.down('Space')
+  await expect.poll(async () => (await diagnostics(page)).astronautAnimation).toBe('Jump')
+  await page.keyboard.up('Space')
+  await expect.poll(async () => (await diagnostics(page)).astronautAnimation, { timeout: 20000 }).toBe('Idle')
+  const zoomBefore = await distance()
+  await page.mouse.move(480, 320)
+  await page.mouse.wheel(0, 400)
+  await expect.poll(distance).toBeGreaterThan(zoomBefore + .5)
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Resume simulation', exact: true })).toBeVisible()
+  expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+  expect(errors).toEqual([])
+})
+

@@ -24,6 +24,7 @@ export default function App() {
   const simulation = useSimulation();
   const [mapOpen, setMapOpen] = useState(false);
   const [driving, setDriving] = useState(false);
+  const [thirdPerson, setThirdPerson] = useState(true);
   const [carActive, setCarActive] = useState(false);
   const [showHazards, setShowHazards] = useState(true);
   const [showLandTypes, setShowLandTypes] = useState(false);
@@ -90,7 +91,18 @@ export default function App() {
           dustParticleCount: dust?.visible ? dust.geometry.drawRange.count : 0,
           cameraPosition: rendering?.camera.position.toArray(),
           cameraFov: rendering?.camera.fov,
+          astronautPosition: rendering?.scene.getObjectByName('mars-astronaut')?.position.toArray(),
+          astronautVisible: rendering?.scene.getObjectByName('mars-astronaut')?.visible,
+          astronautAnimation: rendering?.scene.getObjectByName('mars-astronaut')?.userData.animation,
+          astronautBootClearance: rendering?.scene.getObjectByName('mars-astronaut')?.userData.bootClearance,
+          astronautLegQuaternion: rendering?.scene.getObjectByName('mars-astronaut')?.userData.legQuaternion,
+          astronautYaw: rendering?.scene.getObjectByName('mars-astronaut')?.rotation.y,
+          astronautAnimationTime: rendering?.scene.getObjectByName('mars-astronaut')?.userData.animationTime,
+          astronautMeshCount: rendering?.scene.getObjectByName('mars-astronaut')?.getObjectsByProperty('isSkinnedMesh', true).length,
           vehiclePosition: rendering?.scene.getObjectByName('mars-expedition-car')?.position.toArray(),
+          roverWheelCount: rendering?.scene.getObjectByName('mars-expedition-car')?.userData.wheelCount,
+          roverSource: rendering?.scene.getObjectByName('mars-expedition-car')?.userData.source,
+          roverWheelRotations: Array.from({ length: 6 }, (_, i) => rendering?.scene.getObjectByName(`perseverance-wheel-${i}`)?.rotation.x),
           frontWheelAngles: ['left', 'right'].map((side) => rendering?.scene.getObjectByName(`rover-steering-${side}`)?.rotation.y),
           wheelDustCount: rendering?.scene.getObjectByName('rover-wheel-dust')?.userData.activeParticles ?? 0,
           wheelTrackCount: rendering?.scene.getObjectByName('rover-wheel-tracks')?.userData.activeSegments ?? 0,
@@ -190,12 +202,12 @@ export default function App() {
         fallback={<div className="webgl-error"><h2>WebGL is unavailable</h2><p>Enable hardware acceleration in your browser to walk on Mars.</p></div>}
       >
         <Suspense fallback={null}>
-          {terrain && environment && <World key={terrain.assetBase} evaPace={evaMission.display?.settings.pace} driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={worldReady} />}
+          {terrain && environment && <World thirdPerson={thirdPerson} paused={mapOpen} key={terrain.assetBase} evaPace={evaMission.display?.settings.pace} driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={worldReady} />}
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
     <div inert={mapOpen && !loading && !loadError}>
-    <Hud evaActive={!!evaMission.display} driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    <Hud thirdPerson={thirdPerson} onToggleView={() => { playerRef.current?.exit(); setThirdPerson((value) => !value); }} evaActive={!!evaMission.display} driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
     {evaMission.display && <EVAMission model={evaMission.display} paused={!locked || mapOpen} onWork={evaMission.work} onStorm={evaMission.storm} onEnd={evaMission.end} onReturn={() => {
       const home = evaMission.headHome();
       if (home) { setActiveRoute(home); setWaypointIndex(1); }
