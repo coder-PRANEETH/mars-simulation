@@ -245,7 +245,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
 
   if (!open) return drivingHazards ? <DrivingHazards terrain={terrain} grid={grid} avoid={avoid} maxSlope={maxSlope} {...drivingHazards} /> : null
 
-  return <section className="expedition mission-workspaces" aria-label="Jezero expedition map">
+  return <section className="expedition mission-workspaces mission-full-map" aria-label="Jezero expedition map">
     <header className="expedition-heading">
       <div className="expedition-title"><span className="expedition-eyebrow">MARS EXPLORER / MISSION MAP</span><h1 aria-label="Jezero Expedition Planner">Jezero crater</h1></div>
       <label className="mission-extent"><span className="sr-only">Map extent</span><select aria-label="Map extent" value={context ? 'crater' : 'local'} onChange={(event) => {
@@ -336,7 +336,7 @@ export default function ExpeditionMap({ terrain, drivingHazards, open, onClose, 
         </div>
       </aside>
     </div>
-    <RouteLaunch route={selectedRoute} planning={planning} eva={eva} onLaunch={launch} onRoute={() => switchWorkspace('route')} onBudget={() => switchWorkspace('marswalk')} />
+    <RouteLaunch route={selectedRoute} planning={planning} eva={eva} forecast={evaPreview} onLaunch={launch} onRoute={() => switchWorkspace('route')} onBudget={() => switchWorkspace('marswalk')} />
   </section>
 }
 

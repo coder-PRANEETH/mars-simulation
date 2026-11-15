@@ -333,3 +333,59 @@
 .mission-workspaces .expedition-viewport > svg { height: calc(100% - 82px); }
 .mission-workspaces .expedition-zoom { bottom: 26px; }
 .mission-workspaces .expedition-zoom-hint { bottom: 7px; }
+
+/* Full map canvas; reading and launch controls float above it. */
+.mission-full-map { padding: 0; gap: 0; }
+.mission-full-map .expedition-heading { position: absolute; top: 15px; left: 22px; right: 22px; z-index: 10; padding: 10px 14px; background: linear-gradient(90deg, #101719f5, #101719c9); pointer-events: none; }
+.mission-full-map .expedition-heading > * { pointer-events: auto; }
+.mission-full-map h1 { font-size: 28px; }
+.mission-full-map .expedition-content { position: absolute; inset: 0; display: block; }
+.mission-full-map .expedition-map { position: absolute; inset: 0; }
+.mission-full-map .expedition-viewport { clip-path: none; }
+.mission-full-map .expedition-panel { position: absolute; z-index: 8; top: 103px; bottom: 116px; left: 22px; width: 300px; border: 0; background: #101719f5; backdrop-filter: blur(10px); }
+.mission-full-map .mission-workspace-heading { padding: 0 14px; margin: 0; }
+.mission-full-map .mission-workspace-tabs { gap: 18px; }
+.mission-full-map .mission-workspace-body { padding: 20px 16px 22px; }
+.mission-full-map .mission-sheet-toggle { display: block; min-height: 44px; min-width: 34px; color: var(--atlas-muted); }
+.mission-full-map .expedition-panel.is-collapsed { bottom: auto; }
+.mission-full-map .expedition-panel.is-collapsed .mission-workspace-body { display: none; }
+.mission-full-map .mission-map-controls { top: 104px; right: 22px; }
+.mission-full-map .expedition-north { top: 112px; left: auto; right: 145px; }
+.mission-full-map .mission-map-task { top: 108px; left: 50%; max-width: calc(100% - 710px); }
+.mission-full-map .mission-map-key { left: auto; right: 190px; bottom: 18px; max-width: 280px; }
+.mission-full-map .mission-route-bar { position: absolute; left: 22px; right: 180px; bottom: 15px; margin: 0; min-height: 72px; padding: 12px 16px; width: fit-content; max-width: calc(100% - 210px); border: 0; background: #101719f5; backdrop-filter: blur(10px); }
+.mission-full-map .mission-route-summary { gap: 8px; }
+.mission-full-map .mission-route-summary > strong { font-size: 11px; color: var(--atlas-muted); }
+.mission-summary-metrics { margin: 0; display: flex; gap: 22px; }
+.mission-summary-metrics div { display: grid; gap: 3px; }
+.mission-summary-metrics dt { color: var(--atlas-muted); font-size: 10px; }
+.mission-summary-metrics dd { margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mission-full-map .mission-route-bar .expedition-launch { min-width: 230px; }
+@media(max-width:1100px) {
+ .mission-full-map .mission-route-bar { right: 150px; max-width: calc(100% - 175px); gap: 12px; }
+ .mission-summary-metrics { gap: 14px; }
+ .mission-full-map .mission-route-bar .expedition-launch { min-width: 200px; }
+ .mission-full-map .mission-map-task { left: 340px; transform: none; max-width: calc(100% - 480px); }
+}
+@media(max-width:700px) {
+ .mission-full-map .expedition-heading { left: 12px; right: 12px; top: 10px; padding: 8px 10px; }
+ .mission-full-map h1 { font-size: 24px; }
+ .mission-full-map .mission-extent select { min-height: 32px; }
+ .mission-full-map .expedition-panel { top: auto; left: 12px; right: 12px; width: auto; bottom: 150px; max-height: min(42dvh, 340px); }
+ .mission-full-map .mission-workspace-body { height: min(30dvh, 260px); padding: 14px; }
+ .mission-full-map .expedition-panel.is-collapsed { bottom: 150px; }
+ .mission-full-map .mission-map-controls { top: 118px; right: 12px; }
+ .mission-full-map .expedition-north { top: 122px; right: auto; left: 22px; }
+ .mission-full-map .mission-map-task { left: 12px; top: 172px; max-width: calc(100% - 24px); }
+ .mission-full-map .mission-route-bar { left: 12px; right: 12px; bottom: 12px; width: auto; max-width: none; padding: 10px 12px; gap: 9px; min-height: 0; }
+ .mission-full-map .mission-route-summary { width: 100%; }
+ .mission-full-map .mission-route-summary > strong { display: none; }
+ .mission-full-map .mission-route-bar .expedition-launch { width: 100%; min-width: 0; }
+ .mission-summary-metrics { width: 100%; display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; }
+ .mission-summary-metrics dd { font-size: 11px; }
+ .mission-summary-metrics dt { font-size: 9px; }
+ .mission-full-map .mission-map-key { bottom: 92px; right: auto; left: 12px; max-width: calc(100% - 180px); }
+ .mission-full-map .expedition-zoom { bottom: 92px; }
+ .mission-full-map .expedition-zoom-hint { display: none; }
+ .mission-full-map .expedition-viewport > svg { height: calc(100% - 140px); }
+}

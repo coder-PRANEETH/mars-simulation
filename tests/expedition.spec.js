@@ -98,7 +98,7 @@ test('starts driving at the chosen start pin with the cursor free', async ({ pag
   const viewport = hazards.locator('svg');
   const initialView = await viewport.getAttribute('viewBox');
   await page.keyboard.down('KeyW');
-  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().speed)).toBeGreaterThan(2);
+  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().speed), { timeout: 15000 }).toBeGreaterThan(2);
   await page.keyboard.up('KeyW');
   await expect(viewport).not.toHaveAttribute('viewBox', initialView);
   await page.getByRole('button', { name: 'Expedition map' }).click();

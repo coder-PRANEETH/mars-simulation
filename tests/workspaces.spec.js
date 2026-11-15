@@ -13,6 +13,7 @@ test('one workspace preserves route, suit settings, layers, zoom and selection a
   await page.getByRole('button', { name: 'Try a route' }).click();
   const launch = page.getByLabel('Route launch controls');
   await expect(launch.getByRole('button', { name: 'Drive route', exact: true })).toBeEnabled();
+  await expect(launch.getByLabel('Route summary').locator('dt')).toHaveText(['Distance', 'Walk time', 'Walk energy', 'Risk · model']);
   const summary = await launch.locator('strong').innerText();
   const start = await page.getByRole('button', { name: 'Set start', exact: true }).locator('strong').innerText();
   await page.getByRole('button', { name: 'Map layers', exact: true }).click();
@@ -69,7 +70,8 @@ test('phone workspace collapses while route launch and independent layer control
   const height = (await map.boundingBox()).height;
   await page.getByRole('button', { name: 'Collapse workspace', exact: true }).click();
   await expect(page.getByRole('tabpanel')).toBeHidden();
-  expect((await map.boundingBox()).height).toBeGreaterThan(height + 100);
+  expect((await map.boundingBox()).height).toBeCloseTo(height, 0);
+  await expect(page.getByRole('button', { name: 'Expand workspace', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Map layers', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Geologic regions', exact: true }).check();
   await page.keyboard.press('Escape');

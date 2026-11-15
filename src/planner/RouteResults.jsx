@@ -21,6 +21,7 @@ export default function RouteResults({ routes, selected, onSelect }) {
       <dl className="expedition-readings">
         <dt>Surface distance</dt><dd>{distanceText(route.distance)}</dd>
         <dt>Elevation gain</dt><dd>{Math.round(route.gain)} m</dd>
+        {route.risk && <><dt>Relative risk index</dt><dd>{Math.round(route.risk.mean * 100)}/100 · model</dd><dt>Caution terrain</dt><dd>{distanceText(route.risk.cautionDistance)}</dd></>}
         <dt>Steepest slope</dt><dd>{route.maxSlope.toFixed(1)}°</dd>
         <dt>Estimated walk</dt><dd>{timeRange(route.time)}</dd>
         <dt>There and back</dt><dd>{timeRange(route.time + route.returnTime)}</dd>

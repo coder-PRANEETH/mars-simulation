@@ -1,4 +1,5 @@
 import { cellPoint, terrainClass } from './terrainGrid.js'
+import { terrainRisk } from './routeRisk.js'
 
 const directions = [
   [-1, -1], [0, -1], [1, -1],
@@ -121,6 +122,7 @@ function describeRoute(grid, path, profile, stop) {
   let time = 0
   let returnTime = 0
   let maxSlope = slope[path[0]]
+  let riskSum = 0, cautionDistance = 0, peakRisk = 0
   let lastWaypoint = 0
   const regionIds = new Set(path.map((cell) => grid.unitIds?.[cell]).filter(Boolean))
 
@@ -139,6 +141,10 @@ function describeRoute(grid, path, profile, stop) {
       const penalty = 1 + Math.max(roughness[from], roughness[to])
         + surfacePenalty(grid, from, to)
         + profile.dustPenalty + (profile.thermalPenalty ?? 0)
+      const risk = Math.max(terrainRisk(grid, from, profile.maxSlope).value, terrainRisk(grid, to, profile.maxSlope).value)
+      riskSum += length * risk
+      peakRisk = Math.max(peakRisk, risk)
+      if (terrainClass(grid, to, profile.maxSlope, null) === 'caution') cautionDistance += length
       distance += length
       gain += Math.max(0, rise)
       b.seconds = length / profile.pace * (penalty + Math.max(0, rise) / run * 3 + Math.max(0, -rise) / run)
@@ -155,7 +161,7 @@ function describeRoute(grid, path, profile, stop) {
     }
   }
 
-  return { points, waypoints, distance, gain, time, returnTime, maxSlope, stop,
+  return { points, waypoints, distance, gain, time, returnTime, maxSlope, stop, risk: { mean: distance ? riskSum / distance : 0, peak: peakRisk, cautionDistance },
     regions: [...regionIds].map((id) => grid.units[id]?.label).filter(Boolean) }
 }
 
