@@ -1,6 +1,6 @@
 # Mars Surface Simulator
 
-A working first-person web prototype on **5.87 km² of reconstructed Martian terrain southeast of Jezero Crater**. The product is the walkable 3D surface: real HiRISE elevation, co-registered orbital imagery, terrain contact, gravity-driven jumps, and simulated surface weather.
+A working third-person web simulator on **5.87 km² of reconstructed Martian terrain southeast of Jezero Crater**. The product is the walkable 3D surface: real HiRISE elevation, co-registered orbital imagery, terrain contact, gravity-driven jumps, and simulated surface weather.
 
 ## Run
 
@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite (normally `http://localhost:5173`). Choose **Walk** and click **Start exploring** to capture the mouse, or choose **Drive a rover** to keep the cursor free. The original datasets have already been cropped and packaged in `public/terrain`; Python, external APIs, credentials, and a backend are not needed to run the prototype.
+Open the local URL printed by Vite (normally `http://localhost:5173`). Choose **Walk** and click **Start exploring** to control the animated astronaut in third person. Both third-person walking and rover driving keep the cursor free. Drag the terrain to orbit and scroll to zoom. The top navigation can switch walking to first person, which captures the mouse. The original datasets have already been cropped and packaged in `public/terrain`; Python, external APIs, credentials, and a backend are not needed to run the prototype.
 
 ```bash
 npm run build       # production build in dist/
@@ -108,17 +108,17 @@ GeoTIFF samples from USGS without downloading the full mosaics.
 
 | Input | Action |
 | --- | --- |
-| Click viewport / Enter simulation | Capture mouse, enter first person |
+| Click viewport / Enter simulation | Start/resume third-person walking; capture mouse only in first person |
 | W / S | Forward / backward |
 | A / D | Strafe left / right |
-| Mouse | Look freely |
+| Drag mouse / scroll | Orbit / zoom in third person; mouse-look / FOV zoom in first person |
 | Space | Jump; release before the next jump |
 | Shift | Sprint |
-| Esc | Release the cursor |
+| Esc | Pause third-person movement; release the cursor in first person |
 | E | Raycast through the crosshair to inspect terrain |
 | F3 | Toggle physics diagnostics and FPS |
 
-The camera is the player's head, **1.7 m above their feet**. Walking includes acceleration, deceleration, limited air steering, ground detection, slope grip, and sliding. The small camera gait and landing offsets provide feedback; jump motion comes from the simulated body.
+The default camera follows the imported astronaut from behind. A/D and W/S move relative to the camera, and the character turns toward actual movement. The optional first-person camera is **1.7 m above the collision body’s feet**. Walking includes acceleration, deceleration, limited air steering, ground detection, slope grip, and sliding. The small camera gait and landing offsets provide feedback; jump motion comes from the simulated body.
 
 Open **F3** diagnostics to see vertical velocity, height above ground, grounded state, and airborne time. Holding Space does not repeat the jump.
 
@@ -179,8 +179,8 @@ and wheel sinking, with short recovery hints. The four live telemetry fields
 remain wind, temperature, coordinates and speed. The traction display yields
 space when opening learning or ground-information panels.
 
-The rover uses gradual front-wheel steering and a 2.59 m bicycle-model
-wheelbase, matched to the visual wheel positions. Heading changes depend on
+The imported rover animates six wheels, with front/rear counter-steering and a 2.26 m effective bicycle-model
+wheelbase matched to its visual front/rear wheel spacing. Heading changes depend on
 forward/reverse speed. The horizontal velocity retains momentum while tire
 forces correct lateral motion. Acceleration, cornering and braking share a
 gravity- and grip-dependent force budget. Releasing throttle allows coasting;
@@ -263,7 +263,7 @@ src/
   physics/PlayerPhysics.js   deterministic body integration and terrain contact
   simulation/store.js       environmental values, presets and subscriptions
   simulation/environment.js environment queries shared by all entities
-  scene/Player.jsx          pointer lock, input, physics steps and head camera
+  scene/Player.jsx          third/first-person cameras, input and shared physics steps
   scene/Terrain.jsx         indexed DEM mesh and matched orbital image
   scene/World.jsx           light, Mars sky, fog and inspection marker
   scene/Dust.jsx            limited wind-advected particles
@@ -311,7 +311,7 @@ To add a rover, pass the **same environment object and terrain** to its controll
 
 ### Scroll zoom
 
-Scroll over either mission map to zoom toward the cursor (up to 12×); drag to pan. The +/− and reset controls also work with keyboard/touch. Map picks remain in the original georeferenced coordinates. Scroll over the rover view to change chase-camera distance, or while walking to change the field of view. UI panels keep their normal scrolling.
+Scroll over either mission map to zoom toward the cursor (up to 12×); drag to pan. The +/− and reset controls also work with keyboard/touch. Map picks remain in the original georeferenced coordinates. Scroll over the rover or third-person astronaut view to change camera distance. In first person, scrolling changes the field of view. UI panels keep their normal scrolling.
 
 ### Biology research and rover evidence
 
@@ -336,7 +336,7 @@ The educational model is explicit in `src/simulation/eva.js`:
 - Froude transition sqrt(0.5 × g × leg length) indicates a possible walk–lope transition, not a speed cap or proof that suited loping on Mars is more efficient. There is no invented reduction in cost above this estimate.
 - The default 30 min reserve, task rates (220/350/500 W), constant 450 W cooling and 2 h maximum return-to-shelter scenario are configurable/conceptual choices, not measured Jezero conditions or NASA exclusions.
 
-After launching a Marswalk, expand the separate **Suit model** display (Esc releases the walking cursor). It integrates effort, metabolic oxygen and heat while the walk is active. Pausing or opening the map pauses its clock. Near the planned work point, logging a task advances the model clock by that task duration and charges its energy/oxygen/heat once. **Head home** follows recorded footsteps; this is not a newly surveyed safe shortcut. The extra-time estimate subtracts return and reserve at the current effort and is model-dependent. Switching regions, changing route pins, switching to a rover, resetting or ending the suit simulation clears the mission.
+After launching a Marswalk, expand the separate **Suit model** display (Esc pauses third-person walking or releases the first-person cursor). It integrates effort, metabolic oxygen and heat while the walk is active. Pausing or opening the map pauses its clock. Near the planned work point, logging a task advances the model clock by that task duration and charges its energy/oxygen/heat once. **Head home** follows recorded footsteps; this is not a newly surveyed safe shortcut. The extra-time estimate subtracts return and reserve at the current effort and is model-dependent. Switching regions, changing route pins, switching to a rover, resetting or ending the suit simulation clears the mission.
 
 **Practice a solar-storm alert** is a manually triggered drill, not a forecast or radiation feed. No Gale/Curiosity RAD value is presented as a Jezero measurement. NASA's [radiation protection brief](https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf) motivates shelter/alert awareness; the simulator does not compute a radiation dose or certify shelter shielding. Live telemetry retains exactly wind, temperature, coordinates and speed.
 
@@ -372,3 +372,9 @@ These are **pre-landing photogeologic interpretations**, kept separate from late
 Marswalk's **Astronaut & model assumptions** offers the original mission-reference curve and an optional Pandolf Earth load-carriage baseline, plus adjustable workload response time (default 30 seconds). Delayed demand is integrated analytically, including recovery and cooling-rate crossings. Budgeted walking shares the planner's slope/terrain speed law. Neither model is validated for suited Mars walking; no linear Mars-gravity metabolic scaling is applied. Energy summaries include planned science work and are not rover battery estimates.
 
 See [research, comparison and complete suggestions coverage](docs/research-and-suggestions.md) for equations, MOMAR analysis, data provenance, scoring weights, validation and limitations.
+
+### Imported astronaut and Perseverance
+
+Walking now defaults to an animated third-person astronaut by [Quaternius, CC0](https://poly.pizza/m/3hC2i0CTuO). Idle, walk and run clips blend with physical movement; a small additive airborne pose accompanies physics-driven jumps. The avatar is normalized to 1.85 m and its animated boots are anchored to the collision body's feet. This is visual retargeting, not a musculoskeletal or individual foot-contact solver. Switching camera views pauses walking so UI controls remain usable. Opening the map pauses movement and the existing suit budget.
+
+The rover uses the official [NASA/JPL-Caltech Perseverance model](https://science.nasa.gov/3d-resources/mars-2020-perseverance-rover/), with its supplied mast deployment pose and six separately animated wheels. Steering, dust, tracks, slip, settling and route launches retain the existing shared physics. All models and the decoder are local assets. No external service, login or API key is needed at runtime. See [model credits and modifications](public/models/CREDITS.md).

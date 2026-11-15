@@ -58,6 +58,10 @@ function DataPanel({ metadata, onClose }) {
         </div>
       ))}
       {transforms && <div className="sim-processing"><h3>Processing</h3>{Array.isArray(transforms) ? <ol>{transforms.map((step, index) => <li key={index}>{typeof step === 'string' ? step : JSON.stringify(step)}</li>)}</ol> : <p>{typeof transforms === 'string' ? transforms : JSON.stringify(transforms)}</p>}</div>}
+      <details className="sim-processing"><summary>Character & rover credits</summary>
+        <p><a href="https://poly.pizza/m/3hC2i0CTuO" target="_blank" rel="noreferrer">Astronaut by Quaternius</a> · CC0.</p>
+        <p><a href="https://science.nasa.gov/3d-resources/mars-2020-perseverance-rover/" target="_blank" rel="noreferrer">Perseverance model by NASA/JPL-Caltech</a>. Driving speed and handling are simulated.</p>
+      </details>
       <p className="sim-data-note">Orbital data resolution limits surface detail. Wind and temperature in the simulator are generated values.</p>
     </section>
   );

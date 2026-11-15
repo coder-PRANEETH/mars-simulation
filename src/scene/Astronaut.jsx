@@ -77,7 +77,8 @@ export default function Astronaut({ bodyRef, physics, visible, active }) {
     // Anchor the lowest animated boot to the controller's feet, including during jumps.
     // This fixes the source file's bind-pose offset without moving the collision body.
     model.position.y = model.userData.baseY
-    model.updateWorldMatrix(true, true)
+    if (bodyRef.current) bodyRef.current.updateMatrixWorld(true)
+    else model.updateMatrixWorld(true)
     footBounds.makeEmpty()
     for (const mesh of feet) {
       mesh.skeleton.update()
@@ -85,6 +86,7 @@ export default function Astronaut({ bodyRef, physics, visible, active }) {
       footBounds.union(meshBounds.copy(mesh.boundingBox).applyMatrix4(mesh.matrixWorld))
     }
     if (!footBounds.isEmpty()) model.position.y += physics.position.y - footBounds.min.y
+    model.updateMatrixWorld(true)
     if (bodyRef.current) {
       bodyRef.current.userData.animation = !physics.grounded ? 'Jump' : state
       bodyRef.current.userData.animationTime = mixer.time

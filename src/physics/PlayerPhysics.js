@@ -37,7 +37,7 @@ export const CAR_CONFIG = Object.freeze({
   airAcceleration: 0,
   maxWalkSlope: 30,
   vehicleMotion: true,
-  wheelbase: 2.59,
+  wheelbase: 2.26,
   maxSteeringAngle: 0.52,
   steeringRate: 1.5,
   steeringReturnRate: 2.1,

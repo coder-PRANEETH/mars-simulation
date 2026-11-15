@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { BufferAttribute, BufferGeometry, CanvasTexture, ShaderMaterial } from 'three'
 
 const PARTICLES = 96, TRACKS = 320, TRACK_LIFE = 24
-const wheelX = [-1.05, 1.05]
+const wheelX = [-1.0624, 1.0624]
 const vertex = 'attribute float alpha; varying float fade; varying vec2 uvLocal; void main(){ fade=alpha; uvLocal=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }'
 
 /** Bounded visual cues for simulated loose soil. Never modifies the source DEM. */
@@ -70,7 +70,7 @@ export default function RoverEffects({ physics, terrain, active }) {
     const emit = active && physics.grounded && loose && speed > 0.15
     const yaw = physics.yaw, sin = Math.sin(yaw), cos = Math.cos(yaw)
     s.emission += emit ? dt : 0
-    const wheels = wheelX.map((offset) => ({ x: physics.position.x + cos * offset + sin * 1.27, z: physics.position.z - sin * offset + cos * 1.27 }))
+    const wheels = wheelX.map((offset) => ({ x: physics.position.x + cos * offset + sin * 1.165, z: physics.position.z - sin * offset + cos * 1.165 }))
     if (emit && s.emission >= 0.035) {
       s.emission = 0
       for (const wheel of wheels) {

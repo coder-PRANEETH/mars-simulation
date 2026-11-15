@@ -208,7 +208,10 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
     }
     const up = (event) => keys.current.delete(event.code)
     const pointerControl = () => { keyboardUi.current = false }
-    const blur = () => { keys.current.clear(); endOrbit() }
+    const blur = () => {
+      keys.current.clear(); endOrbit()
+      if (!driving && thirdPerson) { walkingActive.current = false; callbacks.current.onLockChange?.(false) }
+    }
     const focus = (event) => {
       if ((driving || thirdPerson) && event.target.matches('input, select, textarea, [contenteditable="true"]')) keys.current.clear()
     }
@@ -332,8 +335,8 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
         vehicle.current.quaternion.slerp(surfaceTilt.multiply(facing).multiply(bodyLean), 1 - Math.exp(-dt * 14))
         const forwardSpeed = -Math.sin(yaw) * physics.velocity.x - Math.cos(yaw) * physics.velocity.z
         const wheelSpeed = forwardSpeed / Math.max(0.35, 1 - physics.wheelSlip)
-        for (const wheel of wheels.current) if (wheel) wheel.rotation.x -= wheelSpeed / 0.45 * dt
-        for (const wheel of steeringWheels.current) if (wheel) wheel.rotation.y = -physics.steeringAngle
+        for (const wheel of wheels.current) if (wheel) wheel.rotation.x -= wheelSpeed / (wheel.userData.radius ?? .263) * (wheel.userData.spinSign ?? 1) * dt
+        for (const wheel of steeringWheels.current) if (wheel) wheel.rotation.y = -physics.steeringAngle * (wheel.userData.steerSign ?? 1)
       }
     } else if (thirdPerson) {
       const distance = walkingDistance.current

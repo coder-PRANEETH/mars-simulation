@@ -1,6 +1,6 @@
 import { Component, Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
+import { ACESFilmicToneMapping, Box3, SRGBColorSpace, Vector3 } from 'three';
 import { loadTerrain } from './terrain/terrain.js';
 import { createEnvironment } from './simulation/environment.js';
 import { simulationStore, useSimulation } from './simulation/store.js';
@@ -83,6 +83,14 @@ export default function App() {
       setParameter: simulationStore.setParameter,
       applyPreset: simulationStore.applyPreset,
       getTerrain: () => terrain,
+      getAvatarBounds: () => {
+        const avatar = sceneRef.current?.scene.getObjectByName('mars-astronaut');
+        if (!avatar) return null;
+        avatar.updateMatrixWorld(true);
+        const box = new Box3().setFromObject(avatar, true);
+        return { min: box.min.toArray(), max: box.max.toArray(), height: box.max.y - box.min.y,
+          screenCenter: box.getCenter(new Vector3()).project(sceneRef.current.camera).toArray() };
+      },
       getRenderDiagnostics: () => {
         const rendering = sceneRef.current;
         const dust = rendering?.scene.getObjectByName('mars-dust');

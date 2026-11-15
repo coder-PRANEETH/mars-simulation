@@ -12,6 +12,13 @@ test('imported astronaut walks, turns, jumps and zooms in third person with a fr
   expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   const distance = async () => { const d = await diagnostics(page); return Math.hypot(...d.cameraPosition.map((v, i) => v - d.astronautPosition[i])) }
   expect(await distance()).toBeGreaterThan(2.5)
+  const bounds = await page.evaluate(() => window.__MARS_SIM__.getAvatarBounds())
+  const bodyY = (await diagnostics(page)).astronautPosition[1]
+  expect(bounds.height).toBeGreaterThan(1.6)
+  expect(bounds.height).toBeLessThan(2.1)
+  expect(Math.abs(bounds.min[1] - bodyY)).toBeLessThan(.05)
+  expect(Math.abs(bounds.screenCenter[0])).toBeLessThan(.8)
+  expect(Math.abs(bounds.screenCenter[1])).toBeLessThan(.8)
   await page.keyboard.down('KeyW')
   await expect.poll(async () => (await diagnostics(page)).astronautAnimation, { timeout: 15000 }).toBe('Walk')
   const before = await diagnostics(page)
@@ -34,3 +41,18 @@ test('imported astronaut walks, turns, jumps and zooms in third person with a fr
   expect(errors).toEqual([])
 })
 
+test('NASA Perseverance replaces the car and all six wheels animate', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Switch to car mode', exact: true }).click()
+  await page.getByRole('button', { name: 'Enter simulation', exact: true }).click()
+  await expect.poll(async () => (await diagnostics(page)).roverWheelCount, { timeout: 30000 }).toBe(6)
+  expect((await diagnostics(page)).roverSource).toContain('NASA/JPL-Caltech')
+  const before = (await diagnostics(page)).roverWheelRotations
+  await page.keyboard.down('KeyW')
+  await expect.poll(async () => (await diagnostics(page)).roverWheelRotations.every((v, i) => Math.abs(v - before[i]) > .1), { timeout: 15000 }).toBe(true)
+  await page.keyboard.up('KeyW')
+  expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+  expect(errors).toEqual([])
+})
