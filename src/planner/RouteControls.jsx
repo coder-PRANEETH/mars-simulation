@@ -51,8 +51,8 @@ export default function RouteControls({
           </select>
         </label>
         <label>Science stop
-          <select value={scienceStop} onChange={(event) => setScienceStop(event.target.value)}>
-            <option value="auto">Highest priority reachable</option>
+          <select aria-label="Science stop" value={scienceStop} onChange={(event) => setScienceStop(event.target.value)}>
+            <option value="auto">Best science for the effort</option>
             {sites.map((site) => <option value={site.id} key={site.id}>{site.name}</option>)}
           </select>
         </label>

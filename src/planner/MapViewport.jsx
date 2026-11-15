@@ -2,17 +2,26 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { boundView, zoomView } from './mapViewport.js'
 
 const MapScale = createContext(1)
+const MapUnitsPerPixel = createContext(1)
+export const useMapUnitsPerPixel = () => useContext(MapUnitsPerPixel)
 export const useMapScale = () => useContext(MapScale)
 
 export default function MapViewport({ width, height, children, onClick, ...props }) {
   const full = { x: 0, y: 0, width, height }
   const [view, setView] = useState(full)
   const svg = useRef(null)
+  const [pixels, setPixels] = useState({ width: 960, height: 640 })
   const current = useRef(view)
   current.current = view
   const drag = useRef(null)
   const dragged = useRef(false)
   const pointAt = (event) => new DOMPoint(event.clientX, event.clientY).matrixTransform(svg.current.getScreenCTM().inverse())
+
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => setPixels({ width: entry.contentRect.width, height: entry.contentRect.height }))
+    observer.observe(svg.current)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const element = svg.current
@@ -44,7 +53,7 @@ export default function MapViewport({ width, height, children, onClick, ...props
       }}
       onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}
       onClickCapture={(event) => { if (dragged.current) { event.stopPropagation(); dragged.current = false } }} onClick={onClick}>
-      <MapScale.Provider value={view.width / width}>{children}</MapScale.Provider>
+      <MapScale.Provider value={view.width / width}><MapUnitsPerPixel.Provider value={Math.max(view.width / Math.max(1, pixels.width), view.height / Math.max(1, pixels.height))}>{children}</MapUnitsPerPixel.Provider></MapScale.Provider>
     </svg>
     <div className="expedition-zoom" role="group" aria-label="Map zoom">
       <button type="button" aria-label="Zoom in" disabled={view.width <= width / 12 + .01} onClick={() => zoom(.7)}>+</button>

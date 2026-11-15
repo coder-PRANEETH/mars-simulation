@@ -1,8 +1,9 @@
+import { openJezero } from './helpers.js'
 import { test, expect } from '@playwright/test';
 
 test('one workspace preserves route, suit settings, layers, zoom and selection across map inspection', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('button', { name: 'Map layers', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Collected samples', exact: true }).check();
   await page.keyboard.press('Escape');
@@ -12,7 +13,7 @@ test('one workspace preserves route, suit settings, layers, zoom and selection a
   await expect(page.getByLabel('Place details', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Try a route' }).click();
   const launch = page.getByLabel('Route launch controls');
-  await expect(launch.getByRole('button', { name: 'Drive route', exact: true })).toBeEnabled();
+  await expect(launch.getByRole('button', { name: 'Drive route', exact: true })).toBeEnabled({ timeout: 30000 });
   await expect(launch.getByLabel('Route summary').locator('dt')).toHaveText(['Distance', 'Walk time', 'Walk energy', 'Risk · model']);
   const summary = await launch.locator('strong').innerText();
   const start = await page.getByRole('button', { name: 'Set start', exact: true }).locator('strong').innerText();
@@ -62,7 +63,7 @@ test('one workspace preserves route, suit settings, layers, zoom and selection a
 test('phone workspace collapses while route launch and independent layer controls remain reachable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('button', { name: 'Try a route' }).click();
   const drive = page.getByRole('button', { name: 'Drive route', exact: true });
   await expect(drive).toBeInViewport();

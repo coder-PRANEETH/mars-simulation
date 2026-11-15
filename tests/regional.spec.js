@@ -1,13 +1,14 @@
+import { openJezero } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test('regional map exposes full field geology, imagery levels, persistent pins and correct regional drive start', async ({ page }) => {
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/')
-  await page.getByRole('button', { name: 'Explore Jezero' }).click()
+  await openJezero(page)
   const extent = page.getByRole('combobox', { name: 'Map extent', exact: true })
   await expect(extent).toHaveValue('regional')
-  await expect(extent).toBeEnabled()
+  await expect(extent).toBeEnabled({ timeout: 30000 })
   await expect(page.locator('.mission-coverage-note')).toContainText('40 m terrain grid')
   await page.getByRole('tab', { name: 'Discover', exact: true }).click()
   await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('regions')

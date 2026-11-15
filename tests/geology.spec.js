@@ -1,3 +1,4 @@
+import { openJezero } from './helpers.js'
 import { test, expect } from '@playwright/test';
 
 test('mapped sand changes rover handling, wheel settling and live geology information', async ({ page }) => {
@@ -5,7 +6,7 @@ test('mapped sand changes rover handling, wheel settling and live geology inform
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('combobox', { name: 'Map extent', exact: true }).selectOption('local');
   await page.getByRole('tab', { name: 'Discover', exact: true }).click();
   await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('regions');
@@ -19,8 +20,8 @@ test('mapped sand changes rover handling, wheel settling and live geology inform
   await page.getByRole('button', { name: 'Return to surface' }).click();
   await page.getByRole('button', { name: 'Switch to car mode' }).click();
   await page.getByRole('button', { name: 'Enter simulation', exact: true }).click();
-  // Interior of a published Aeb polygon, independently checked against the source grid.
-  await page.evaluate(() => window.__MARS_SIM__.reset({ x: -2136.2345575531235, z: -304, yaw: 0 }));
+  // Interior of large aeolian bedforms in the detailed field map and Aeb in the USGS map; 296 m from their shared sand boundary.
+  await page.evaluate(() => window.__MARS_SIM__.reset({ x: -1438.0690893652466, z: 280, yaw: 0 }));
   const read = () => page.evaluate(() => window.__MARS_SIM__.getTelemetry());
   await expect.poll(async () => (await read()).surface.unit.symbol).toBe('Aeb');
   await page.keyboard.down('KeyW');
@@ -64,11 +65,11 @@ test('mapped sand changes rover handling, wheel settling and live geology inform
 
 test('the driving minimap overlays land types while preserving hazard information', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('combobox', { name: 'Map extent', exact: true }).selectOption('local');
   await page.getByRole('button', { name: 'Try a route' }).click();
   await page.getByRole('button', { name: 'Drive route', exact: true }).click();
-  await page.evaluate(() => window.__MARS_SIM__.reset({ x: -2136.2345575531235, z: -304, yaw: 0 }));
+  await page.evaluate(() => window.__MARS_SIM__.reset({ x: -1438.0690893652466, z: 280, yaw: 0 }));
   const map = page.getByRole('complementary', { name: 'Driving hazard map' });
   const toggle = map.getByRole('button', { name: 'Land types' });
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');

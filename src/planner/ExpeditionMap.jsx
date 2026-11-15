@@ -18,7 +18,7 @@ import MapLayersMenu from './MapLayersMenu.jsx'
 import RouteLaunch from './RouteLaunch.jsx'
 import { EVA_DEFAULTS, forecastEVA } from '../simulation/eva.js'
 import EVAPlanner, { EVAReturnLayer } from './EVAPlanner.jsx'
-import MapViewport, { useMapScale } from './MapViewport.jsx'
+import MapViewport, { useMapScale, useMapUnitsPerPixel } from './MapViewport.jsx'
 import './expedition.css'
 
 const origin = (point, metadata) => ({
@@ -26,7 +26,7 @@ const origin = (point, metadata) => ({
   y: point.z + metadata.depthMeters / 2,
 })
 
-export default function ExpeditionMap({ terrain: worldTerrain, drivingHazards, open, onClose, onLaunch, onClearRoute }) {
+export default function ExpeditionMap({ terrain: worldTerrain, sceneLoading, drivingHazards, open, onClose, onLaunch, onClearRoute }) {
   const [terrain, setTerrain] = useState(worldTerrain)
   const [coverageLoading, setCoverageLoading] = useState(false)
   const [coverageError, setCoverageError] = useState(null)
@@ -81,13 +81,16 @@ export default function ExpeditionMap({ terrain: worldTerrain, drivingHazards, o
   const evaPreview = useMemo(() => forecastEVA(routes?.[selected] ?? routes?.terrain, { ...evaSettings, pace }), [routes, selected, evaSettings, pace])
   const eva = evaEnabled ? evaPreview : null
   const selectedRoute = routes?.[selected] ?? routes?.terrain
+  useEffect(() => {
+    if (routes && !routes[selected]) setSelected('terrain')
+  }, [routes, selected])
   const [thermal, setThermal] = useState(false)
   const [context, setContext] = useState(false)
   const [crater, setCrater] = useState(null)
   const [contextError, setContextError] = useState(false)
   const raster = useMemo(() => layer === 'Imagery' ? null : mapLayer(grid, metadata, layer, maxSlope), [grid, metadata, layer, maxSlope])
   const hazard = useMemo(() => hazards ? mapLayer(grid, metadata, showGeology ? 'Hazard boundaries' : 'Hazards', maxSlope, avoid) : null, [grid, metadata, hazards, maxSlope, avoid, showGeology])
-  const scaleBar = widthMeters >= 3000 ? 500 : 200
+  const scaleBar = widthMeters >= 10000 ? 2000 : widthMeters >= 3000 ? 500 : 200
 
   async function changeCoverage(directory) {
     if (coverageLoading) return
@@ -192,8 +195,8 @@ export default function ExpeditionMap({ terrain: worldTerrain, drivingHazards, o
   const layerNames = overlays.filter(({ active, disabled }) => active && !disabled).map(({ name }) => name)
   const launch = (route, asCar) => { if (route && !coverageLoading) onLaunch({ ...route, avoidZones: zones, assetDirectory: terrain.assetBase.split('/').at(-1), ...(asCar || !eva ? {} : { eva }) }, asCar) }
 
-  function endpointLabel(cell) {
-    if (cell < 0) return 'Choose on the map'
+  function endpointLabel(cell, key) {
+    if (cell < 0) return pinCoordinates.current[key] ? 'Outside this area · choose regional view' : 'Choose on the map'
     const site = localSites.find((candidate) => candidate.cell === cell)
     if (site) return site.name
     const { x, z } = cellPoint(grid, cell)
@@ -347,7 +350,7 @@ export default function ExpeditionMap({ terrain: worldTerrain, drivingHazards, o
           {inspection && detail === 'terrain' && mode === 'Inspect' && <circle cx={origin(inspection, metadata).x} cy={origin(inspection, metadata).y} r={widthMeters / 145} fill="none" stroke="#fff" strokeWidth={widthMeters / 500} />}
         </MapViewport>}
         {(coverageLoading || coverageError) && <p className="mission-map-task" role={coverageError ? 'alert' : 'status'}>{coverageError ?? 'Loading regional terrain…'}</p>}
-        <div className="mission-coverage-note">{terrain.metadata.coverageTier ?? 'HiRISE detailed'} · {Math.round(terrain.metadata.meshResolutionMeters ?? terrain.metadata.gridMeters ?? 8)} m terrain grid · {metadata.areaKm2.toFixed(1)} km²</div>
+        <div className="mission-coverage-note">{context ? 'Crater overview · context only' : `${terrain.metadata.coverageTier ?? 'HiRISE detailed'} · ${Math.round(terrain.metadata.meshResolutionMeters ?? terrain.metadata.gridMeters ?? 8)} m terrain grid · ${metadata.areaKm2.toFixed(1)} km²`}</div>
         <div className="mission-map-controls"><MapLayersMenu openMap={open} context={context} layer={layer} onLayer={setLayer} overlays={overlays} /></div>
         {!context && mode !== 'Inspect' && <div className="mission-map-task" role="status">
           <span>{mode === 'Set start' ? 'Choose your start on the map' : mode === 'Set destination' ? 'Choose your destination on the map' : 'Click to mark a 40 m avoid zone'}</span>
@@ -377,7 +380,7 @@ export default function ExpeditionMap({ terrain: worldTerrain, drivingHazards, o
         <div id="mission-workspace-body" ref={panelBody} className="mission-workspace-body" role="tabpanel" aria-labelledby={`workspace-${workspace}`}>
           <div hidden={!!detail || workspace !== 'route'} data-workspace="route">
             {context && <p>Routes use the measured Western Delta terrain. Choosing a pin opens that area.</p>}
-            <fieldset disabled={coverageLoading} className="mission-coverage-fields"><RouteControls start={start} end={end} startLabel={endpointLabel(start)} endLabel={endpointLabel(end)} mode={mode} setMode={beginPick}
+            <fieldset disabled={coverageLoading} className="mission-coverage-fields"><RouteControls start={start} end={end} startLabel={endpointLabel(start, 'start')} endLabel={endpointLabel(end, 'end')} mode={mode} setMode={beginPick}
               maxSlope={maxSlope} setMaxSlope={(value) => update(setMaxSlope, value)} pace={pace} setPace={(value) => update(setPace, value)}
               dust={dust} setDust={(value) => update(setDust, value)} temperature={temperature} setTemperature={(value) => update(setTemperature, value)}
               objective={objective} setObjective={(value) => update(setObjective, value)} scienceStop={scienceStop} setScienceStop={(value) => update(setScienceStop, value)}
@@ -400,7 +403,7 @@ export default function ExpeditionMap({ terrain: worldTerrain, drivingHazards, o
         </div>
       </aside>
     </div>
-    <RouteLaunch route={coverageLoading ? null : selectedRoute} planning={planning} eva={eva} forecast={evaPreview} onLaunch={launch} onRoute={() => switchWorkspace('route')} onBudget={() => switchWorkspace('marswalk')} />
+    <RouteLaunch loadingScene={sceneLoading} route={coverageLoading ? null : selectedRoute} planning={planning} eva={eva} forecast={evaPreview} onLaunch={launch} onRoute={() => switchWorkspace('route')} onBudget={() => switchWorkspace('marswalk')} />
   </section>
 }
 
@@ -459,7 +462,7 @@ function SiteMarkers({ size, sites, locate, selected, onSelect }) {
 
 function RouteOverlay({ routes, selected, grid, start, end, zones, metadata }) {
   const toMap = (point) => origin(point, metadata)
-  const labelSize = metadata.widthMeters * 0.012 * useMapScale()
+  const labelSize = 11 * useMapUnitsPerPixel()
   const selectedRoute = routes?.[selected]
   return <g className="expedition-route-overlay" aria-hidden="true">
     {zones.map((zone, index) => {
@@ -476,7 +479,13 @@ function RouteOverlay({ routes, selected, grid, start, end, zones, metadata }) {
       }).join(' ')} fill="none" stroke={color} strokeWidth={id === selected ? 3 : 1.6}
         strokeDasharray={id === selected ? undefined : '4 4'} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
     })}
-    {selectedRoute?.waypoints.map((waypoint, index) => {
+    {selectedRoute?.waypoints.filter((waypoint, index, all) => {
+      if (index === 0 || index === all.length - 1) return true
+      if (waypoint.label !== 'Traverse') return true
+      const nearEnd = Math.min(waypoint.distance, selectedRoute.distance - waypoint.distance) < labelSize * 4
+      return !nearEnd && Math.floor(waypoint.distance / (labelSize * 4)) !== Math.floor(all[index - 1].distance / (labelSize * 4))
+    }).map((waypoint) => {
+      const index = selectedRoute.waypoints.indexOf(waypoint)
       if (index === 0 || index === selectedRoute.waypoints.length - 1) return null
       const { x, y } = toMap(waypoint)
       return <g key={index} transform={`translate(${x} ${y})`}>

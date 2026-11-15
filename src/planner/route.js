@@ -1,4 +1,6 @@
 import { cellPoint, terrainClass } from './terrainGrid.js'
+import { EVA_DEFAULTS, effortWatts, forecastEVA, walkingSpeed } from '../simulation/eva.js'
+import { contactTargets } from './scienceContacts.js'
 import { terrainRisk } from './routeRisk.js'
 
 const directions = [
@@ -81,12 +83,23 @@ function shortestPath(grid, start, end, profile, avoid) {
       const incline = Math.max(slope[cell], slope[next]) / profile.maxSlope
       const uneven = Math.max(roughness[cell], roughness[next])
       const material = surfacePenalty(grid, cell, next)
-      const nextCost = cost + Math.hypot(horizontal, rise) * (1 + 2.2 * incline ** 2 + 2 * uneven + material)
+      let edgeCost = Math.hypot(horizontal, rise) * (1 + 2.2 * incline ** 2 + 2 * uneven + material)
+      if (profile.optimize === 'energy') {
+        const factor = 1 + uneven + material + profile.dustPenalty + (profile.thermalPenalty ?? 0)
+        const midpointHeight = sharedElevation(grid, cell, next)
+        edgeCost = 0
+        for (const delta of [midpointHeight - elevation[cell], elevation[next] - midpointHeight]) {
+          const segmentLength = Math.hypot(horizontal / 2, delta)
+          const speed = walkingSpeed(profile.pace, delta / (horizontal / 2), factor)
+          edgeCost += segmentLength / speed * effortWatts(speed, delta / (horizontal / 2), 1 + uneven + material, profile.eva)
+        }
+      }
+      const nextCost = cost + edgeCost
       if (nextCost >= distance[next]) continue
       distance[next] = nextCost
       parent[next] = cell
       const remaining = Math.hypot((endColumn - nextColumn) * dx, (endRow - nextRow) * dz)
-      queue.push({ cell: next, priority: nextCost + remaining, cost: nextCost })
+      queue.push({ cell: next, priority: nextCost + remaining * (profile.optimize === 'energy' ? effortWatts(0, 0, 1, profile.eva) / profile.pace : 1), cost: nextCost })
     }
   }
   return null
@@ -124,14 +137,18 @@ function describeRoute(grid, path, profile, stop) {
   let maxSlope = slope[path[0]]
   let riskSum = 0, cautionDistance = 0, peakRisk = 0
   let lastWaypoint = 0
+  const contacts = []
   const regionIds = new Set(path.map((cell) => grid.unitIds?.[cell]).filter(Boolean))
 
   for (let i = 1; i < path.length; i++) {
     const from = path[i - 1]
     const to = path[i]
+    const aUnit = grid.photoUnits?.[grid.photoUnitIds?.[from]]
+    const bUnit = grid.photoUnits?.[grid.photoUnitIds?.[to]]
+    if (aUnit && bUnit && aUnit.id !== bUnit.id) contacts.push({ from: aUnit.symbol, to: bUnit.symbol, distance, exposed: !grid.coverIds?.[to] || grid.coverIds[to] === 6 })
     const origin = points.at(-1)
-    const next = { ...cellPoint(grid, to), y: elevation[to] }
-    const midpoint = { x: (origin.x + next.x) / 2, y: sharedElevation(grid, from, to), z: (origin.z + next.z) / 2 }
+    const next = { ...cellPoint(grid, to), y: elevation[to], regionSymbol: bUnit?.symbol, regionColor: bUnit?.color }
+    const midpoint = { x: (origin.x + next.x) / 2, y: sharedElevation(grid, from, to), z: (origin.z + next.z) / 2, regionSymbol: aUnit?.symbol, regionColor: aUnit?.color }
     points.push(midpoint, next)
     maxSlope = Math.max(maxSlope, slope[to])
     const run = Math.hypot(next.x - origin.x, next.z - origin.z) / 2
@@ -161,24 +178,42 @@ function describeRoute(grid, path, profile, stop) {
     }
   }
 
-  return { points, waypoints, distance, gain, time, returnTime, maxSlope, stop, risk: { mean: distance ? riskSum / distance : 0, peak: peakRisk, cautionDistance },
+  const route = { points, waypoints, distance, gain, time, returnTime, maxSlope, stop, contacts, settings: profile.eva, risk: { mean: distance ? riskSum / distance : 0, peak: peakRisk, cautionDistance },
     regions: [...regionIds].map((id) => grid.units[id]?.label).filter(Boolean) }
+  const forecast = forecastEVA(route, { ...profile.eva, pace: profile.pace })
+  route.energyJ = forecast.outward.energyJ
+  route.budgetFeasible = forecast.feasible
+  return route
 }
 
 export function planRoutes(grid, { start, end, profile, avoid = [], sites = [] }) {
+  profile = { maxSlope: 20, pace: 1, dustPenalty: 0, thermalPenalty: 0, ...profile, eva: { ...EVA_DEFAULTS, ...profile.eva } }
   const blocked = new Set(avoid)
   const terrainPath = shortestPath(grid, start, end, profile, blocked)
-  if (!terrainPath) return { terrain: null, science: null }
-
-  const terrain = describeRoute(grid, terrainPath, profile)
-  for (const stop of sites) {
+  if (!terrainPath) return { terrain: null, energy: null, science: null }
+  const terrain = { ...describeRoute(grid, terrainPath, profile), strategy: 'Easier terrain' }
+  const energyProfile = { ...profile, optimize: 'energy' }
+  const energyPath = shortestPath(grid, start, end, energyProfile, blocked)
+  const energy = energyPath && { ...describeRoute(grid, energyPath, profile), strategy: 'Save your energy' }
+  let science = null, bestScore = -Infinity
+  const candidates = profile.scienceStop === 'auto' || !profile.scienceStop
+    ? [...sites.slice(0, 7), ...contactTargets(grid, start, end, profile, blocked)] : sites
+  for (const stop of candidates) {
     if (stop.cell === start || stop.cell === end) continue
-    const firstLeg = shortestPath(grid, start, stop.cell, profile, blocked)
-    if (!firstLeg) continue
-    const secondLeg = shortestPath(grid, stop.cell, end, profile, blocked)
-    if (!secondLeg) continue
-    const science = describeRoute(grid, [...firstLeg, ...secondLeg.slice(1)], profile, stop)
-    return { terrain, science }
+    const targets = stop.cells ?? [stop.cell]
+    let current = start, path = [start], reachable = true
+    for (const target of [...targets, end]) {
+      const leg = shortestPath(grid, current, target, energyProfile, blocked)
+      if (!leg) { reachable = false; break }
+      path.push(...leg.slice(1)); current = target
+    }
+    if (!reachable) continue
+    const option = describeRoute(grid, path, profile, stop)
+    if (profile.requireBudget && !option.budgetFeasible) continue
+    const priority = stop[profile.objective ?? 'habitability'] ?? 5
+    const detourEnergy = Math.max(0, option.energyJ - (energy?.energyJ ?? terrain.energyJ))
+    const score = priority / (1 + detourEnergy / 250000 + Math.max(0, option.time - terrain.time) / 1800 + option.risk.mean)
+    if (score > bestScore) { science = { ...option, scienceScore: score }; bestScore = score }
   }
-  return { terrain, science: null }
+  return { terrain, energy, science }
 }

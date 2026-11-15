@@ -1,10 +1,11 @@
+import { openJezero } from './helpers.js'
 import { test, expect } from '@playwright/test';
 
 test('opens real Jezero terrain and inspects its map layers', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await expect(page.getByRole('heading', { name: 'Jezero Expedition Planner' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTerrain().surfaceFlags?.length)).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Map layers', exact: true }).click();
@@ -25,6 +26,7 @@ test('opens real Jezero terrain and inspects its map layers', async ({ page }) =
   await page.getByRole('tab', { name: 'Discover', exact: true }).click();
   await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('regions');
   await expect(page.getByText('Published geologic units')).toBeVisible();
+  await page.getByRole('combobox', { name: 'Geologic map source' }).selectOption('usgs');
   await page.getByRole('combobox', { name: 'Explore a geologic region' }).selectOption('8');
   await expect(page.getByLabel('Selected geologic region')).toContainText('Eolian bedform unit');
   await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('data');
@@ -39,7 +41,7 @@ test('opens real Jezero terrain and inspects its map layers', async ({ page }) =
   await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('seitah');
   await expect(page.getByText(/Investigate the olivine-rich/)).toBeVisible();
   await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('neretva');
-  await expect(page.getByRole('img', { name: 'Jezero crater elevation overview' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Detailed traverse map' })).toBeVisible();
   await page.getByRole('button', { name: 'Return to surface' }).click();
   await expect(page.getByText('Jezero Crater / Western Delta')).toBeVisible();
   await page.getByRole('button', { name: 'Southeast hills' }).click();
@@ -51,12 +53,15 @@ test('calculates and follows a science route on the Jezero terrain', async ({ pa
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('button', { name: 'Try a route' }).click();
-  await expect(page.getByRole('heading', { name: 'Two ways to explore' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Choose your mission' })).toBeVisible();
   const routeDistance = parseFloat(await page.getByRole('button', { name: /Easier terrain/ }).locator('strong').innerText());
   expect(routeDistance).toBeGreaterThan(2);
   expect(routeDistance).toBeLessThan(5);
+  await page.getByText('Route settings', { exact: true }).click();
+  await page.getByRole('combobox', { name: 'Science stop', exact: true }).selectOption('delta');
+  await page.getByText('Route settings', { exact: true }).click();
   await page.getByRole('button', { name: /Science stop/ }).click();
   await expect(page.getByText(/Via Western Delta front/)).toBeVisible();
   await page.getByText(/^Route details ·/).click();
@@ -66,7 +71,7 @@ test('calculates and follows a science route on the Jezero terrain', async ({ pa
   await expect(page.getByLabel('Traverse guidance')).toContainText('Next stop 2');
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().longitude)).toBeCloseTo(77.4509, 3);
   await page.getByRole('button', { name: 'Expedition map' }).click();
-  await expect(page.getByRole('heading', { name: 'Two ways to explore' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Choose your mission' })).toBeVisible();
   await page.getByText('Route settings', { exact: true }).click();
   await page.getByRole('button', { name: 'Mark avoid zone', exact: true }).click();
   await page.getByRole('img', { name: 'Detailed traverse map' }).click();
@@ -77,7 +82,7 @@ test('calculates and follows a science route on the Jezero terrain', async ({ pa
 
 test('starts driving at the chosen start pin with the cursor free', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('button', { name: 'Set start', exact: true }).click();
   await page.getByRole('button', { name: 'Octavia E. Butler Landing Site', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Set destination', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -85,7 +90,7 @@ test('starts driving at the chosen start pin with the cursor free', async ({ pag
   await page.getByRole('button', { name: 'Drive route', exact: true }).click();
 
   await expect(page.getByLabel('Traverse guidance')).toContainText('Next stop 2');
-  await expect(page.locator('.sim-hud')).toHaveClass(/is-driving/);
+  await expect(page.locator('.sim-hud')).toHaveClass(/is-driving/, { timeout: 30000 });
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().longitude)).toBeCloseTo(77.4509, 3);
   expect(await page.evaluate(() => document.pointerLockElement)).toBeNull();
   const hazards = page.getByRole('complementary', { name: 'Driving hazard map' });

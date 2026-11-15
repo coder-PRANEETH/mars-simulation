@@ -1,0 +1,33 @@
+import { openJezero } from './helpers.js'
+import { test, expect } from '@playwright/test'
+
+test('astronaut assumptions affect energy routing, suit forecast and science feasibility', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/')
+  await openJezero(page)
+  await page.getByRole('button', { name: 'Try a route' }).click()
+  await page.getByRole('button', { name: /Save your energy/ }).click()
+  await expect(page.getByLabel('Route launch controls').locator('strong')).toContainText('Save your energy')
+  await page.getByText(/^Route details ·/).click()
+  await expect(page.getByLabel('Route elevation and metabolic demand profile', { exact: true })).toBeVisible()
+  await expect(page.getByText(/mapped bedrock contact crossings/)).toBeVisible()
+  await page.getByRole('button', { name: /Science stop/ }).click()
+  await page.getByRole('tab', { name: 'Marswalk', exact: true }).click()
+  await page.getByText('Energy & science breakdown', { exact: true }).click()
+  const energy = () => page.getByText('Metabolic energy', { exact: true }).locator('xpath=following-sibling::dd[1]').innerText()
+  const before = await energy()
+  await page.getByText('Astronaut & model assumptions', { exact: true }).click()
+  await page.getByRole('combobox', { name: 'Effort model' }).selectOption('pandolf')
+  await expect.poll(energy, { timeout: 30000 }).not.toBe(before)
+  await expect(page.getByText(/Neither model is validated/)).toBeVisible()
+  await page.getByRole('checkbox', { name: 'Apply suit budget to Walk route' }).check()
+  await page.getByText('Suit & science plan', { exact: true }).click()
+  await page.getByLabel('Usable oxygen (L, STPD)').fill('50')
+  await expect(page.getByRole('button', { name: 'Walk route', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Drive route', exact: true })).toBeEnabled({ timeout: 30000 })
+  await page.getByRole('tab', { name: 'Route', exact: true }).click()
+  await expect(page.getByRole('button', { name: /Science stop/ })).toBeDisabled({ timeout: 30000 })
+  await expect(page.getByRole('button', { name: /Easier terrain/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(errors).toEqual([])
+})

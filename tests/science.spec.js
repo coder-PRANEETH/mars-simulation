@@ -1,10 +1,11 @@
+import { openJezero } from './helpers.js'
 import { test, expect } from '@playwright/test';
 
 test('connects biology field notes, NASA sample locations and credited rover images', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('tab', { name: 'Discover', exact: true }).click();
   await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('notes');
   const notes = page.getByLabel('Life and science field notes');
@@ -19,7 +20,7 @@ test('connects biology field notes, NASA sample locations and credited rover ima
   await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('samples');
   await page.getByRole('combobox', { name: 'Inspect collected sample' }).selectOption({ label: 'Sapphire Canyon' });
   await expect(page.getByLabel('Selected sample')).toContainText('1215');
-  await expect(page.getByRole('img', { name: 'Jezero crater elevation overview' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Detailed traverse map' })).toBeVisible();
   await page.getByRole('button', { name: 'Back to workspace', exact: true }).click();
   await page.getByRole('combobox', { name: 'Discover topic' }).selectOption('sites');
   await page.getByRole('combobox', { name: 'Inspect science site' }).selectOption('cheyava');

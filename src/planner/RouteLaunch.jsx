@@ -2,10 +2,10 @@ import Icon from '../ui/Icon.jsx'
 import { riskLabel } from './routeRisk.js'
 import { distanceText } from './RouteResults.jsx'
 
-export default function RouteLaunch({ route, planning, eva, forecast, onLaunch, onRoute, onBudget }) {
+export default function RouteLaunch({ route, planning, loadingScene, eva, forecast, onLaunch, onRoute, onBudget }) {
   return <footer className="mission-route-bar" aria-label="Route launch controls">
     <div className="mission-route-summary">
-      <strong>{planning ? 'Finding your route…' : route ? `${distanceText(route.distance)} · ${route.stop ? `via ${route.stop.name}` : 'Easier terrain'}` : 'Choose a start and destination'}</strong>
+      <strong>{loadingScene ? 'Preparing the surface…' : planning ? 'Finding your route…' : route ? `${distanceText(route.distance)} · ${route.stop ? `via ${route.stop.name}` : route.strategy ?? 'Easier terrain'}` : 'Choose a start and destination'}</strong>
       {route && <dl className="mission-summary-metrics" aria-label="Route summary">
         <div><dt>Distance</dt><dd>{distanceText(route.distance)}</dd></div>
         <div><dt>Walk time</dt><dd>{Math.ceil(route.time / 60)} min</dd></div>
@@ -16,8 +16,8 @@ export default function RouteLaunch({ route, planning, eva, forecast, onLaunch, 
       {eva && !eva.feasible && <button type="button" className="mission-budget-warning" onClick={onBudget}>Review Marswalk budget before walking<Icon name="arrow" size={14} /></button>}
     </div>
     <div className="expedition-launch">
-      <button className="expedition-primary" type="button" disabled={!route || planning} onClick={() => onLaunch(route, true)}>Drive route<Icon name="arrow" size={18} /></button>
-      <button type="button" disabled={!route || planning || (!!eva && !eva.feasible)} onClick={() => onLaunch(route, false)}><Icon name="walking" size={17} />Walk route</button>
+      <button className="expedition-primary" type="button" disabled={!route || planning || loadingScene} onClick={() => onLaunch(route, true)}>Drive route<Icon name="arrow" size={18} /></button>
+      <button type="button" disabled={!route || planning || loadingScene || (!!eva && !eva.feasible)} onClick={() => onLaunch(route, false)}><Icon name="walking" size={17} />Walk route</button>
     </div>
   </footer>
 }

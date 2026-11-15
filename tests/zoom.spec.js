@@ -1,8 +1,9 @@
+import { openJezero } from './helpers.js'
 import { test, expect } from '@playwright/test';
 
 test('scroll zooms maps without changing picked coordinates, and pans without placing pins', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   const map = page.getByRole('img', { name: 'Detailed traverse map' });
   const box = await map.boundingBox();
   const x = box.x + box.width / 2, y = box.y + box.height / 2;

@@ -40,3 +40,16 @@ test('fine and regional classifications agree at known source-registered landing
   assert.equal(results[1].bedrock.symbol, 'Cf-fr')
   assert.match(results[0].bedrock.interpretation, /./)
 })
+
+
+test('detailed field-map bedrock and cover supersede the broader surface flags inside coverage', () => {
+  const terrain = load('jezero')
+  const index = terrain.photoGrid.findIndex((id, i) => id && !terrain.coverGrid[i])
+  terrain.surfaceFlags = new Uint8Array(terrain.photoGrid.length).fill(1)
+  const grid = buildGrid(terrain)
+  assert.equal(grid.surface[index], 0)
+  assert.notEqual(materialAtCell(grid, index).name, 'Loose sand')
+  const sand = terrain.coverGrid.findIndex((id) => id === 2 || id === 3)
+  assert.equal(grid.surface[sand], 1)
+  assert.equal(materialAtCell(grid, sand).name, 'Loose sand')
+})

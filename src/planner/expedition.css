@@ -397,3 +397,6 @@
 .mission-route-profile figcaption span { display: block; color: #a6a9aa; margin-top: 4px; }
 .mission-route-profile svg { width: 100%; height: auto; margin: 8px 0; border-bottom: 1px solid #667078; }
 .mission-route-profile small { font-size: 10px; color: #b9bdc0; }
+/* Keep the analysis scale visible above launch controls at every screen size. */
+.mission-coverage-note { top: 162px; right: 22px; left: auto; bottom: auto; max-width: 250px; line-height: 1.6; }
+@media (max-width: 700px) { .mission-coverage-note { top: 170px; left: 12px; right: auto; bottom: auto; max-width: calc(100% - 24px); } }

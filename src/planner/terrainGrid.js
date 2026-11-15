@@ -31,7 +31,14 @@ export function buildGrid(terrain, surface = terrain.surfaceFlags) {
 
   // Keep worker messages and telemetry small: geometry stays on terrain.geology.
   const units = Object.fromEntries(Object.values(terrain.geologicUnits ?? {}).map(({ polygons, ...unit }) => [unit.id, unit]))
-  const grid = { width, height, dx, dz, slope, roughness, elevation, surface, heights: terrain.heights,
+  // Detailed cover supersedes broader USGS cover within the field map's extent.
+  const coverFlags = terrain.photoGrid ? Uint8Array.from(surface ?? new Uint8Array(width * height)) : surface
+  if (terrain.photoGrid) for (let i = 0; i < terrain.photoGrid.length; i++) {
+    if (!terrain.photoGrid[i]) continue
+    const material = terrain.photoCovers?.[terrain.coverGrid?.[i]]?.material
+    coverFlags[i] = material === 'sand' ? 1 : ['mantle', 'loose-cover'].includes(material) ? 2 : 0
+  }
+  const grid = { width, height, dx, dz, slope, roughness, elevation, surface: coverFlags, heights: terrain.heights,
     unitIds: terrain.geologyGrid, units,
     photoUnitIds: terrain.photoGrid, photoUnits: terrain.photoUnits, coverIds: terrain.coverGrid, covers: terrain.photoCovers,
     analysisQuality: terrain.metadata.analysisQuality ?? 1, groundSpeed: new Float32Array(width * height) }

@@ -43,6 +43,7 @@ export default function App() {
   evaLatest.current = evaMission.display;
   const playerRef = useRef(null);
   const pendingLaunch = useRef(null);
+  const launchGeneration = useRef(0);
   const sceneRef = useRef(null);
   const latestTelemetry = useRef(telemetry);
   latestTelemetry.current = telemetry;
@@ -128,6 +129,7 @@ export default function App() {
   };
 
   const launchRoute = async (route, asCar) => {
+    const generation = ++launchGeneration.current;
     const directory = route.assetDirectory ?? 'jezero';
     if (terrain.assetBase.endsWith(`/${directory}`)) { finishLaunch(route, asCar); return; }
     setLoading(true);
@@ -135,6 +137,7 @@ export default function App() {
     document.exitPointerLock?.();
     try {
       const data = await loadTerrain(directory);
+      if (generation !== launchGeneration.current) return;
       pendingLaunch.current = { route, asCar };
       setTerrain(data);
       setEnvironment(createEnvironment(data));
@@ -151,6 +154,8 @@ export default function App() {
   };
 
   const changeRegion = () => {
+    launchGeneration.current++;
+    pendingLaunch.current = null;
     evaMission.end();
     setActiveRoute(null);
     setCarActive(false);
@@ -171,7 +176,7 @@ export default function App() {
     setCarActive(false);
     setDriving((mode) => !mode);
   };
-  const reset = () => { evaMission.end(); playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
+  const reset = () => { launchGeneration.current++; pendingLaunch.current = null; evaMission.end(); playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
 
   return <main className="simulation-viewport">
     <SceneErrorBoundary key={region}>
@@ -202,6 +207,6 @@ export default function App() {
     </aside>}
     {region === 'terrain' && drivingHazards && <DrivingHazards terrain={terrain} {...drivingHazards} />}
     {region === 'jezero' && !loadError && terrain &&
-      <ExpeditionMap terrain={terrain} drivingHazards={drivingHazards} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => { setActiveRoute(null); evaMission.end(); }} />}
+      <ExpeditionMap sceneLoading={loading} terrain={terrain} drivingHazards={drivingHazards} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => { launchGeneration.current++; pendingLaunch.current = null; setActiveRoute(null); evaMission.end(); }} />}
   </main>;
 }
