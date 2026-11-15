@@ -400,3 +400,11 @@
 /* Keep the analysis scale visible above launch controls at every screen size. */
 .mission-coverage-note { top: 162px; right: 22px; left: auto; bottom: auto; max-width: 250px; line-height: 1.6; }
 @media (max-width: 700px) { .mission-coverage-note { top: 170px; left: 12px; right: auto; bottom: auto; max-width: calc(100% - 24px); } }
+.mission-auto-choice { display: inline-flex; gap: 8px; align-items: center; min-height: 28px; font-size: 11px; color: var(--atlas-ink); cursor: pointer; }
+.mission-auto-choice input { accent-color: var(--atlas-accent); }
+.mission-full-map:has(.mission-auto-choice) .expedition-panel { bottom: 150px; }
+@media(max-width:700px) {
+ .mission-auto-choice { min-height: 38px; font-size: 11px; }
+ .mission-full-map:has(.mission-auto-choice) .expedition-panel { bottom: 190px; }
+ .mission-full-map:has(.mission-auto-choice) .mission-map-key, .mission-full-map:has(.mission-auto-choice) .expedition-zoom { bottom: 132px; }
+}

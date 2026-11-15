@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Euler, Quaternion, Raycaster, Vector2, Vector3 } from 'three'
+import { RoutePilot } from '../simulation/routePilot.js'
 import { CAR_CONFIG, PlayerPhysics, PLAYER_CONFIG } from '../physics/PlayerPhysics.js'
 
 import Car from './Car.jsx'
@@ -12,11 +13,14 @@ const LOOK_SENSITIVITY = 0.002
 const MAX_PITCH = Math.PI / 2 - 0.035
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
-export default function Player({ thirdPerson, paused, evaPace, driving, carActive, onPauseCar, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
+export default function Player({ automatic, autoPaused, onAutoPause, onManualControl, route, thirdPerson, paused, evaPace, driving, carActive, onPauseCar, terrain, environment, onTelemetry, onLockChange, onInspect, resetRef }) {
   const { camera, gl, scene } = useThree()
   const physics = useMemo(() => new PlayerPhysics(terrain, environment), [terrain, environment])
-  const callbacks = useRef({ carActive, onPauseCar, onTelemetry, onLockChange, onInspect })
-  callbacks.current = { carActive, onPauseCar, onTelemetry, onLockChange, onInspect }
+  const pilot = useMemo(() => route?.autoFollow ? new RoutePilot(route, driving) : null, [route, driving])
+  const manualOverride = useRef(false)
+  const blockNotified = useRef(false)
+  const callbacks = useRef({ automatic, carActive, onAutoPause, onManualControl, onPauseCar, onTelemetry, onLockChange, onInspect })
+  callbacks.current = { automatic, carActive, onAutoPause, onManualControl, onPauseCar, onTelemetry, onLockChange, onInspect }
   const keys = useRef(new Set())
   const keyboardUi = useRef(false)
   const vehicle = useRef(null)
@@ -88,6 +92,25 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
     if (!driving) physics.config = evaPace ? { ...PLAYER_CONFIG, budgetedWalk: true, walkSpeed: evaPace, sprintSpeed: Math.max(1.8, evaPace * 1.5) } : PLAYER_CONFIG
   }, [driving, physics, evaPace])
 
+  useEffect(() => { manualOverride.current = false; blockNotified.current = false }, [pilot])
+  useEffect(() => {
+    if (!automatic || !pilot) return
+    keys.current.clear()
+    if (!autoPaused && !paused) {
+      manualOverride.current = false
+      if (!driving) {
+        walkingActive.current = true
+        callbacks.current.onLockChange?.(true)
+        look.current.targetPitch = .18
+      }
+      gl.domElement.tabIndex = -1
+      gl.domElement.focus({ preventScroll: true })
+    } else if (!driving) {
+      walkingActive.current = false
+      callbacks.current.onLockChange?.(false)
+    }
+  }, [automatic, autoPaused, paused, pilot, driving, thirdPerson, gl])
+
   useEffect(() => {
     if (carActive) {
       // Hand keyboard control to the view after launching from an HTML button.
@@ -131,6 +154,7 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
     }
     const orbit = (event) => {
       if (Math.abs(event.movementX) > 200 || Math.abs(event.movementY) > 200) return
+      state.current.orbitHold = physics.elapsed + 4
       look.current.targetYaw -= event.movementX * LOOK_SENSITIVITY
       look.current.targetPitch = clamp(look.current.targetPitch - event.movementY * LOOK_SENSITIVITY, -MAX_PITCH, MAX_PITCH)
     }
@@ -186,6 +210,7 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
       if (!(driving ? callbacks.current.carActive : walkingActive.current)) return
       if ((driving || thirdPerson) && event.code === 'Tab') { keyboardUi.current = true; return }
       if (event.code === 'Escape') {
+        if (callbacks.current.automatic) { callbacks.current.onAutoPause?.(); return }
         if (driving) callbacks.current.onPauseCar()
         else if (thirdPerson) { walkingActive.current = false; keys.current.clear(); callbacks.current.onLockChange?.(false) }
         else document.exitPointerLock()
@@ -202,6 +227,7 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
       }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyE'].includes(event.code)) {
         event.preventDefault()
+        if (callbacks.current.automatic && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(event.code)) { manualOverride.current = true; callbacks.current.onManualControl?.() }
         keys.current.add(event.code)
       }
       if (event.code === 'KeyE' && !event.repeat) inspect()
@@ -210,6 +236,7 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
     const pointerControl = () => { keyboardUi.current = false }
     const blur = () => {
       keys.current.clear(); endOrbit()
+      if (callbacks.current.automatic) callbacks.current.onAutoPause?.()
       if (!driving && thirdPerson) { walkingActive.current = false; callbacks.current.onLockChange?.(false) }
     }
     const focus = (event) => {
@@ -287,7 +314,15 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
     }
     frame.accumulator += dt
     while (frame.accumulator >= PLAYER_CONFIG.fixedStep) {
-      physics.step(PLAYER_CONFIG.fixedStep, input)
+      const autoActive = automatic && pilot && !manualOverride.current
+      const running = !paused && !autoPaused && (driving ? carActive : walkingActive.current)
+      const command = autoActive ? pilot.controls(physics, PLAYER_CONFIG.fixedStep, running) : input
+      physics.step(PLAYER_CONFIG.fixedStep, command)
+      if (autoActive) {
+        pilot.record(physics, PLAYER_CONFIG.fixedStep, running)
+        if (!driving && physics.elapsed > (frame.orbitHold ?? 0) && command.forward > 0) view.targetYaw += Math.atan2(Math.sin(command.yaw - view.targetYaw), Math.cos(command.yaw - view.targetYaw)) * .03
+        if (pilot.status === 'Blocked' && !blockNotified.current) { blockNotified.current = true; callbacks.current.onAutoPause?.() }
+      }
       if (driving) driverYaw.current = physics.yaw
       frame.accumulator -= PLAYER_CONFIG.fixedStep
       if (physics.landingSpeed > 0) {
@@ -374,6 +409,7 @@ export default function Player({ thirdPerson, paused, evaPace, driving, carActiv
       frame.telemetryTime = 0
       callbacks.current.onTelemetry?.({
         ...physics.telemetry(),
+        auto: automatic && pilot ? pilot.telemetry(autoPaused || paused) : null,
         fps: Math.round(frame.fps),
         heading: ((-(driving ? driverYaw.current : view.yaw) * 180 / Math.PI) % 360 + 360) % 360,
       })

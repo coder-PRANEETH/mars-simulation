@@ -193,7 +193,7 @@ export default function ExpeditionMap({ terrain: worldTerrain, sceneLoading, dri
     { name: 'Thermal IR', active: thermal, onChange: toggleThermal },
   ]
   const layerNames = overlays.filter(({ active, disabled }) => active && !disabled).map(({ name }) => name)
-  const launch = (route, asCar) => { if (route && !coverageLoading) onLaunch({ ...route, avoidZones: zones, assetDirectory: terrain.assetBase.split('/').at(-1), ...(asCar || !eva ? {} : { eva }) }, asCar) }
+  const launch = (route, asCar) => { if (route && !coverageLoading) onLaunch({ ...route, walkPace: pace, gridMeters: Math.min(grid.dx, grid.dz), slopeLimit: maxSlope, avoidZones: zones, assetDirectory: terrain.assetBase.split('/').at(-1), ...(asCar || !eva ? {} : { eva }) }, asCar) }
 
   function endpointLabel(cell, key) {
     if (cell < 0) return pinCoordinates.current[key] ? 'Outside this area · choose regional view' : 'Choose on the map'

@@ -67,7 +67,7 @@ function DataPanel({ metadata, onClose }) {
   );
 }
 
-export default function Hud({ thirdPerson, onToggleView, evaActive, driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, inspection, onClearInspection }) {
+export default function Hud({ autoMode, thirdPerson, onToggleView, evaActive, driving, carActive, showHazards, onToggleHazards, onToggleDriving, region: regionId, onChangeRegion, onOpenMap, simulation = {}, telemetry = {}, metadata = {}, locked, loading, loadError, onEnter, onReset, debug, inspection, onClearInspection }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
@@ -101,7 +101,7 @@ export default function Hud({ thirdPerson, onToggleView, evaActive, driving, car
   };
 
   return (
-    <div className={`sim-hud ${locked ? 'is-locked' : active ? 'is-driving' : 'is-paused'}`}>
+    <div className={`sim-hud ${autoMode ? 'is-auto-mode' : ''} ${locked ? 'is-locked' : active ? 'is-driving' : 'is-paused'}`}>
       <div className="sim-scene-shade" aria-hidden="true" />
       <div className="sim-mission-frame" aria-hidden="true"><span>04 — MARS</span><span>EXPLORE / LEARN / DISCOVER</span></div>
       <header className="sim-brand">
@@ -119,7 +119,7 @@ export default function Hud({ thirdPerson, onToggleView, evaActive, driving, car
         {driving && carActive && <button type="button" className={`sim-tool-button ${showHazards ? 'is-active' : ''}`} aria-pressed={showHazards} onClick={onToggleHazards}>
           <Icon name="hazard" size={16} /><span>Hazards</span>
         </button>}
-        {!driving && <button type="button" className="sim-tool-button" aria-label={thirdPerson ? 'Switch to first-person view' : 'Switch to third-person view'} aria-pressed={thirdPerson} onClick={onToggleView}><Icon name="walking" size={16} />{thirdPerson ? 'Third person' : 'First person'}</button>}
+        {!driving && !autoMode && <button type="button" className="sim-tool-button" aria-label={thirdPerson ? 'Switch to first-person view' : 'Switch to third-person view'} aria-pressed={thirdPerson} onClick={onToggleView}><Icon name="walking" size={16} />{thirdPerson ? 'Third person' : 'First person'}</button>}
         {onOpenMap && <button className="sim-tool-button sim-map-link" onClick={onOpenMap} aria-label="Expedition map"><Icon name="route" size={17} />Mission map</button>}
         <button className="sim-tool-button" onClick={onChangeRegion}><Icon name="compass" size={17} />{regionId === 'jezero' ? 'Southeast hills' : 'Explore Jezero'}</button>
         <button className="sim-icon-button" onClick={() => setDataOpen((open) => !open)} aria-expanded={dataOpen} aria-label="Terrain & data"><Icon name="info" /></button>
@@ -127,7 +127,7 @@ export default function Hud({ thirdPerson, onToggleView, evaActive, driving, car
 
       {dataOpen && <DataPanel metadata={metadata} onClose={() => setDataOpen(false)} />}
 
-      {!active && !dataOpen && <div className="sim-launch-layout">
+      {!active && !dataOpen && !autoMode && <div className="sim-launch-layout">
       <div className="sim-entry sim-interactive" role="region" aria-label="Enter simulation">
         <div className="sim-entry-index"><span />{loading ? 'LOADING YOUR MISSION' : loadError ? 'MISSION ON HOLD' : hasEntered ? 'MISSION PAUSED' : 'YOUR MISSION STARTS HERE'}</div>
         <h2>{loading ? <>Getting<br /><em>ready.</em></> : loadError ? <>Let’s<br /><em>try again.</em></> : hasEntered ? <>Mission<br /><em>paused.</em></> : <>Explore<br /><em>Mars.</em></>}</h2>

@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import Icon from '../ui/Icon.jsx'
 import { riskLabel } from './routeRisk.js'
 import { distanceText } from './RouteResults.jsx'
 
 export default function RouteLaunch({ route, planning, loadingScene, eva, forecast, onLaunch, onRoute, onBudget }) {
+  const [autoFollow, setAutoFollow] = useState(false)
   return <footer className="mission-route-bar" aria-label="Route launch controls">
     <div className="mission-route-summary">
       <strong>{loadingScene ? 'Preparing the surface…' : planning ? 'Finding your route…' : route ? `${distanceText(route.distance)} · ${route.stop ? `via ${route.stop.name}` : route.strategy ?? 'Easier terrain'}` : 'Choose a start and destination'}</strong>
@@ -12,12 +14,13 @@ export default function RouteLaunch({ route, planning, loadingScene, eva, foreca
         <div title="One-way walking and planned science work; metabolic energy estimate, not rover battery use"><dt>Walk energy</dt><dd>{forecast ? (forecast.outward.energyJ / 1e6).toFixed(2) : '—'} MJ</dd></div>
         <div title="Relative model index from slope, roughness, loose ground and data quality; not injury probability"><dt>Risk · model</dt><dd>{route.risk ? `${riskLabel(route.risk.mean)} · ${Math.round(route.risk.mean * 100)}/100` : '—'}</dd></div>
       </dl>}
+      {route && <label className="mission-auto-choice"><input type="checkbox" checked={autoFollow} onChange={(event) => setAutoFollow(event.target.checked)} disabled={planning || loadingScene} />Auto follow route</label>}
       {!route && !planning && <button type="button" onClick={onRoute}>Pick a route<Icon name="arrow" size={14} /></button>}
       {eva && !eva.feasible && <button type="button" className="mission-budget-warning" onClick={onBudget}>Review Marswalk budget before walking<Icon name="arrow" size={14} /></button>}
     </div>
     <div className="expedition-launch">
-      <button className="expedition-primary" type="button" disabled={!route || planning || loadingScene} onClick={() => onLaunch(route, true)}>Drive route<Icon name="arrow" size={18} /></button>
-      <button type="button" disabled={!route || planning || loadingScene || (!!eva && !eva.feasible)} onClick={() => onLaunch(route, false)}><Icon name="walking" size={17} />Walk route</button>
+      <button className="expedition-primary" type="button" disabled={!route || planning || loadingScene} onClick={() => onLaunch({ ...route, autoFollow }, true)}>Drive route<Icon name="arrow" size={18} /></button>
+      <button type="button" disabled={!route || planning || loadingScene || (!!eva && !eva.feasible)} onClick={() => onLaunch({ ...route, autoFollow }, false)}><Icon name="walking" size={17} />Walk route</button>
     </div>
   </footer>
 }

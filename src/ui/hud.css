@@ -278,3 +278,25 @@
   .eva-mission > strong { font-size: 13px; }
   .eva-mission-details { max-height: 28vh; }
 }
+.auto-mission { position: absolute; z-index: 24; left: 44px; top: 130px; width: 292px; padding: 14px 16px; color: #e7e2d9; background: linear-gradient(90deg,#11191af2,#11191add); border-left: 2px solid #d8a475; font: 11px 'Segoe UI', sans-serif; }
+.auto-mission header span { display: block; color: #b7b7ae; font: 8px var(--sim-mono); letter-spacing: .1em; }
+.auto-mission header strong { display: block; margin: 8px 0 12px; font-size: 16px; font-weight: 500; }
+.auto-mission progress { width: 100%; height: 3px; accent-color: #d8a475; margin-bottom: 10px; }
+.auto-mission dl { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; margin: 0; }
+.auto-mission dt { font-size: 9px; color: #bec1bb; }
+.auto-mission dd { margin: 6px 0 0; font: 23px var(--sim-mono); }
+.auto-mission dd small { font: 10px 'Segoe UI',sans-serif; margin-left: 5px; color: #beb9b1; }
+.auto-actions { display: flex; gap: 20px; margin-top: 10px; }
+.auto-actions button { background: none; color: #e8bf95; border: 0; border-bottom: 1px solid #e8bf9540; min-height: 44px; cursor: pointer; padding: 0; font-size: 11px; }
+.auto-actions button:disabled { opacity: .4; cursor: default; }
+.auto-mission details { color: #aeb8b7; font-size: 9px; margin-top: 10px; line-height: 1.6; }
+.auto-mission details summary { cursor: pointer; min-height: 24px; }
+.auto-warning { color: #edba97; }
+@media(max-width:700px) { .auto-mission { top: 130px; left: 20px; width: 238px; padding: 12px; } .auto-mission header strong { font-size: 13px; } .auto-mission dl { gap: 9px; } .auto-mission dd { font-size: 17px; } }
+.auto-stat-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 0; min-height: 44px; background: none; border: 0; color: inherit; cursor: pointer; text-align: left; }
+.auto-stat-toggle span { font-size: 16px !important; }
+.auto-mission dl[hidden] { display: none; }
+.auto-compact-stats { font: 10px var(--sim-mono); color: #e0c4a5; margin: 3px 0; }
+.auto-mission button:focus-visible { outline: 2px solid #e7b38c; outline-offset: 3px; }
+.sim-hud.is-auto-mode.is-paused .sim-scene-shade { background: linear-gradient(180deg,#06111b66,transparent 30%,transparent 60%,#04101bbb); }
+@media(max-width:700px) { .simulation-viewport.has-auto-route .expedition-guide { top: auto; bottom: 165px; left: auto; right: 20px; max-width: 220px; text-align: right; transform: none; } }

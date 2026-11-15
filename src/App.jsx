@@ -10,6 +10,7 @@ import ExpeditionMap from './planner/ExpeditionMap.jsx';
 import DrivingHazards from './planner/DrivingHazards.jsx';
 import { useEVAMission } from './simulation/useEVAMission.js';
 import EVAMission from './ui/EVAMission.jsx';
+import AutoMission from './ui/AutoMission.jsx';
 
 class SceneErrorBoundary extends Component {
   state = { error: null };
@@ -29,6 +30,8 @@ export default function App() {
   const [showHazards, setShowHazards] = useState(true);
   const [showLandTypes, setShowLandTypes] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null);
+  const [automatic, setAutomatic] = useState(false);
+  const [autoPaused, setAutoPaused] = useState(false);
   const [waypointIndex, setWaypointIndex] = useState(0);
   const [region, setRegion] = useState('terrain');
   const [terrain, setTerrain] = useState(null);
@@ -130,7 +133,8 @@ export default function App() {
     distance: Math.hypot(nextWaypoint.x - position.x, nextWaypoint.z - position.z),
     bearing: (Math.atan2(nextWaypoint.x - position.x, position.z - nextWaypoint.z) * 180 / Math.PI + 360) % 360,
   } : null;
-  const reached = (locked || (carActive && !mapOpen)) && guide && guide.distance <= 14;
+  const autoReached = telemetry.auto && (waypointIndex === activeRoute?.waypoints.length - 1 ? telemetry.auto.status === 'Complete' : telemetry.auto.progress >= (nextWaypoint?.distance ?? Infinity));
+  const reached = (locked || (carActive && !mapOpen)) && guide && (automatic ? autoReached : guide.distance <= 14);
   useEffect(() => {
     if (reached) setWaypointIndex((index) => index + 1);
   }, [reached, waypointIndex]);
@@ -142,6 +146,9 @@ export default function App() {
     setInspection(null);
     setWaypointIndex(1);
     setActiveRoute(route);
+    setAutomatic(!!route.autoFollow);
+    setAutoPaused(false);
+    if (route.autoFollow && !asCar) setThirdPerson(true);
     evaMission.begin(route);
     setDriving(asCar);
     setCarActive(asCar);
@@ -174,6 +181,7 @@ export default function App() {
   };
 
   const changeRegion = () => {
+    setAutomatic(false); setAutoPaused(false); setLocked(false);
     launchGeneration.current++;
     pendingLaunch.current = null;
     evaMission.end();
@@ -190,15 +198,20 @@ export default function App() {
   };
   const drivingHazards = carActive && !mapOpen && showHazards && terrain
     ? { telemetry, route: activeRoute, showLandTypes, onToggleLandTypes: () => setShowLandTypes((value) => !value) } : null;
-  const enter = () => driving ? setCarActive(true) : playerRef.current?.enter();
+  const pauseAuto = () => { setAutoPaused(true); setCarActive(false); playerRef.current?.exit(); };
+  const resumeAuto = () => { setAutoPaused(false); if (driving) setCarActive(true); else playerRef.current?.enter(); };
+  const takeControl = () => { setAutomatic(false); setAutoPaused(false); if (driving) setCarActive(true); else playerRef.current?.enter(); };
+  const enter = () => automatic ? resumeAuto() : driving ? setCarActive(true) : playerRef.current?.enter();
+  useEffect(() => { if (automatic && evaMission.display?.warning && !autoPaused) pauseAuto(); }, [automatic, autoPaused, evaMission.display?.warning]);
   const toggleDriving = () => {
+    setAutomatic(false); setAutoPaused(false);
     evaMission.end();
     setCarActive(false);
     setDriving((mode) => !mode);
   };
-  const reset = () => { launchGeneration.current++; pendingLaunch.current = null; evaMission.end(); playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
+  const reset = () => { setAutomatic(false); setAutoPaused(false); launchGeneration.current++; pendingLaunch.current = null; evaMission.end(); playerRef.current?.reset(); setInspection(null); setActiveRoute(null); };
 
-  return <main className="simulation-viewport">
+  return <main className={`simulation-viewport ${automatic ? 'has-auto-route' : ''}`}>
     <SceneErrorBoundary key={region}>
       <Canvas
         frameloop={mapOpen && !loading ? 'never' : 'always'}
@@ -210,23 +223,24 @@ export default function App() {
         fallback={<div className="webgl-error"><h2>WebGL is unavailable</h2><p>Enable hardware acceleration in your browser to walk on Mars.</p></div>}
       >
         <Suspense fallback={null}>
-          {terrain && environment && <World thirdPerson={thirdPerson} paused={mapOpen} key={terrain.assetBase} evaPace={evaMission.display?.settings.pace} driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => setCarActive(false)} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={worldReady} />}
+          {terrain && environment && <World automatic={automatic} autoPaused={autoPaused} onAutoPause={pauseAuto} onManualControl={() => { setAutomatic(false); setAutoPaused(false); }} thirdPerson={thirdPerson} paused={mapOpen} key={terrain.assetBase} evaPace={evaMission.display?.settings.pace} driving={driving} carActive={carActive && !mapOpen} onPauseCar={() => { setCarActive(false); if (automatic) setAutoPaused(true); }} route={activeRoute} terrain={terrain} environment={environment} playerRef={playerRef} onTelemetry={setTelemetry} onLockChange={setLocked} onInspect={setInspection} inspection={inspection} onReady={worldReady} />}
         </Suspense>
       </Canvas>
     </SceneErrorBoundary>
     <div inert={mapOpen && !loading && !loadError}>
-    <Hud thirdPerson={thirdPerson} onToggleView={() => { playerRef.current?.exit(); setThirdPerson((value) => !value); }} evaActive={!!evaMission.display} driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => setMapOpen(true) : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
+    <Hud autoMode={automatic} thirdPerson={thirdPerson} onToggleView={() => { setAutomatic(false); setAutoPaused(false); playerRef.current?.exit(); setThirdPerson((value) => !value); }} evaActive={!!evaMission.display} driving={driving} carActive={carActive} showHazards={showHazards} onToggleHazards={() => setShowHazards((visible) => !visible)} onToggleDriving={toggleDriving} onOpenMap={region === 'jezero' && !loading && !loadError ? () => { if (automatic) setAutoPaused(true); setMapOpen(true); } : null} region={region} onChangeRegion={changeRegion} simulation={simulation} telemetry={telemetry} metadata={terrain?.metadata} locked={locked} loading={loading} loadError={loadError} onEnter={enter} onReset={reset} debug={debug} inspection={inspection} onClearInspection={() => setInspection(null)} />
     {evaMission.display && <EVAMission model={evaMission.display} paused={!locked || mapOpen} onWork={evaMission.work} onStorm={evaMission.storm} onEnd={evaMission.end} onReturn={() => {
       const home = evaMission.headHome();
-      if (home) { setActiveRoute(home); setWaypointIndex(1); }
+      if (home) { setActiveRoute({ ...home, autoFollow: automatic, settings: evaMission.display.settings, walkPace: evaMission.display.settings.pace, gridMeters: activeRoute?.gridMeters, slopeLimit: activeRoute?.slopeLimit }); setWaypointIndex(1); if (automatic) setAutoPaused(false); }
     }} />}
     </div>
+    {automatic && !mapOpen && <AutoMission model={telemetry.auto} paused={autoPaused} onPause={pauseAuto} onResume={resumeAuto} onManual={takeControl} />}
     {activeRoute && !mapOpen && <aside className="expedition-guide" aria-label="Traverse guidance">
       <strong>{guide ? `Next stop ${guide.number} of ${guide.count} · ${guide.waypoint.label === 'Traverse' ? 'Follow your route' : guide.waypoint.label}` : 'You reached your destination!'}</strong>
       {guide && <span>{Math.round(guide.distance)} m to go · direction {Math.round(guide.bearing) % 360}°</span>}
     </aside>}
     {region === 'terrain' && drivingHazards && <DrivingHazards terrain={terrain} {...drivingHazards} />}
     {region === 'jezero' && !loadError && terrain &&
-      <ExpeditionMap sceneLoading={loading} terrain={terrain} drivingHazards={drivingHazards} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => { launchGeneration.current++; pendingLaunch.current = null; setActiveRoute(null); evaMission.end(); }} />}
+      <ExpeditionMap sceneLoading={loading} terrain={terrain} drivingHazards={drivingHazards} open={mapOpen} onClose={() => setMapOpen(false)} onLaunch={launchRoute} onClearRoute={() => { setAutomatic(false); setAutoPaused(false); launchGeneration.current++; pendingLaunch.current = null; setActiveRoute(null); evaMission.end(); }} />}
   </main>;
 }
