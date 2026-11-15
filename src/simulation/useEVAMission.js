@@ -8,7 +8,7 @@ export function useEVAMission(terrain, telemetry, active, gravity) {
   function publish() {
     const m = mission.current
     if (!m) { setDisplay(null); return }
-    const back = returnBudget(m.breadcrumbs, m.settings)
+    const back = returnBudget(m.breadcrumbs, m.settings, m.budget.workloadWatts)
     const reserve = 350 * m.settings.reserveMinutes * 60 / JOULES_PER_LITRE_O2
     const oxygenLeft = Math.max(0, m.settings.oxygenLitres - m.budget.oxygenUsed)
     const margin = oxygenLeft - back.oxygenUsed - reserve
@@ -32,14 +32,17 @@ export function useEVAMission(terrain, telemetry, active, gravity) {
     m.lastTime = active ? now : null
     if (m.finished) return
     const position = { ...telemetry.position, y: terrain.sampleHeight(telemetry.position.x, telemetry.position.z),
-      effortTerrain: 1 + (telemetry.surface?.roughness ?? 0) + Math.max(0, 1 / (telemetry.surface?.speedFactor ?? 1) - 1) }
+      effortTerrain: telemetry.surface?.effortTerrain ?? 1 }
     const previous = m.position ?? position
     const run = Math.hypot(position.x - previous.x, position.z - previous.z)
     const grade = run > .03 ? Math.max(-.8, Math.min(.8, (position.y - previous.y) / run)) : 0
-    m.watts = effortWatts(telemetry.speed ?? 0, grade, position.effortTerrain, m.settings)
+    const surfaceSpeed = Math.hypot(telemetry.speed ?? 0, telemetry.grounded ? telemetry.verticalVelocity ?? 0 : 0)
+    const targetWatts = effortWatts(surfaceSpeed, grade, position.effortTerrain, m.settings)
+    m.watts = m.budget.workloadWatts ?? effortWatts(0, 0, 1, m.settings)
     m.gait = (telemetry.speed ?? 0) < .1 ? 'Standing' : telemetry.speed < transitionSpeed(gravity, m.settings.legMeters) ? 'Walking' : 'Loping'
     if (seconds) {
-      m.budget = advanceBudget(m.budget, seconds, m.watts, m.settings)
+      m.budget = advanceBudget(m.budget, seconds, targetWatts, m.settings)
+      m.watts = m.budget.workloadWatts
       const last = m.breadcrumbs.at(-1)
       if (Math.hypot(position.x - last.x, position.z - last.z) > 1) {
         if (m.returning && m.breadcrumbs.length > 1) {
@@ -74,6 +77,7 @@ export function useEVAMission(terrain, telemetry, active, gravity) {
       const m = mission.current
       if (!m || !display?.canWork || m.taskDone || m.settings.taskMinutes === 0) return
       m.budget = advanceBudget(m.budget, m.settings.taskMinutes * 60, m.settings.taskWatts, m.settings)
+      m.watts = m.budget.workloadWatts
       m.taskDone = true
       publish()
     },

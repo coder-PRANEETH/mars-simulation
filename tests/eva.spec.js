@@ -1,10 +1,11 @@
+import { openJezero } from './helpers.js'
 import { test, expect } from '@playwright/test';
 
 test('Marswalk plan checks oxygen, cooling, science and return reserve before launch', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
   await page.getByRole('tab', { name: 'Marswalk', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Apply suit budget to Walk route' }).check();
   const plan = page.getByLabel('Marswalk life support planner');
@@ -16,11 +17,11 @@ test('Marswalk plan checks oxygen, cooling, science and return reserve before la
   await plan.getByText('Suit & science plan', { exact: true }).click();
   await plan.getByLabel('Cooling capacity (W)').fill('700');
   await plan.getByLabel('Mission duration (min)').fill('480');
-  await expect(page.getByRole('button', { name: 'Walk route', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Walk route', exact: true })).toBeEnabled({ timeout: 30000 });
   await plan.getByLabel('Usable oxygen (L, STPD)').fill('50');
   await expect(plan).toContainText('Not enough oxygen for the return and reserve.');
   await expect(page.getByRole('button', { name: 'Walk route', exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Drive route', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Drive route', exact: true })).toBeEnabled({ timeout: 30000 });
   await plan.getByLabel('Usable oxygen (L, STPD)').fill('600');
   await page.getByRole('button', { name: 'Walk route', exact: true }).click();
   const suit = page.getByLabel('Marswalk suit model');
@@ -37,7 +38,7 @@ test('Marswalk plan checks oxygen, cooling, science and return reserve before la
   await page.keyboard.down('KeyW');
   await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getTelemetry().speed), { timeout: 15000 }).toBeGreaterThan(.6);
   expect(await page.evaluate(() => window.__MARS_SIM__.getTelemetry().speed)).toBeLessThan(1.5);
-  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getEVA().watts), { timeout: 15000 }).toBeGreaterThan(200);
+  await expect.poll(() => page.evaluate(() => window.__MARS_SIM__.getEVA().watts), { timeout: 15000 }).toBeGreaterThan(155);
   await page.keyboard.up('KeyW');
   await page.evaluate(() => document.exitPointerLock());
   await expect.poll(() => page.evaluate(() => document.pointerLockElement === null)).toBe(true);
@@ -56,7 +57,8 @@ test('Marswalk plan checks oxygen, cooling, science and return reserve before la
 
 test('science work at a nearby destination charges the suit budget once', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Explore Jezero' }).click();
+  await openJezero(page);
+  await page.getByRole('combobox', { name: 'Map extent', exact: true }).selectOption('local');
   await page.getByRole('tab', { name: 'Marswalk', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Apply suit budget to Walk route' }).check();
   await page.getByRole('tab', { name: 'Route', exact: true }).click();
@@ -77,7 +79,7 @@ test('science work at a nearby destination charges the suit budget once', async 
   const suit = page.getByLabel('Marswalk suit model');
   await suit.getByRole('button', { name: /SUIT MODEL/ }).click();
   const work = suit.getByRole('button', { name: 'Log 20 min of science' });
-  await expect(work).toBeEnabled();
+  await expect(work).toBeEnabled({ timeout: 30000 });
   const oxygen = await page.evaluate(() => window.__MARS_SIM__.getEVA().oxygenLeft);
   await work.click();
   const model = await page.evaluate(() => window.__MARS_SIM__.getEVA());

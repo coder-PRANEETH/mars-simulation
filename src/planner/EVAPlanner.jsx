@@ -13,12 +13,12 @@ export default function EVAPlanner({ settings, onChange, plan }) {
       <strong className={`eva-status ${plan.feasible ? '' : 'is-warning'}`} role="status">{plan.feasible ? 'Within your modelled budget' : 'Revise this Marswalk'}</strong>
       <dl className="expedition-readings">
         <dt>O₂ including reserve</dt><dd>{Math.round(plan.oxygenUsed + plan.reserveOxygen)} / {settings.oxygenLitres} L</dd>
-        <dt>Peak stored heat</dt><dd>{plan.peakHeatKjKg.toFixed(2)} / 3 kJ/kg</dd>
+        <dt>Peak metabolic rate</dt><dd>{Math.round(plan.peakWatts)} W</dd><dt>Peak stored heat</dt><dd>{plan.peakHeatKjKg.toFixed(2)} / 3 kJ/kg</dd>
         <dt>Return to base</dt><dd>{Math.ceil(plan.returnSeconds / 60)} min</dd>
       </dl>
       <meter aria-label="Oxygen budget including reserve" min="0" max={settings.oxygenLitres} value={Math.min(settings.oxygenLitres, plan.oxygenUsed + plan.reserveOxygen)} />
       {plan.reasons.map((reason) => <p className="eva-warning" key={reason}>{reason}</p>)}
-      <p>Science work: {settings.taskMinutes} min at {plan.stop.label ?? plan.stop.name ?? 'the destination'}. Green/red route bands show the oxygen, time and shelter return check. Heat is checked over the full excursion.</p>
+      <p>Science work: {settings.taskMinutes} min at {plan.stop.label ?? plan.stop.name ?? 'the destination'}. Green/red route bands show the oxygen, time and shelter return check. Return bands include a conservative allowance for residual metabolic demand. Heat is checked over the full excursion.</p>
     </> : <p>Choose a start and destination to check your supplies.</p>}
     {plan && <details className="expedition-disclosure">
       <summary>Energy & science breakdown</summary>
@@ -45,8 +45,11 @@ export default function EVAPlanner({ settings, onChange, plan }) {
     </details>
     <details className="expedition-disclosure">
       <summary>Astronaut & model assumptions</summary>
-      <div className="eva-settings">{field('bodyKg', 'Body mass (kg)', 45, 120)}{field('suitKg', 'Suit + tools (kg)', 10, 150)}{field('legMeters', 'Leg length (m)', .6, 1.2, .05)}</div>
+      <label className="eva-setting">Effort model<select aria-label="Effort model" value={settings.model} onChange={(e) => onChange({ ...settings, model: e.target.value })}><option value="reference">Mars mission reference · illustrative</option><option value="pandolf">Pandolf load carriage · Earth baseline</option></select></label>
+      <div className="eva-settings">{field('responseSeconds', 'Workload response (seconds)', 0, 120, 5)}{field('bodyKg', 'Body mass (kg)', 45, 120)}{field('suitKg', 'Suit + tools (kg)', 10, 150)}{field('legMeters', 'Leg length (m)', .6, 1.2, .05)}</div>
       <p>Predicted walk–lope transition: {transitionSpeed(3.71, settings.legMeters).toFixed(2)} m/s at Mars gravity. This is a Froude-number estimate, not a speed limit.</p>
+      <p>The optional Pandolf equation uses body and carried mass, speed, terrain and percent grade. It was developed on Earth; downhill uses the level-ground term. Suit mass is treated as carried load, not suit-joint resistance. Neither model is validated for suited Mars walking. A first-order response delays changes in metabolic demand; the default 30 seconds is an adjustable assumption, not a measured Mars time constant.</p>
+      <a href="https://ntrs.nasa.gov/citations/20240001423" target="_blank" rel="noreferrer">NASA 2024 metabolic modelling research ↗</a>
       <p>Educational estimates, not a validated Mars suit or medical model. Effort rises with speed, grade, carried mass and rough/soft ground. Curves and task rates are our assumptions. Oxygen excludes leakage and system overhead. All metabolic heat is treated as heat load; cooling is constant and excludes solar, wind and contact heat transfer. No body temperature, heart rate or CO₂ readings are invented.</p>
       <p>The 3 kJ/kg heat ceiling is an illustrative reference to NASA’s nominal heat-storage criterion; NASA uses detailed human thermal models. The 2-hour shelter rule is a scenario choice. No actual habitat is mapped.</p>
       <a href="https://ntrs.nasa.gov/citations/20260002884" target="_blank" rel="noreferrer">NASA Mars PLSS study ↗</a><br />

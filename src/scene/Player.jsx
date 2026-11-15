@@ -61,7 +61,7 @@ export default function Player({ evaPace, driving, carActive, onPauseCar, terrai
   }, [driving, physics])
 
   useEffect(() => {
-    if (!driving) physics.config = evaPace ? { ...PLAYER_CONFIG, walkSpeed: evaPace, sprintSpeed: Math.max(1.8, evaPace * 1.5) } : PLAYER_CONFIG
+    if (!driving) physics.config = evaPace ? { ...PLAYER_CONFIG, budgetedWalk: true, walkSpeed: evaPace, sprintSpeed: Math.max(1.8, evaPace * 1.5) } : PLAYER_CONFIG
   }, [driving, physics, evaPace])
 
   useEffect(() => {

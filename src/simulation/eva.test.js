@@ -9,16 +9,16 @@ test('EVA units, gait estimate and cooling obey explicit energy balances', () =>
   assert.ok(effortWatts(1, .1) > effortWatts(1))
   assert.ok(effortWatts(1, 0, 1.3) > effortWatts(1))
   assert.ok(effortWatts(1, 0, 1, { ...EVA_DEFAULTS, suitKg: 100 }) > effortWatts(1))
-  const warm = advanceBudget(emptyBudget(), 60, 500, EVA_DEFAULTS)
+  const warm = advanceBudget(emptyBudget(), 60, 500, { ...EVA_DEFAULTS, responseSeconds: 0 })
   assert.equal(warm.heatJ, 3000)
   assert.equal(warm.oxygenUsed, 30000 / JOULES_PER_LITRE_O2)
-  const cooled = advanceBudget(warm, 60, 150, EVA_DEFAULTS)
+  const cooled = advanceBudget(warm, 60, 150, { ...EVA_DEFAULTS, responseSeconds: 0 })
   assert.equal(cooled.heatJ, 0)
   assert.equal(cooled.peakHeatJ, 3000)
 })
 
 test('EVA forecast budgets science, directional return, reserve and rejects insufficient supplies', () => {
-  const plan = forecastEVA(route)
+  const plan = forecastEVA(route, { responseSeconds: 0 })
   assert.equal(plan.elapsed, 2400) // 10 min out + 20 work + 10 back
   assert.equal(plan.returnSeconds, 600)
   assert.equal(plan.oxygenUsed, 350 * 2400 / JOULES_PER_LITRE_O2)
@@ -26,7 +26,7 @@ test('EVA forecast budgets science, directional return, reserve and rejects insu
   assert.equal(plan.feasible, true)
   assert.equal(forecastEVA(route, { oxygenLitres: 50 }).feasible, false)
   assert.equal(forecastEVA(route, { durationMinutes: 45 }).feasible, false)
-  assert.equal(forecastEVA(route, { coolingWatts: 150 }).feasible, false)
+  assert.equal(forecastEVA(route, { coolingWatts: 150, responseSeconds: 0 }).feasible, false)
   const short = forecastEVA(route, { oxygenLitres: 50 })
   assert.equal(short.returnChecks.at(-1).canReturn, false)
   const slope = { ...route, points: [{ x: 0, y: 0, z: 0 }, { x: 600, y: 60, z: 0 }] }

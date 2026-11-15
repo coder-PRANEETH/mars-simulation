@@ -1,3 +1,4 @@
+import { walkingSpeed } from '../simulation/eva.js'
 import { FIRM_SURFACE } from '../simulation/surface.js'
 import { stepVehicleMotion } from './vehicleMotion.js'
 
@@ -182,7 +183,10 @@ export class PlayerPhysics {
         stepVehicleMotion(this, dt, input, { speed, grip, softness, gravity, normal, surface })
       } else if (inputLength > 0) {
         const uphill = Math.max(0, -(desiredX * normal.x + desiredZ * normal.z))
-        const slopeSpeed = speed / (1 + uphill * 1.35)
+        const grade = -(desiredX * normal.x + desiredZ * normal.z) / normal.y
+        const slopeSpeed = config.budgetedWalk
+          ? walkingSpeed(speedLimit, grade, surface.effortTerrain ?? 1) / Math.sqrt(1 + grade ** 2)
+          : speed / (1 + uphill * 1.35)
         ;[velocity.x, velocity.z] = approachVector(
           velocity.x, velocity.z, desiredX * slopeSpeed, desiredZ * slopeSpeed,
           config.groundAcceleration * traction * (1 - softness * 0.3) * dt,

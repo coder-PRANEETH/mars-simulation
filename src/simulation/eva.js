@@ -3,12 +3,20 @@
 export const JOULES_PER_LITRE_O2 = 20190
 export const EVA_DEFAULTS = Object.freeze({ bodyKg: 75, suitKg: 50, legMeters: .9,
   oxygenLitres: 600, coolingWatts: 450, durationMinutes: 240, reserveMinutes: 30,
-  taskMinutes: 20, taskWatts: 350, pace: 1 })
+  taskMinutes: 20, taskWatts: 350, pace: 1, model: 'reference', responseSeconds: 30 })
 export const HEAT_CEILING_KJ_KG = 3
 export const SHELTER_SECONDS = 7200
 export const transitionSpeed = (gravity = 3.71, legMeters = .9) => Math.sqrt(.5 * gravity * legMeters)
 
 export function effortWatts(speed, grade = 0, terrainFactor = 1, settings = EVA_DEFAULTS) {
+  if (settings.model === 'pandolf') {
+    // Pandolf et al. (1977), as reproduced by Kim et al. (NASA, 2024).
+    // G is PERCENT grade, mass is kg, V is m/s. Earth empirical baseline.
+    // No unsupported Mars-gravity scaling; downhill cost is conservatively level.
+    const W = settings.bodyKg, L = settings.suitKg, V = Math.max(0, speed)
+    return 1.5 * W + 2 * (W + L) * (L / W) ** 2
+      + Math.max(1, terrainFactor) * (W + L) * (1.5 * V ** 2 + .35 * V * Math.max(0, grade * 100))
+  }
   // The reference point is 350 W at 1 m/s on level firm ground, matching the
   // average design assumption in ICES-2026-158. All response curves are ours.
   return 150 * (settings.bodyKg / 75) ** .75 + 200 * Math.max(0, speed) ** 1.5
@@ -16,12 +24,35 @@ export function effortWatts(speed, grade = 0, terrainFactor = 1, settings = EVA_
     * (1 + 5 * Math.max(0, grade) + Math.max(0, -grade))
 }
 
+/** Shared speed law for planning and budgeted walking; coefficients are educational. */
+export function walkingSpeed(pace, grade = 0, terrainFactor = 1) {
+  return pace / (Math.max(1, terrainFactor) + 3 * Math.max(0, grade) + Math.max(0, -grade))
+}
+
 export function advanceBudget(state, seconds, watts, settings) {
-  const energy = watts * seconds
-  const heat = Math.max(0, state.heatJ + (watts - settings.coolingWatts) * seconds)
-  return { elapsed: state.elapsed + seconds, energyJ: state.energyJ + energy,
+  const dt = Math.max(0, seconds)
+  const tau = Math.max(0, settings.responseSeconds ?? 0)
+  const initial = state.workloadWatts ?? effortWatts(0, 0, 1, settings)
+  const decay = tau ? Math.exp(-dt / tau) : 0
+  const end = tau ? watts + (initial - watts) * decay : watts
+  const integrated = (t) => watts * t + (tau ? (initial - watts) * tau * (1 - Math.exp(-t / tau)) : 0)
+  const energy = integrated(dt)
+  // Integrate through the possible cooling-rate crossing; clamp storage at zero
+  // at each monotonic interval so early spare cooling cannot be banked.
+  const times = [0, dt]
+  const ratio = (settings.coolingWatts - watts) / (initial - watts)
+  if (tau && ratio > 0 && ratio < 1) {
+    const crossing = -tau * Math.log(ratio)
+    if (crossing > 0 && crossing < dt) times.splice(1, 0, crossing)
+  }
+  let heat = state.heatJ, peak = state.peakHeatJ
+  for (let i = 1; i < times.length; i++) {
+    heat = Math.max(0, heat + integrated(times[i]) - integrated(times[i - 1]) - settings.coolingWatts * (times[i] - times[i - 1]))
+    peak = Math.max(peak, heat)
+  }
+  return { elapsed: state.elapsed + dt, energyJ: state.energyJ + energy,
     oxygenUsed: state.oxygenUsed + energy / JOULES_PER_LITRE_O2,
-    heatJ: heat, peakHeatJ: Math.max(state.peakHeatJ, heat), peakWatts: Math.max(state.peakWatts, watts) }
+    heatJ: heat, peakHeatJ: peak, peakWatts: Math.max(state.peakWatts, tau ? initial : watts, end), workloadWatts: end }
 }
 export const emptyBudget = () => ({ elapsed: 0, energyJ: 0, oxygenUsed: 0, heatJ: 0, peakHeatJ: 0, peakWatts: 0 })
 
@@ -31,8 +62,8 @@ export function segmentModel(from, to, settings) {
   const length = Math.hypot(run, rise)
   const grade = run > .001 ? rise / run : 0
   const factor = to.effortTerrain ?? 1
-  const seconds = to.seconds ?? length / settings.pace * (factor + 3 * Math.max(0, grade) + Math.max(0, -grade))
-  const returnSeconds = to.returnSeconds ?? length / settings.pace * (factor + 3 * Math.max(0, -grade) + Math.max(0, grade))
+  const seconds = to.seconds ?? length / walkingSpeed(settings.pace, grade, factor)
+  const returnSeconds = to.returnSeconds ?? length / walkingSpeed(settings.pace, -grade, factor)
   return { seconds, returnSeconds, watts: effortWatts(length / Math.max(.001, seconds), grade, factor, settings),
     returnWatts: effortWatts(length / Math.max(.001, returnSeconds), -grade, factor, settings), length }
 }
@@ -58,7 +89,7 @@ export function forecastEVA(route, options = EVA_DEFAULTS) {
     backSeconds += segment.returnSeconds
     distance += segment.length
     returnChecks.push({ ...route.points[index + 1], distance,
-      canReturn: budget.oxygenUsed + backOxygen + reserveOxygen <= settings.oxygenLitres
+      canReturn: budget.oxygenUsed + backOxygen + (settings.responseSeconds ? budget.workloadWatts * settings.responseSeconds / JOULES_PER_LITRE_O2 : 0) + reserveOxygen <= settings.oxygenLitres
         && budget.elapsed + backSeconds + settings.reserveMinutes * 60 <= settings.durationMinutes * 60
         && backSeconds <= SHELTER_SECONDS })
   })
@@ -82,8 +113,8 @@ export function forecastEVA(route, options = EVA_DEFAULTS) {
 }
 
 // Budget for retracing the path actually walked. It does not invent a shortcut.
-export function returnBudget(breadcrumbs, settings) {
-  let budget = emptyBudget()
+export function returnBudget(breadcrumbs, settings, initialWatts) {
+  let budget = { ...emptyBudget(), ...(initialWatts == null ? {} : { workloadWatts: initialWatts }) }
   for (let i = breadcrumbs.length - 1; i > 0; i--) {
     const segment = segmentModel(breadcrumbs[i - 1], breadcrumbs[i], settings)
     budget = advanceBudget(budget, segment.returnSeconds, segment.returnWatts, settings)
